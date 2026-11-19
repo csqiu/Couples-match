@@ -136,3 +136,54 @@ option was taken. Newest phases are at the bottom.
 
     Their true list is the engine's own output given the true parameters. They answer by
     comparing true scores, and 10% of answers are flipped.
+
+## Phase 3: Program data (research deferred)
+
+28. **The data-source research step was skipped, at the owner's request.**
+    `docs/data-sources.md` lists what it must answer. Until then, the pipeline only takes
+    hand-assembled CSV files and never fetches program lists itself. The sites involved
+    (acgme.org, FREIDA, nrmp.org) are blocked from the build environment anyway.
+29. **The seed is entered by hand and unverified.**
+    - It has 57 real programs (IM, Peds, General Surgery, EM, Psychiatry) at 30 teaching
+      hospitals in the six required metros.
+    - Coordinates are approximations of each primary teaching hospital, entered from
+      memory, because the Census geocoder and Nominatim are blocked here. Every row has
+      `geocodeSource: 'manual'`, confidence 0.75 and `verified: false`.
+    - `pnpm --filter @pairwise/data geocode:seed` re-geocodes every row and reports drift
+      once the network allows it. `--write` updates the rows.
+    - CBSA codes and names follow the 2023 OMB delineations and are also unverified.
+    - Program names follow ACGME-style sponsor naming, but they are not copied from ACGME
+      and have no ACGME IDs or NRMP codes.
+30. **Program ids are readable strings**, e.g. `seed-mgh-internal-medicine`, and imports
+    use `acgme-<id>` when a source provides ACGME IDs. Ids stay stable across
+    re-imports. Phase 4's `programs.id` should therefore be `text`, not `uuid`.
+31. **Two extra columns:** `geocode_confidence` and `geocode_source`. The spec asks us to
+    "store geocode confidence", and these drive the review queue.
+32. **Geocoding.** The geocoders are tried in order:
+    - US Census first. One match gives confidence 0.95; several matches give 0.7.
+    - Nominatim as a fallback. A hospital or building hit gives 0.85, any other hit
+      0.6, and a city centroid 0.3.
+
+    Below 0.8 a program goes to review (`GEOCODE_REVIEW_THRESHOLD`). Nominatim is called
+    at most once every 1.1 s, with a generic User-Agent. Every answer is cached,
+    including "not found", in `.cache/geocode.json`, which is git-ignored.
+33. **Review queue reasons:** `no_geocode`, `low_confidence`, `possible_duplicate` and
+    `outside_cbsa`.
+    - A possible duplicate is a program with the same id, or with the same specialty,
+      the same institution name and within 1 mile of an existing one. It is held back
+      from the import instead of being added twice.
+    - Specialties outside the NRMP (Urology, Ophthalmology) and unknown spellings are
+      rejected rather than guessed.
+34. **Who is "verified".** A cleanly imported row (confident geocode, no flags) is
+    marked verified. Seed rows (manual coordinates) and user-added programs are not:
+    user-added programs stay private to the couple until an admin approves them.
+35. **The CBSA lookup has two versions.** Phase 4 will use PostGIS in the database. A
+    TypeScript point-in-polygon version over the Census boundary GeoJSON lets imports be
+    checked offline and in tests. Boundary files aren't committed (they are large); the
+    import takes `--cbsa <file>`.
+36. **SMS fellowship match names are an illustrative subset and unverified.** The list
+    puts medicine and pediatric fellowships under "Medicine and Pediatric Specialties".
+    The full fellowship list should come from the approved data source.
+37. **`supabase/seed/programs.sql` is generated** by `pnpm --filter @pairwise/data seed:sql`.
+    It inserts the No Match sentinels (codes 999999999 and 888888888) and the seed
+    programs, with `geom` as a PostGIS geography point. It targets the Phase 4 schema.

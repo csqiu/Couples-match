@@ -7,3 +7,7 @@ coverage/
 .env.*.local
 *.log
 .DS_Store
+
+# data pipeline
+.cache/
+packages/data/out/

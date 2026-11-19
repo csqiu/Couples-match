@@ -1,0 +1,2 @@
+name,institution,specialty,street,city,state,zip,acgme_id,is_advanced,source_id
+Example Hospital,Example Health System,Internal Medicine,1 Example Way,Boston,MA,02114,,false,example-1

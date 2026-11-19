@@ -96,8 +96,8 @@ above the other.
 |---|---|---|
 | 1 | Engine core: pairs, scoring, hard rules, conflict detection, ranking, explanations | ✅ Done |
 | 2 | Learning from your answers, smart question choice | ✅ Done |
-| 3 | Research on program data sources, plus a seed of about 50 programs | Next |
-| 4 | Backend (Supabase): accounts, partner invites, live sync | |
+| 3 | Program data: seed of 57 programs, import + geocoding pipeline | ✅ Done (source research deferred, see [docs/data-sources.md](docs/data-sources.md)) |
+| 4 | Backend (Supabase): accounts, partner invites, live sync | Next |
 | 5–7 | Web app screens, comparison cards, final list, versions, export | |
 | 8–9 | Full program import, admin, polish, deploy | |
 
@@ -110,6 +110,7 @@ pnpm install
 pnpm test                                   # run the engine's test suite
 pnpm engine:cli fixtures/sample.json        # print a ranked list for an example couple
 pnpm engine:cli fixtures/sample.json --top 60 --why 2,4   # …and explain why row 2 is above row 4
+pnpm --filter @pairwise/data demo internal-medicine pediatrics   # a list built from real seed programs
 ```
 
 There are no environment variables or secrets yet. When the web app and Supabase arrive,
@@ -121,7 +122,7 @@ commit them.
 ```
 apps/web            Next.js app                                  (Phase 5+)
 packages/engine     scoring, rules, conflict detection, ranking  ← the product's brain
-packages/data       program import + geocoding scripts           (Phase 3)
+packages/data       specialties, seed programs, import + geocoding pipeline
 supabase/           database migrations, security policies       (Phase 4)
 ```
 
@@ -140,7 +141,40 @@ Inside `packages/engine/src`:
 | `learning.ts` | Learns your trade-offs from your answers |
 | `questions.ts` | Picks the next question; works out list confidence and when to stop |
 | `bench/` | Simulated couples, used to measure how well the learning works |
+
+Inside `packages/data/src`:
+
+| File | What's in it |
+|---|---|
+| `specialties.ts` | The list of specialties, and which NRMP match each one belongs to |
+| `pipeline.ts` | Turns imported rows into programs, plus a review list for an admin |
+| `geocode.ts` | Looks up map positions (Census and OpenStreetMap), with caching and rate limits |
+| `cbsa.ts` | Works out which metro area a point is in |
+| `seed.ts` | The seed programs, and the No Match entries |
 | `text.ts` | Turns reasons into plain English |
+
+## Program data
+
+There is no public NRMP file of program codes with locations, so Pairwise builds its own
+program list:
+
+- **Seed.** 57 real programs in Internal Medicine, Pediatrics, General Surgery, Emergency
+  Medicine and Psychiatry, across Boston, New York, Baltimore/DC, Chicago, the Bay Area
+  and Houston (`packages/data/seed/programs.json`). Their map positions were entered by
+  hand and haven't been checked by a geocoder yet. They have no NRMP codes: each couple
+  types their own codes from R3.
+- **Import pipeline.** Takes a spreadsheet (CSV) of programs and does four things:
+  1. Maps every specialty spelling ("Med-Peds", "OB/GYN") to one list of specialties,
+     each tied to the NRMP match it belongs to.
+  2. Finds each program on the map using free services (US Census first, then
+     OpenStreetMap), and remembers every answer so it never looks the same address up
+     twice.
+  3. Works out which metro area (CBSA) each program is in.
+  4. Sends anything doubtful to an admin review list: a vague map location, a possible
+     duplicate, or a program outside every metro.
+
+  Which websites we may take the full program list from is still being researched; see
+  [docs/data-sources.md](docs/data-sources.md).
 
 Design choices that weren't spelled out in the spec are recorded in
 [DECISIONS.md](DECISIONS.md).
