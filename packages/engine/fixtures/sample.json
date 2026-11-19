@@ -1,0 +1,259 @@
+{
+  "_comment": "Illustrative fixture: coordinates are approximate and no NRMP codes are included.",
+  "partnerNames": [
+    "Alex",
+    "Sam"
+  ],
+  "programs": {
+    "im-mgh": {
+      "id": "im-mgh",
+      "name": "Mass General \u2014 IM",
+      "city": "Boston",
+      "state": "MA",
+      "lat": 42.3626,
+      "lon": -71.0685,
+      "cbsaCode": "14460"
+    },
+    "im-bidmc": {
+      "id": "im-bidmc",
+      "name": "Beth Israel Deaconess \u2014 IM",
+      "city": "Boston",
+      "state": "MA",
+      "lat": 42.3398,
+      "lon": -71.1065,
+      "cbsaCode": "14460"
+    },
+    "im-cumc": {
+      "id": "im-cumc",
+      "name": "Columbia \u2014 IM",
+      "city": "New York",
+      "state": "NY",
+      "lat": 40.8409,
+      "lon": -73.9425,
+      "cbsaCode": "35620"
+    },
+    "im-jhh": {
+      "id": "im-jhh",
+      "name": "Johns Hopkins \u2014 IM",
+      "city": "Baltimore",
+      "state": "MD",
+      "lat": 39.2963,
+      "lon": -76.5928,
+      "cbsaCode": "12580"
+    },
+    "im-gwu": {
+      "id": "im-gwu",
+      "name": "George Washington \u2014 IM",
+      "city": "Washington",
+      "state": "DC",
+      "lat": 38.9009,
+      "lon": -77.0507,
+      "cbsaCode": "47900"
+    },
+    "im-nw": {
+      "id": "im-nw",
+      "name": "Northwestern \u2014 IM",
+      "city": "Chicago",
+      "state": "IL",
+      "lat": 41.8955,
+      "lon": -87.6211,
+      "cbsaCode": "16980"
+    },
+    "im-ucsf": {
+      "id": "im-ucsf",
+      "name": "UCSF \u2014 IM",
+      "city": "San Francisco",
+      "state": "CA",
+      "lat": 37.7631,
+      "lon": -122.458,
+      "cbsaCode": "41860"
+    },
+    "im-bcm": {
+      "id": "im-bcm",
+      "name": "Baylor \u2014 IM",
+      "city": "Houston",
+      "state": "TX",
+      "lat": 29.71,
+      "lon": -95.396,
+      "cbsaCode": "26420"
+    },
+    "pd-bch": {
+      "id": "pd-bch",
+      "name": "Boston Children's \u2014 Peds",
+      "city": "Boston",
+      "state": "MA",
+      "lat": 42.3376,
+      "lon": -71.1053,
+      "cbsaCode": "14460"
+    },
+    "pd-cumc": {
+      "id": "pd-cumc",
+      "name": "Columbia \u2014 Peds",
+      "city": "New York",
+      "state": "NY",
+      "lat": 40.8406,
+      "lon": -73.942,
+      "cbsaCode": "35620"
+    },
+    "pd-cnmc": {
+      "id": "pd-cnmc",
+      "name": "Children's National \u2014 Peds",
+      "city": "Washington",
+      "state": "DC",
+      "lat": 38.9273,
+      "lon": -77.0141,
+      "cbsaCode": "47900"
+    },
+    "pd-jhh": {
+      "id": "pd-jhh",
+      "name": "Johns Hopkins \u2014 Peds",
+      "city": "Baltimore",
+      "state": "MD",
+      "lat": 39.297,
+      "lon": -76.592,
+      "cbsaCode": "12580"
+    },
+    "pd-lurie": {
+      "id": "pd-lurie",
+      "name": "Lurie Children's \u2014 Peds",
+      "city": "Chicago",
+      "state": "IL",
+      "lat": 41.8963,
+      "lon": -87.6219,
+      "cbsaCode": "16980"
+    },
+    "pd-ucsf": {
+      "id": "pd-ucsf",
+      "name": "UCSF Benioff \u2014 Peds",
+      "city": "San Francisco",
+      "state": "CA",
+      "lat": 37.7676,
+      "lon": -122.3893,
+      "cbsaCode": "41860"
+    },
+    "pd-stanford": {
+      "id": "pd-stanford",
+      "name": "Stanford \u2014 Peds",
+      "city": "Palo Alto",
+      "state": "CA",
+      "lat": 37.4337,
+      "lon": -122.1745,
+      "cbsaCode": "41940"
+    },
+    "pd-tch": {
+      "id": "pd-tch",
+      "name": "Texas Children's \u2014 Peds",
+      "city": "Houston",
+      "state": "TX",
+      "lat": 29.7075,
+      "lon": -95.4018,
+      "cbsaCode": "26420"
+    }
+  },
+  "lists": [
+    [
+      {
+        "programId": "im-mgh",
+        "rank": 1,
+        "tier": "A",
+        "acceptable": true
+      },
+      {
+        "programId": "im-ucsf",
+        "rank": 2,
+        "tier": "A",
+        "acceptable": true
+      },
+      {
+        "programId": "im-cumc",
+        "rank": 3,
+        "tier": "B",
+        "acceptable": true
+      },
+      {
+        "programId": "im-jhh",
+        "rank": 4,
+        "tier": "B",
+        "acceptable": true
+      },
+      {
+        "programId": "im-bidmc",
+        "rank": 5,
+        "tier": "B",
+        "acceptable": true
+      },
+      {
+        "programId": "im-nw",
+        "rank": 6,
+        "tier": "B",
+        "acceptable": true
+      },
+      {
+        "programId": "im-gwu",
+        "rank": 7,
+        "tier": "C",
+        "acceptable": true
+      },
+      {
+        "programId": "im-bcm",
+        "rank": 8,
+        "tier": "C",
+        "acceptable": true
+      }
+    ],
+    [
+      {
+        "programId": "pd-bch",
+        "rank": 1,
+        "tier": "A",
+        "acceptable": true
+      },
+      {
+        "programId": "pd-ucsf",
+        "rank": 2,
+        "tier": "B",
+        "acceptable": true
+      },
+      {
+        "programId": "pd-stanford",
+        "rank": 3,
+        "tier": "B",
+        "acceptable": true
+      },
+      {
+        "programId": "pd-cnmc",
+        "rank": 4,
+        "tier": "B",
+        "acceptable": true
+      },
+      {
+        "programId": "pd-jhh",
+        "rank": 5,
+        "tier": "B",
+        "acceptable": true
+      },
+      {
+        "programId": "pd-lurie",
+        "rank": 6,
+        "tier": "C",
+        "acceptable": true
+      },
+      {
+        "programId": "pd-cumc",
+        "rank": 7,
+        "tier": "C",
+        "acceptable": true
+      },
+      {
+        "programId": "pd-tch",
+        "rank": 8,
+        "tier": "C",
+        "acceptable": true
+      }
+    ]
+  ],
+  "settings": {
+    "tierAPriority": null,
+    "listLength": 300
+  }
+}

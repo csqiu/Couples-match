@@ -1,0 +1,11 @@
+{
+  "name": "pairwise",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "engine:cli": "pnpm --filter @pairwise/engine cli"
+  }
+}
