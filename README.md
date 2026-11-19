@@ -54,7 +54,37 @@ The engine has two layers.
 based on its tier and where it sits in the tier. Being apart costs some points.
 "Commutable" costs a little, "drivable" more, and "apart" most. Apart is a flat cost:
 800 miles and 2,500 miles count the same. Your "this or that" answers tune those numbers
-to you. *(The tuning is Phase 2. Right now the engine uses sensible defaults.)*
+to you.
+
+**How it learns from your answers.** The engine doesn't keep one guess about how much
+distance matters to you. It keeps about 2,000 plausible guesses. Every answer makes the
+guesses that agree with it more likely and the ones that disagree less likely, so the
+engine also knows how *sure* it is. It uses that to:
+
+- **Pick the next question.** It asks where it is least sure *and* where the answer would
+  move the most rows. Questions that trade distance against program quality get a boost,
+  because they teach it the most. The first 5 questions are standard "calibration"
+  questions near the top of your list.
+- **Know when to stop.** "List confidence" is the share of neighbouring rows in your top
+  100 that the engine is at least 90% sure about. It suggests stopping at 90%, or after 40
+  questions. You can always keep going or stop early.
+- **Flag answers that no longer fit.** If the engine is now more than 85% sure you'd
+  answer a question the other way, it asks "Still true?" It never deletes an answer.
+
+Every answer is "soft" by default. Turn on **"I'm certain"** and the answer also becomes a
+hard rule.
+
+**How well does it work?** We tested it on 12 simulated couples. Each one has a hidden
+"true" preference, answers 40 questions, and gets 1 in 10 answers wrong on purpose.
+Measured against each couple's true order over their top 100 pairs, where 1.0 means
+identical:
+
+| | Before any questions | After 40 questions |
+|---|---|---|
+| Pairwise's question choice | 0.835 | **0.962** (lowest couple: 0.920) |
+| Random questions | 0.835 | 0.913 (lowest couple: 0.833) |
+
+Run it yourself with `pnpm --filter @pairwise/engine bench`.
 
 The final list follows every hard rule. Wherever the rules leave a choice, the
 higher-scoring pair goes first. For any two rows, the app can tell you **why** one is
@@ -65,8 +95,8 @@ above the other.
 | Phase | What | Status |
 |---|---|---|
 | 1 | Engine core: pairs, scoring, hard rules, conflict detection, ranking, explanations | ✅ Done |
-| 2 | Learning from your answers, smart question choice | Next |
-| 3 | Research on program data sources, plus a seed of about 50 programs | |
+| 2 | Learning from your answers, smart question choice | ✅ Done |
+| 3 | Research on program data sources, plus a seed of about 50 programs | Next |
 | 4 | Backend (Supabase): accounts, partner invites, live sync | |
 | 5–7 | Web app screens, comparison cards, final list, versions, export | |
 | 8–9 | Full program import, admin, polish, deploy | |
@@ -107,6 +137,9 @@ Inside `packages/engine/src`:
 | `conflicts.ts` | Finds circles, Tier A collisions, surprising answers and partner disagreements |
 | `rank.ts` | Produces the list, explains it, and checks manual drags |
 | `fees.ts` | NRMP fee estimate |
+| `learning.ts` | Learns your trade-offs from your answers |
+| `questions.ts` | Picks the next question; works out list confidence and when to stop |
+| `bench/` | Simulated couples, used to measure how well the learning works |
 | `text.ts` | Turns reasons into plain English |
 
 Design choices that weren't spelled out in the spec are recorded in

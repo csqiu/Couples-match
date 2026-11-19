@@ -1,9 +1,10 @@
 /**
  * Conflict ("paradox") detection (Section 5.5).
  */
-import { BT_BETA, SURPRISE_THRESHOLD } from './defaults.js';
+import { SURPRISE_THRESHOLD } from './defaults.js';
+import { pairFeatures } from './features.js';
+import { posteriorMoments, predictiveExact } from './posterior.js';
 import { pathToLinks, type Graph } from './graph.js';
-import { pairScore, sigmoid } from './scoring.js';
 import type { Comparison, EngineInput, Link, PairId, Posterior, RuleException } from './types.js';
 
 export type Conflict =
@@ -174,19 +175,15 @@ export function effectiveComparisons(comparisons: Comparison[]): { counted: Comp
   return { counted, disagreements };
 }
 
-/** Probability (under the posterior) that `a` is preferred to `b`. */
+/** Probability (under the posterior predictive) that the couple prefers `a` to `b`. */
 export function preferenceProbability(g: Graph, posterior: Posterior, a: PairId, b: PairId): number {
   const ia = g.index.get(a);
   const ib = g.index.get(b);
   if (ia === undefined || ib === undefined) return 0.5;
-  const total = posterior.weights.reduce((x, y) => x + y, 0) || 1;
-  let p = 0;
-  for (let i = 0; i < posterior.particles.length; i++) {
-    const params = posterior.particles[i];
-    const d = pairScore(params, g.pairs[ia], g.settings) - pairScore(params, g.pairs[ib], g.settings);
-    p += (posterior.weights[i] / total) * sigmoid(BT_BETA * d);
-  }
-  return p;
+  const fa = pairFeatures(g.pairs[ia], g.settings);
+  const fb = pairFeatures(g.pairs[ib], g.settings);
+  const x = fa.phi.map((v, i) => v - fb.phi[i]);
+  return predictiveExact(posteriorMoments(posterior), x, fa.bonus - fb.bonus);
 }
 
 export function findConflicts(g: Graph, posterior: Posterior, comparisons: Comparison[]): Conflict[] {

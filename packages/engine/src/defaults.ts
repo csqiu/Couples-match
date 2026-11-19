@@ -5,7 +5,7 @@ import type { CoupleSettings, DistanceBands, ModelParams } from './types.js';
 import { NRMP_RULES } from './rules.js';
 
 /** Bumped whenever a change could reorder a saved list. Stored with each version. */
-export const ENGINE_VERSION = '0.1.0';
+export const ENGINE_VERSION = '0.2.0';
 
 export const DEFAULT_DISTANCE_BANDS: DistanceBands = {
   togetherMi: 30,
@@ -29,6 +29,39 @@ export const TIER_A_STRONG_BONUS = 3.0;
 
 /** Bradley–Terry sharpness: P(left) = sigmoid(BT_BETA * (S_left - S_right)). */
 export const BT_BETA = 6;
+
+/** Number of parameter samples in the posterior (Section 5.3). */
+export const PARTICLE_COUNT = 2000;
+/** Metropolis steps per particle after each resample, and their step size in latent units. */
+export const MH_STEPS = 3;
+export const MH_STEP_SD = 0.35;
+
+/**
+ * Prior widths, on the latent scale (see learning.ts). Each multiplicative
+ * parameter is log-normal around its default with these log-sds; `cLevel` is an
+ * additive sd for the Tier C level.
+ */
+export const PRIOR_LOG_SD = {
+  s: 0.5,
+  cLevel: 0.3,
+  gap: 0.7,
+  pen: 0.8,
+  nm: 0.4,
+};
+
+/** Active learning (Section 5.6). */
+export const QUESTION_WINDOW = 20;
+export const CALIBRATION_QUESTIONS = 5;
+/** Calibration questions are looked for among the top N list positions, widening in these steps. */
+export const CALIBRATION_SEARCH_DEPTHS = [30, 60, 100];
+export const TRADEOFF_BOOST = 1.5;
+/** Positions beyond this count less toward a question's impact. */
+export const IMPACT_FOCUS_TOP = 100;
+export const IMPACT_TAIL_WEIGHT = 0.25;
+export const STOP_ORDER_CONFIDENCE = 0.9;
+export const STOP_ADJACENT_FRACTION = 0.9;
+export const STOP_TOP = 100;
+export const MAX_QUESTIONS = 40;
 
 /** An answer is "surprising" when the model predicts the opposite with at least this probability. */
 export const SURPRISE_THRESHOLD = 0.85;

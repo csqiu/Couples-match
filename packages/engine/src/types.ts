@@ -159,6 +159,8 @@ export interface ModelParams {
 export interface Posterior {
   particles: ModelParams[];
   weights: number[];
+  /** Each particle's position in the latent space (see learning.ts); enables Metropolis moves. */
+  latents?: number[][];
 }
 
 export interface ScoreSummary {

@@ -64,3 +64,75 @@ option was taken. Newest phases are at the bottom.
     partner gives up until further down the list, and why: the pair is closer, and/or the
     other partner gets a better program. The spec said the reason is "always a distance
     band", but it can also be the partner's program.
+
+## Phase 2: Learning
+
+16. **The score is linear in 12 parameters.** The score is S = θ·φ(pair) + bonus, where
+    θ packs the tier values, within-tier spreads, three distance penalties and v_NM
+    (`features.ts`). This makes several things cheap:
+    - Posterior means and SDs of every score come straight from θ's mean and covariance
+      (`scorePairs` no longer loops over particles).
+    - Each answer reduces to one 12-number difference vector.
+17. **The prior is built so the model's own assumptions always hold.** Particles live in
+    an unconstrained latent space, z ~ N(0, I) (`learning.ts`). The transform to
+    parameters guarantees, for every particle:
+    - every Tier A program beats every Tier B one, and every Tier B beats every Tier C;
+    - 0 ≤ pen(commutable) ≤ pen(drivable) ≤ pen(apart);
+    - v_NM sits below every Tier C value.
+
+    z = 0 is exactly the default parameters. Widths are in `defaults.ts` (`PRIOR_LOG_SD`).
+18. **Resample-move.** Reweighting and resampling alone collapse to a handful of distinct
+    particles after a few dozen answers. So after each resample, every particle takes 3
+    Metropolis steps against all answers so far. This is a standard addition to the
+    spec's particle filter, and it keeps the posterior diverse.
+19. **Ties** use the likelihood 4·σ(βd)·σ(−βd), which is highest when the two scores are
+    equal. β = 6 (`BT_BETA`).
+20. **Question uncertainty uses P(the order is right), not the answer prediction.** The
+    spec says "uncertainty = 1 − |2p − 1| using the posterior predictive p". If p
+    includes answer noise, two pairs the model is *confident are about equal* look
+    maximally uncertain, and asking about them teaches nothing. Using p = P(θ ranks left
+    above right) instead raised the benchmark (12 couples):
+    - mean τ after 40 questions: 0.931 → 0.952 (later 0.962, with change 22);
+    - couples where active beat random: 8/12 → 10/12.
+
+    The predictive probability is still returned as `pLeft` for display.
+21. **Impact** is the number of list positions between the two pairs (the rows that would
+    move if their order flipped). Positions past 100 count ¼, because the stopping rule
+    and the couple's attention are on the top 100.
+22. **Calibration.** There are 5 opening questions (`CALIBRATION_QUESTIONS`), built from
+    templates:
+    - (Apart vs. Together), (Drivable vs. Together), (Commutable vs. Together),
+      (Apart vs. Commutable), (Apart vs. Drivable). In each, the farther pair is better
+      for at least one partner.
+    - One "partner 1 does better vs. partner 2 does better" question at the same
+      distance.
+
+    For each template the engine picks the most uncertain open question in the top 30
+    rows, widening to 60 and then 100 only if needed. Searching near the top first
+    improved results:
+    - mean τ: 0.952 → 0.962;
+    - active beat random: 10/12 → 11/12.
+23. **The question pool** is pairs within 20 positions in the current *full* order (not
+    just the truncated list) that the hard rules don't already order and that haven't
+    been asked. The random baseline draws from the same pool, so the benchmark isolates
+    the *choice* of question.
+24. **`nextQuestions(list, posterior, k, opts)`** takes the ranked list instead of
+    `(pairs, graph, …)`. It needs the current positions, and the list already carries
+    the graph and pairs. `fitModel(prior, comparisons, ctx)` takes the candidate pairs
+    and settings in `ctx`, because answers refer to pairs by id.
+25. **`runEngine(input)` fits from the prior** using `input.seed` when no posterior is
+    passed. A saved version is therefore reproduced exactly by re-running its
+    inputs_snapshot.
+26. **Fitting cost.** Fitting 40 answers takes about 170 ms with 2,000 particles. That is
+    fine after each answer, but in the web app it should run in a Web Worker so typing
+    and dragging never stall. Ranking, conflicts and question selection stay well inside
+    their budgets (about 8 ms and 5 ms for 323 pairs).
+27. **Simulated couples for the benchmark** (`src/bench/simulate.ts`):
+    - 15 programs each, spread over 6 of 9 metros;
+    - 1–3 Tier A programs and 5–8 Tier B; the rest are Tier C;
+    - both Tier A rules hard, with the couple choosing "case by case" when Tier A
+      programs collide;
+    - hidden parameters drawn from the prior.
+
+    Their true list is the engine's own output given the true parameters. They answer by
+    comparing true scores, and 10% of answers are flipped.

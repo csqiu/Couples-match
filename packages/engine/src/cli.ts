@@ -6,10 +6,10 @@
 import { readFileSync } from 'node:fs';
 import { withDefaults } from './defaults.js';
 import { BAND_LABEL } from './geo.js';
-import { edgeCount, runEngine } from './index.js';
+import { edgeCount, learningStatus, nextQuestions, runEngine } from './index.js';
 import { explainOrder, inversionReport } from './rank.js';
 import { feeEstimate } from './fees.js';
-import { describeConflict, describeExplanation, programLabel, type TextContext } from './text.js';
+import { describeConflict, describeExplanation, pairLabel, programLabel, type TextContext } from './text.js';
 import type { EngineInput } from './types.js';
 
 const args = process.argv.slice(2);
@@ -37,7 +37,7 @@ const ctx: TextContext = { programs: input.programs, partnerNames: raw.partnerNa
 const [n1, n2] = ctx.partnerNames ?? ['Partner 1', 'Partner 2'];
 
 const t0 = performance.now();
-const { pairs, graph, conflicts, list } = runEngine(input);
+const { pairs, graph, conflicts, list, posterior } = runEngine(input);
 const ms = performance.now() - t0;
 
 const top = Number(flag('top') ?? 30);
@@ -75,6 +75,17 @@ if (inv.length) {
       ` • ${i.partner === 0 ? n1 : n2} gets ${programLabel(ctx, list.rows[i.rank - 1].pair.programs[i.partner])} at #${i.rank} before ${programLabel(ctx, i.betterProgram)} (#${i.betterProgramFirstRank}) — ${i.because.join(', ') || 'constraint'}`,
     );
   }
+}
+
+const status = learningStatus(list, posterior, input.comparisons);
+console.log(
+  `\nList confidence: ${Math.round(status.confidence * 100)}% after ${status.answered} answer(s)${status.done ? ' — good enough to stop' : ''}`,
+);
+console.log('Next questions:');
+for (const q of nextQuestions(list, posterior, 3, { comparisons: input.comparisons })) {
+  console.log(
+    ` • [${q.kind}${q.tradeoff ? ', trade-off' : ''}] ${pairLabel(ctx, q.left)}  vs.  ${pairLabel(ctx, q.right)}  (model expects left ${Math.round(q.pLeft * 100)}%)`,
+  );
 }
 
 const why = flag('why');

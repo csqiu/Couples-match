@@ -1,9 +1,10 @@
 /**
  * Soft layer (Section 5.3): each partner's value for a program, the pair score,
- * and posterior summaries. Fitting the posterior from comparisons is Phase 2;
- * this module already works with any weighted set of parameter particles.
+ * and per-pair posterior summaries. Fitting lives in learning.ts.
  */
 import { DEFAULT_PARAMS, DEFAULT_SETTINGS, TIER_A_STRONG_BONUS } from './defaults.js';
+import { pairFeatures } from './features.js';
+import { linearMoments, posteriorMoments } from './posterior.js';
 import {
   NO_MATCH,
   type Band,
@@ -81,19 +82,12 @@ export function scorePairs(
   posterior: Posterior,
   settings: CoupleSettings = DEFAULT_SETTINGS,
 ): Map<PairId, ScoreSummary> {
-  const totalW = posterior.weights.reduce((a, b) => a + b, 0) || 1;
+  const m = posteriorMoments(posterior);
   const out = new Map<PairId, ScoreSummary>();
   for (const pair of pairs) {
-    let mean = 0;
-    let sq = 0;
-    for (let p = 0; p < posterior.particles.length; p++) {
-      const w = posterior.weights[p] / totalW;
-      if (w === 0) continue;
-      const s = pairScore(posterior.particles[p], pair, settings);
-      mean += w * s;
-      sq += w * s * s;
-    }
-    out.set(pair.id, { mean, sd: Math.sqrt(Math.max(0, sq - mean * mean)) });
+    const { phi, bonus } = pairFeatures(pair, settings);
+    const { mean, variance } = linearMoments(m, phi, bonus);
+    out.set(pair.id, { mean, sd: Math.sqrt(variance) });
   }
   return out;
 }
