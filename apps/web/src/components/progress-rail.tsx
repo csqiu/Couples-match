@@ -9,7 +9,7 @@ import { STEPS } from '@/lib/steps';
 export function ProgressRail({ done, locked }: { done: string[]; locked: boolean }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Steps" className="overflow-x-auto">
+    <nav aria-label="Steps" className="relative overflow-x-auto">
       <ol className="flex min-w-max gap-1 sm:gap-2">
         {STEPS.map((s) => {
           const current = pathname.startsWith(`/app/${s.slug}`);

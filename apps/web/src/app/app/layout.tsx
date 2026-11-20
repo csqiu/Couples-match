@@ -41,7 +41,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <ProgressRail done={done} locked={!setupDone} />
-      <main className="pb-12">{children}</main>
+      <main className="min-w-0 pb-12">{children}</main>
     </div>
   );
 }

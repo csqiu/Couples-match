@@ -20,9 +20,16 @@ async function devSignIn(page: Page, email: string) {
   await form.getByRole('button', { name: 'Sign in with password' }).click();
 }
 
+const browserErrors: string[] = [];
+
 async function newUser(browser: Browser) {
   const ctx = await browser.newContext({ deviceScaleFactor: SHOTS ? 2 : 1, viewport: { width: 1280, height: 900 } });
-  return ctx.newPage();
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => browserErrors.push(`pageerror: ${e.message}`));
+  page.on('console', (m) => {
+    if (m.type() === 'error') browserErrors.push(`console: ${m.text()}`);
+  });
+  return page;
 }
 
 async function shot(page: Page, name: string) {
@@ -91,6 +98,11 @@ test('two partners: setup, invite, accept, choose programs, rank and tier', asyn
   }
   await alex.getByLabel('Search programs').fill('');
   await expect(alex.locator('.maplibregl-canvas')).toBeVisible();
+  // The pins rendered (the map's worker loaded and the program layer is drawn).
+  await expect
+    .poll(() => alex.evaluate(() => document.querySelector('.maplibregl-canvas')?.closest('[role=img]')?.getAttribute('aria-label')))
+    .toBe('Map of 4 programs');
+  await expect.poll(() => alex.evaluate(() => (window as unknown as { __pairwiseMapPins?: number }).__pairwiseMapPins ?? 0)).toBe(4);
   await expect(alex.getByText('Mine (4)')).toBeVisible();
   await alex.waitForTimeout(1500); // let tiles paint for the screenshot
   await shot(alex, '04-programs-map');
@@ -118,15 +130,19 @@ test('two partners: setup, invite, accept, choose programs, rank and tier', asyn
   await code.fill('1234140C0');
   await code.blur();
   await expect(code).toHaveAttribute('aria-invalid', 'false');
+  await expect(alex.getByText('Saved code 1234140C0 for Johns Hopkins University — Internal Medicine')).toBeVisible();
 
   // Keyboard drag: pick up Hopkins, move it up into Tier A, drop.
   const handle = alex.getByRole('button', { name: 'Drag Johns Hopkins University — Internal Medicine' });
   await handle.focus();
+  // Human pacing: dnd-kit needs a moment to pick the item up and to settle after each move.
   await alex.keyboard.press('Space');
+  await alex.waitForTimeout(300);
   await alex.keyboard.press('ArrowUp');
+  await alex.waitForTimeout(300);
   await alex.keyboard.press('Space');
   await expect(board.getByTestId('tier-A').getByText('Johns Hopkins University — Internal Medicine', { exact: true })).toBeVisible();
-  await alex.waitForTimeout(1000);
+  await expect(alex.getByText('Moved Johns Hopkins University — Internal Medicine to Tier A')).toBeVisible();
 
   // Everything persisted: reload and check the order.
   await alex.reload();
@@ -143,8 +159,25 @@ test('two partners: setup, invite, accept, choose programs, rank and tier', asyn
   // --- Sam sees Alex's programs on the map, and Alex's presence --------------------------------
   await sam.goto('/app/programs');
   await expect(sam.getByText('Alex (4)')).toBeVisible();
-  const presence = await sam.getByText('Alex is ranking').isVisible({ timeout: 10_000 }).catch(() => false);
-  console.log(`presence visible to Sam: ${presence}`);
+  // Presence over the private couple channel (also proves its access policy admits members).
+  await expect(sam.getByText('Alex is ranking')).toBeVisible({ timeout: 30_000 });
+
+  // Live sync: Alex removes a program; Sam's page updates without a reload.
+  await alex.getByRole('button', { name: 'Remove Beth Israel Deaconess Medical Center — Internal Medicine' }).click();
+  await expect(alex.getByText('Removed Beth Israel Deaconess Medical Center — Internal Medicine')).toBeVisible();
+  await expect(sam.getByText('Alex (3)')).toBeVisible({ timeout: 20_000 });
+  await shot(sam, '08-partner-view-live');
+
+  // Phone width: no sideways scrolling on any app page.
+  const phoneCheck = await browser.newContext({ viewport: { width: 390, height: 844 }, storageState: await alex.context().storageState() });
+  const pp = await phoneCheck.newPage();
+  for (const path of ['/app/setup', '/app/programs', '/app/rank']) {
+    await pp.goto(path);
+    await pp.waitForLoadState('networkidle');
+    expect(await pp.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(390);
+  }
+
+  expect(browserErrors).toEqual([]);
 
   // Dark mode and phone width, for the record.
   if (SHOTS) {

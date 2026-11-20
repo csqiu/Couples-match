@@ -47,6 +47,9 @@ export function Live({ coupleId, me }: { coupleId: string; me: { userId: string;
             timer.current = setTimeout(() => router.refresh(), 400);
           },
           onPresence: setOthers,
+          onStatus: (status, err) => {
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn(`[live] ${status}`, err?.message ?? '');
+          },
         },
       );
     })();

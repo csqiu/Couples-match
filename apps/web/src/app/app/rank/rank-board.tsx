@@ -102,9 +102,12 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
   const containerOf = (id: string): Tier | null =>
     id.startsWith('zone-') ? (id.slice(5) as Tier) : findTier(board, id);
 
+  const keyboardDrag = useRef(false);
+
   function onDragStart(e: DragStartEvent) {
     setActiveId(String(e.active.id));
     dragStart.current = board;
+    keyboardDrag.current = e.activatorEvent instanceof KeyboardEvent;
   }
 
   function onDragOver(e: DragOverEvent) {
@@ -114,9 +117,10 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
     const from = containerOf(id);
     const to = containerOf(overId);
     if (!from || !to || from === to) return;
-    // Crossing into another tier: insert where the pointer is.
-    const index = overId.startsWith('zone-') ? board[to].length : board[to].findIndex((it) => it.programId === overId);
-    setBoard((b) => moveTo(b, id, to, index < 0 ? undefined : index));
+    // Crossing into a tier above lands at its end, into a tier below at its start — the same as
+    // the arrow buttons. A pointer drop then fine-tunes the position within the tier on drag end.
+    const up = TIERS.indexOf(to) < TIERS.indexOf(from);
+    setBoard((b) => moveTo(b, id, to, up ? undefined : 0));
   }
 
   function onDragEnd(e: DragEndEvent) {
@@ -125,7 +129,10 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
     setActiveId(null);
     const start = dragStart.current ?? board;
     let next = board;
-    if (overId && !overId.startsWith('zone-')) {
+    const changedTier = findTier(start, id) !== findTier(board, id);
+    // A keyboard move into another tier keeps its tier-edge placement (end of the tier above,
+    // start of the tier below); otherwise drop where the item is over.
+    if (overId && !overId.startsWith('zone-') && !(keyboardDrag.current && changedTier)) {
       const tier = findTier(board, id)!;
       if (findTier(board, overId) === tier) next = moveTo(board, id, tier, board[tier].findIndex((it) => it.programId === overId));
     }
@@ -276,6 +283,7 @@ function RowCard({
   onAcceptable?: (v: boolean) => void;
   onRemove?: () => void;
 }) {
+  const toast = useToast();
   const [code, setCode] = useState(entry.nrmpCode);
   const [codeError, setCodeError] = useState<string | null>(null);
   useEffect(() => setCode(entry.nrmpCode), [entry.nrmpCode]);
@@ -309,6 +317,7 @@ function RowCard({
               if (code && !isValidProgramCode(code)) return setCodeError('9 characters, e.g. 1234140C0');
               const res = await saveCode(entry.programId, code);
               if (res.error) setCodeError(res.error);
+              else toast({ message: code ? `Saved code ${code} for ${entry.name}` : `Cleared code for ${entry.name}` });
             }}
             placeholder="NRMP code"
             maxLength={9}

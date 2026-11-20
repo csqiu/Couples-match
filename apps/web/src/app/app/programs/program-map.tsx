@@ -35,6 +35,8 @@ export function ProgramMap({ points, className }: { points: MapPoint[]; classNam
     (async () => {
       const maplibre = await import('maplibre-gl');
       if (disposed || !el.current) return;
+      // Served from /public by scripts/copy-maplibre-worker.mjs.
+      maplibre.setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
       const m = new maplibre.Map({
         container: el.current,
         style: isDark() ? STYLE.dark : STYLE.light,
@@ -76,6 +78,7 @@ export function ProgramMap({ points, className }: { points: MapPoint[]; classNam
           m.on('mouseleave', layer, () => (m.getCanvas().style.cursor = ''));
         }
         fit(m, latest.current);
+        m.once('idle', () => exposePins(m));
       };
       m.on('style.load', addLayers);
       onTheme = () => m.setStyle(isDark() ? STYLE.dark : STYLE.light);
@@ -95,10 +98,17 @@ export function ProgramMap({ points, className }: { points: MapPoint[]; classNam
     if (m && src) {
       src.setData(toGeoJSON(points));
       fit(m, points);
+      m.once('idle', () => exposePins(m));
     }
   }, [points]);
 
   return <div ref={el} className={className} role="img" aria-label={`Map of ${points.length} programs`} />;
+}
+
+/** How many of my pins are drawn — read by the end-to-end test. */
+function exposePins(m: MlMap) {
+  if (!m.getLayer('me')) return;
+  (window as unknown as { __pairwiseMapPins?: number }).__pairwiseMapPins = m.queryRenderedFeatures({ layers: ['me'] }).length;
 }
 
 function fit(m: MlMap, points: MapPoint[]) {

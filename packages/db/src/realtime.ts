@@ -34,6 +34,8 @@ export interface CoupleChannelHandlers {
   /** Any change to the couple's data. Typically: refetch that table and re-run the engine. */
   onChange(table: CoupleTable, event: 'INSERT' | 'UPDATE' | 'DELETE', row: Record<string, unknown>): void;
   onPresence?(others: PresenceState[]): void;
+  /** Connection status changes ('SUBSCRIBED', 'CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'), with the error if any. */
+  onStatus?(status: string, error?: Error): void;
 }
 
 export function coupleChannelName(coupleId: string): string {
@@ -72,7 +74,8 @@ export function subscribeToCouple(
     });
   }
 
-  channel.subscribe(async (status) => {
+  channel.subscribe(async (status, err) => {
+    handlers.onStatus?.(status, err);
     if (status === 'SUBSCRIBED') await channel.track(me);
   });
   return channel;

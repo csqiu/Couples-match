@@ -75,7 +75,7 @@ export function ProgramsView({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <Card className="flex flex-col gap-3 p-4 sm:p-4">
+        <Card className="flex min-w-0 flex-col gap-3 p-4 sm:p-4">
           <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
@@ -125,7 +125,7 @@ export function ProgramsView({
           </ul>
         </Card>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-3">
           <Card className="overflow-hidden p-0 sm:p-0">
             <ProgramMap points={points} className="h-[320px] w-full lg:h-[420px]" />
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs text-muted">
@@ -148,9 +148,9 @@ export function ProgramsView({
             {mine.length ? (
               <ul className="flex flex-wrap gap-2">
                 {mine.map((p) => (
-                  <li key={p.id}>
-                    <Badge tone="accent" className="py-1 pr-1">
-                      {p.name}
+                  <li key={p.id} className="max-w-full">
+                    <Badge tone="accent" className="max-w-full py-1 pr-1">
+                      <span className="truncate">{p.name}</span>
                       <button className="rounded-full p-0.5 hover:bg-accent/10" aria-label={`Remove ${p.name}`} onClick={() => toggle(p)}>
                         <X className="h-3 w-3" aria-hidden />
                       </button>
