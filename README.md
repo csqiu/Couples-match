@@ -97,7 +97,7 @@ above the other.
 | 1 | Engine core: pairs, scoring, hard rules, conflict detection, ranking, explanations | ✅ Done |
 | 2 | Learning from your answers, smart question choice | ✅ Done |
 | 3 | Program data: seed of 57 programs, import + geocoding pipeline | ✅ Done (source research deferred, see [docs/data-sources.md](docs/data-sources.md)) |
-| 4 | Backend (Supabase): database, security rules, accounts, partner invites, live sync | ✅ Done (no Supabase project created yet) |
+| 4 | Backend (Supabase): database, security rules, accounts, partner invites, live sync | ✅ Done, deployed to Supabase (free tier) |
 | 5 | Web app: setup, program search with map, rank and tier | Next |
 | 6–7 | Comparison cards, conflicts, final list, versions, export | |
 | 8–9 | Full program import, admin, polish, deploy | |
@@ -118,6 +118,12 @@ pnpm --filter @pairwise/data demo internal-medicine pediatrics   # a list built 
 Ubuntu, install them with `apt install postgresql-16 postgresql-16-postgis-3`. The tests
 then start a throwaway database by themselves. Alternatively, point `DATABASE_URL` at a
 local Supabase (`supabase start`).
+
+**Supabase project:** `pairwise` in the Infinite Games organization (free tier, US East),
+at `https://julbfusuwcjptyobguxm.supabase.co`. All five migrations, the specialties and
+the 57 seed programs are loaded, and the invite email function is deployed. The
+project's public key is under Settings → API in the Supabase dashboard; it goes in
+`.env.local`.
 
 **Environment variables** are listed in [`.env.example`](.env.example). Copy it to
 `.env.local` and fill it in; never commit real values. Nothing is needed to run the

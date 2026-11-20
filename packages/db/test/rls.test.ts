@@ -214,6 +214,32 @@ describe('Row level security', () => {
       }
     }));
 
+  it('only the intended functions are callable through the API (advisor check)', () =>
+    tx(async (db) => {
+      await db.asAdmin();
+      const rows = await db.query<{ fn: string; anon: boolean; auth: boolean }>(`
+        select p.proname as fn,
+               has_function_privilege('anon', p.oid, 'execute') as anon,
+               has_function_privilege('authenticated', p.oid, 'execute') as auth
+        from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.prosecdef
+        order by 1`);
+      const callable = (role: 'anon' | 'auth') => rows.filter((r) => r[role]).map((r) => r.fn);
+      expect(callable('anon')).toEqual(['invite_preview']);
+      expect(callable('auth')).toEqual([
+        'accept_invite', 'create_invite', 'delete_my_account', 'invite_preview', 'is_active_member',
+        'is_admin', 'is_couple_member', 'leave_couple', 'revoke_invite',
+      ]);
+      // Every security-definer function pins its search_path.
+      const unpinned = await db.query(`
+        select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.prolang <> (select oid from pg_language where lanname = 'c')
+          and p.proname not like 'st\\_%' and not exists (
+            select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')
+          and p.proname in (select routine_name from information_schema.routines where routine_schema = 'public')`);
+      expect(unpinned).toEqual([]);
+    }));
+
   it("each partner edits only their own rank list, but both can see both", () =>
     tx(async (db) => {
       const { a, b, coupleId } = await activeCouple(db);

@@ -258,3 +258,24 @@ option was taken. Newest phases are at the bottom.
     - The `realtime.messages` policy: no Supabase Realtime here.
 
     Both should be checked on a real Supabase project, local or hosted.
+50. **Deployed to a hosted Supabase project.** It is `pairwise`, ref
+    `julbfusuwcjptyobguxm`, on the free plan in us-east-1, in the existing "Infinite
+    Games" organization, chosen by the owner. Migrations 1–4 applied unchanged and the
+    seeds loaded.
+    - The two pieces that couldn't be tested locally exist and are wired up: the
+      `realtime.messages` channel policy, and the `pg_cron` purge job (04:17 UTC daily).
+51. **Migration 5 (hardening) fixes what Supabase's advisors flagged:**
+    - The trigger helpers were executable over `/rest/v1/rpc`, because Postgres grants
+      EXECUTE to PUBLIC on functions created after a blanket revoke. They are now
+      revoked, and the schema's default privileges no longer grant EXECUTE.
+    - `protect_list_version` was missing a pinned search_path.
+    - Eleven foreign keys lacked indexes.
+
+    The remaining advisor warnings are the intended API: nine invite and membership
+    functions for signed-in users, and `invite_preview` for signed-out visitors (the
+    token is the secret). A new test locks in exactly that list.
+52. **`send-invite` checks its email settings first.** If `RESEND_API_KEY`,
+    `INVITE_FROM_EMAIL` or `APP_URL` is missing, it returns 503 `email_not_configured`
+    *before* creating an invite, rather than creating one and revoking it. It is
+    deployed (JWT required) and compiles on Supabase's runtime. It is still untested
+    end to end, because no email key exists yet.

@@ -30,6 +30,9 @@ Deno.serve(async (req) => {
 
   const authorization = req.headers.get('Authorization');
   if (!authorization) return json(401, { error: 'not_signed_in' });
+  if (!Deno.env.get('RESEND_API_KEY') || !Deno.env.get('INVITE_FROM_EMAIL') || !Deno.env.get('APP_URL')) {
+    return json(503, { error: 'email_not_configured' });
+  }
 
   let body: { coupleId?: string; email?: string };
   try {
