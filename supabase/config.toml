@@ -1,0 +1,49 @@
+# Supabase CLI configuration for local development (`supabase start`).
+# Hosted projects are configured in the dashboard to match.
+
+project_id = "pairwise"
+
+[api]
+port = 54321
+schemas = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 16
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed/specialties.sql", "./seed/programs.sql"]
+
+[realtime]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+# Sessions persist on the device; refresh tokens rotate.
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+
+[auth.email]
+# Magic links only: no passwords to store.
+enable_signup = true
+enable_confirmations = false
+double_confirm_changes = true
+otp_expiry = 3600
+
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+skip_nonce_check = false
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+
+[functions.send-invite]
+verify_jwt = true

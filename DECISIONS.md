@@ -187,3 +187,74 @@ option was taken. Newest phases are at the bottom.
 37. **`supabase/seed/programs.sql` is generated** by `pnpm --filter @pairwise/data seed:sql`.
     It inserts the No Match sentinels (codes 999999999 and 888888888) and the seed
     programs, with `geom` as a PostGIS geography point. It targets the Phase 4 schema.
+
+## Phase 4: Backend
+
+38. **No Supabase project yet.** Creating one could cost money, and the spec says to ask
+    first. Everything was therefore built as standard Supabase migrations
+    (`supabase/migrations`) and tested against a plain local Postgres 16 + PostGIS.
+    - `supabase/tests/supabase-shim.sql` supplies the bits of Supabase the migrations
+      rely on: the anon, authenticated and service roles, `auth.users`, `auth.uid()`
+      read from the request's JWT claims (the same mechanism PostgREST uses), and the
+      `supabase_realtime` publication.
+    - Every statement in the shim is guarded, so on real Supabase it does nothing.
+    - The tests switch to the `authenticated` role with a given user's claims, so row
+      level security is exercised exactly as it would be from the app.
+39. **Couple membership.** It lives in `couples.partner_a` and `partner_b`, as in the
+    spec, with a status of `pending`, `active` or `dissolved`.
+    - "One active couple per match year" is a trigger with an advisory lock.
+    - Partner A can start building their list while the invite is pending.
+    - Members can change a couple's `settings` only. Partners, status and match change
+      only through security-definer functions; column-level grants enforce this.
+40. **Invites.**
+    - Tokens are 32 random bytes, stored only as a SHA-256 hash.
+    - `create_invite` returns the token once. The `send-invite` Edge Function calls it
+      *as the user* and puts the token only in the email, so the browser never sees it.
+    - Resending creates a new link and revokes the old one. There is one open invite at
+      a time.
+    - `accept_invite` requires the signed-in email to match the invite, checks expiry and
+      single use, and refuses partners in different matches (the `specialties` table
+      maps each specialty to its match).
+    - `invite_preview(token)` lets the landing page show who invited you before you sign
+      in.
+41. **Leaving and deletion.**
+    - `leave_couple` dissolves the couple. Former members can still read it but not
+      change it.
+    - A daily job (`pg_cron` on hosted Supabase) deletes couples dissolved more than 30
+      days ago.
+    - `delete_my_account` deletes the auth user. This cascades to their profile and rank
+      list. Their past answers and versions stay with the couple, with the author shown
+      as unknown. The couple is dissolved, or deleted outright if nobody is left.
+42. **"Private tiers" hides tiers in the UI only.** The spec says the partner's tiers are
+    still *used by the engine*, which runs in the browser. Both partners' rows are
+    therefore readable by both, and the app hides the partner's tiers when
+    `settings.privacy = 'private_tiers'`. True secrecy would need the engine to run
+    server-side.
+43. **Programs store `lat`/`lon`, and `geom` is generated from them.** The client reads
+    and writes plain numbers, and PostGIS still gets a geography column for distances
+    and metro lookup. Program CBSAs are assigned by a trigger once `cbsa_boundaries` is
+    loaded; until then the given code is kept.
+44. **Distances.** The spec asks for a "materialized helper", but a materialized view
+    can't carry row-level security. `couple_pair_distances` is therefore a normal
+    `security_invoker` view, plus `pair_distance_mi(a, b)`. The engine also computes
+    distances itself from the coordinates, so the client never depends on the view.
+45. **Activity feed.** Statement-level triggers write one `audit_events` row per change
+    per couple, e.g. "individual_ranks.update, count 12" for a drag-and-drop, plus
+    settings and status changes. Users can read the feed but never write it.
+46. **Live sync.**
+    - The eight shared tables are in the `supabase_realtime` publication, with full row
+      images so deletes still carry `couple_id`.
+    - Presence uses a private channel per couple, `couple:<id>`. A policy on
+      `realtime.messages` admits only members; it is created only where Supabase
+      Realtime exists.
+    - `packages/db/src/realtime.ts` wraps both for the app, with last-write-wins rank
+      edits (the undo toast is UI, Phase 5).
+47. **The rank-uniqueness constraint is deferrable,** so a drag-and-drop reorder can
+    rewrite many ranks in one statement.
+48. **Database types (`packages/db/src/database.types.ts`) are hand-written** in the shape
+    `supabase gen types` produces. Regenerate them once a project exists.
+49. **Two pieces are not tested here:**
+    - The `send-invite` Edge Function: no Deno or email service in this environment.
+    - The `realtime.messages` policy: no Supabase Realtime here.
+
+    Both should be checked on a real Supabase project, local or hosted.

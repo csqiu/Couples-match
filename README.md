@@ -97,8 +97,9 @@ above the other.
 | 1 | Engine core: pairs, scoring, hard rules, conflict detection, ranking, explanations | ✅ Done |
 | 2 | Learning from your answers, smart question choice | ✅ Done |
 | 3 | Program data: seed of 57 programs, import + geocoding pipeline | ✅ Done (source research deferred, see [docs/data-sources.md](docs/data-sources.md)) |
-| 4 | Backend (Supabase): accounts, partner invites, live sync | Next |
-| 5–7 | Web app screens, comparison cards, final list, versions, export | |
+| 4 | Backend (Supabase): database, security rules, accounts, partner invites, live sync | ✅ Done (no Supabase project created yet) |
+| 5 | Web app: setup, program search with map, rank and tier | Next |
+| 6–7 | Comparison cards, conflicts, final list, versions, export | |
 | 8–9 | Full program import, admin, polish, deploy | |
 
 ## Running it
@@ -113,9 +114,14 @@ pnpm engine:cli fixtures/sample.json --top 60 --why 2,4   # …and explain why r
 pnpm --filter @pairwise/data demo internal-medicine pediatrics   # a list built from real seed programs
 ```
 
-There are no environment variables or secrets yet. When the web app and Supabase arrive,
-the required variables will be listed here, and they belong in `.env.local`. Never
-commit them.
+**Database tests** (`packages/db`) need PostgreSQL 16 with PostGIS on the machine. On
+Ubuntu, install them with `apt install postgresql-16 postgresql-16-postgis-3`. The tests
+then start a throwaway database by themselves. Alternatively, point `DATABASE_URL` at a
+local Supabase (`supabase start`).
+
+**Environment variables** are listed in [`.env.example`](.env.example). Copy it to
+`.env.local` and fill it in; never commit real values. Nothing is needed to run the
+tests.
 
 ## Repository layout
 
@@ -123,7 +129,8 @@ commit them.
 apps/web            Next.js app                                  (Phase 5+)
 packages/engine     scoring, rules, conflict detection, ranking  ← the product's brain
 packages/data       specialties, seed programs, import + geocoding pipeline
-supabase/           database migrations, security policies       (Phase 4)
+packages/db         database types, rows → engine input, live-sync helpers, database tests
+supabase/           database migrations (tables + security rules), seeds, invite email function
 ```
 
 Inside `packages/engine/src`:
@@ -175,6 +182,24 @@ program list:
 
   Which websites we may take the full program list from is still being researched; see
   [docs/data-sources.md](docs/data-sources.md).
+
+## Accounts, partners and privacy
+
+- **Sign-in** is by emailed magic link, or optionally Google. There are no passwords.
+- **Inviting your partner.** Partner 1 enters Partner 2's email address. Partner 2 gets a
+  single-use link that expires in 7 days, and must sign in with that same address to
+  accept. Partner 1 can resend the invite (which cancels the old link) or revoke it.
+- **One couple per match year.** Each person can be in one active couple per match year,
+  and both partners must be in the same NRMP match.
+- **Who can see what.** The database enforces privacy for every request, not just in the
+  app. Only the two partners can see a couple's lists, answers and versions, and each
+  partner can only edit their own rank list. This is covered by the test suite,
+  including the spec's "a third user cannot read the couple's data" check on every
+  table.
+- **Live sync.** Both partners see list edits, answers and resolved conflicts as they
+  happen, plus who is doing what ("Alex is answering comparisons").
+- **Leaving and deleting.** If either partner leaves, the couple becomes read-only and is
+  deleted after 30 days. Deleting your account removes your data immediately.
 
 Design choices that weren't spelled out in the spec are recorded in
 [DECISIONS.md](DECISIONS.md).
