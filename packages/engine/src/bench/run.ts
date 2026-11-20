@@ -3,7 +3,7 @@
  *
  *   pnpm --filter @pairwise/engine bench [--couples 12] [--questions 40] [--noise 0.1]
  */
-import { hiddenParams, simulateCouple, simulatedInput } from './simulate.js';
+import { hiddenParams, simulateCouple, simulatedInput } from './simulate';
 
 const args = process.argv.slice(2);
 const flag = (name: string, dflt: number) => {

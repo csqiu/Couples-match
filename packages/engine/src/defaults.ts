@@ -1,8 +1,8 @@
 /**
  * Every distance, tier and model default lives here (spec: "one defaults.ts").
  */
-import type { CoupleSettings, DistanceBands, ModelParams } from './types.js';
-import { NRMP_RULES } from './rules.js';
+import type { CoupleSettings, DistanceBands, ModelParams } from './types';
+import { NRMP_RULES } from './rules';
 
 /** Bumped whenever a change could reorder a saved list. Stored with each version. */
 export const ENGINE_VERSION = '0.2.0';

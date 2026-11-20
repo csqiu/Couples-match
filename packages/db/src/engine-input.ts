@@ -22,7 +22,7 @@ import type {
   PinRow,
   ProgramRow,
   RuleExceptionRow,
-} from './database.types.js';
+} from './database.types';
 
 /** Couple settings as stored: engine overrides plus app-only fields. */
 export interface StoredSettings extends Partial<Omit<CoupleSettings, 'matchType'>> {

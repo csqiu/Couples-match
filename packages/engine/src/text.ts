@@ -3,11 +3,11 @@
  * "You said A over B (comparison #7). B is over C because both of you prefer it
  * at the same distance (automatic). C is over A because of Partner 1's Tier A rule (rule)."
  */
-import { splitPairId } from './candidates.js';
-import { BAND_LABEL } from './geo.js';
-import type { Conflict } from './conflicts.js';
-import type { Reason } from './rank.js';
-import { NO_MATCH, type EdgeReason, type Link, type PairId, type ProgramInfo } from './types.js';
+import { splitPairId } from './candidates';
+import { BAND_LABEL } from './geo';
+import type { Conflict } from './conflicts';
+import type { Reason } from './rank';
+import { NO_MATCH, type EdgeReason, type Link, type PairId, type ProgramInfo } from './types';
 
 export interface TextContext {
   programs: Record<string, ProgramInfo>;

@@ -21,7 +21,7 @@ import {
   type GeocodeResult,
   type Geocoder,
   type StagingRow,
-} from '../src/index.js';
+} from '../src/index';
 
 describe('Specialty vocabulary', () => {
   it.each([

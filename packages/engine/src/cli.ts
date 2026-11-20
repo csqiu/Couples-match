@@ -4,13 +4,13 @@
  *   pnpm --filter @pairwise/engine cli fixtures/sample.json [--top 40] [--why 1,5]
  */
 import { readFileSync } from 'node:fs';
-import { withDefaults } from './defaults.js';
-import { BAND_LABEL } from './geo.js';
-import { edgeCount, learningStatus, nextQuestions, runEngine } from './index.js';
-import { explainOrder, inversionReport } from './rank.js';
-import { feeEstimate } from './fees.js';
-import { describeConflict, describeExplanation, pairLabel, programLabel, type TextContext } from './text.js';
-import type { EngineInput } from './types.js';
+import { withDefaults } from './defaults';
+import { BAND_LABEL } from './geo';
+import { edgeCount, learningStatus, nextQuestions, runEngine } from './index';
+import { explainOrder, inversionReport } from './rank';
+import { feeEstimate } from './fees';
+import { describeConflict, describeExplanation, pairLabel, programLabel, type TextContext } from './text';
+import type { EngineInput } from './types';
 
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith('--'));

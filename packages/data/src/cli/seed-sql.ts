@@ -7,9 +7,9 @@
  * supabase/seed/programs.sql (No Match sentinels + seed programs).
  */
 import { writeFileSync } from 'node:fs';
-import { SEED_PROGRAMS, noMatchSentinels } from '../seed.js';
-import { SPECIALTIES } from '../specialties.js';
-import type { ProgramRecord } from '../types.js';
+import { SEED_PROGRAMS, noMatchSentinels } from '../seed';
+import { SPECIALTIES } from '../specialties';
+import type { ProgramRecord } from '../types';
 
 const q = (v: string | null | undefined) => (v == null ? 'null' : `'${v.replace(/'/g, "''")}'`);
 const n = (v: number | null) => (v == null ? 'null' : String(v));

@@ -8,7 +8,7 @@
  *   in the migrations lets only the couple's members join it.
  */
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from './database.types.js';
+import type { Database } from './database.types';
 
 export const COUPLE_TABLES = [
   'couples',

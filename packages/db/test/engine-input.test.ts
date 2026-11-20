@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { NO_MATCH, runEngine } from '@pairwise/engine';
-import { buildEngineInput, coupleSeed, settingsFrom, toEngineProgramId, type CoupleData } from '../src/index.js';
-import { activeCouple, tx } from './db.js';
+import { buildEngineInput, coupleSeed, settingsFrom, toEngineProgramId, type CoupleData } from '../src/index';
+import { activeCouple, tx } from './db';
 
 describe('Database rows → engine input', () => {
   it('a member loads the couple through RLS and gets a ranked list', () =>

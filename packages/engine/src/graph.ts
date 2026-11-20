@@ -2,8 +2,8 @@
  * Hard layer (Section 5.4): a directed graph over candidate pairs. An edge
  * X → Y means X must rank above Y. Every edge remembers why.
  */
-import { isNoMatchPair, pairId } from './candidates.js';
-import { DOMINANCE_BAND_RANK } from './geo.js';
+import { isNoMatchPair, pairId } from './candidates';
+import { DOMINANCE_BAND_RANK } from './geo';
 import {
   NO_MATCH,
   type CoupleSettings,
@@ -13,7 +13,7 @@ import {
   type Pair,
   type PairId,
   type PartnerIndex,
-} from './types.js';
+} from './types';
 
 export interface TierACollision {
   /** Example: partner 1 gets Tier A, partner 2 does not. */

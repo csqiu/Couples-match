@@ -22,8 +22,8 @@ import {
   T,
   type Comparison,
   type EngineInput,
-} from '../src/index.js';
-import { hiddenParams, simulateCouple, simulatedInput } from '../src/bench/simulate.js';
+} from '../src/index';
+import { hiddenParams, simulateCouple, simulatedInput } from '../src/bench/simulate';
 
 const PARTICLES_FOR_UNIT_TESTS = 500;
 

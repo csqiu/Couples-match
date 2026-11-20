@@ -7,10 +7,10 @@
  * (Section 4, step 1), still pending.
  */
 import { haversineMi } from '@pairwise/engine';
-import type { CbsaIndex } from './cbsa.js';
-import type { Geocoder } from './geocode.js';
-import { normalizeSpecialty } from './specialties.js';
-import type { ProgramRecord, Rejected, ReviewItem, StagingRow } from './types.js';
+import type { CbsaIndex } from './cbsa';
+import type { Geocoder } from './geocode';
+import { normalizeSpecialty } from './specialties';
+import type { ProgramRecord, Rejected, ReviewItem, StagingRow } from './types';
 
 /** Geocodes below this confidence go to the admin review queue. */
 export const GEOCODE_REVIEW_THRESHOLD = 0.8;

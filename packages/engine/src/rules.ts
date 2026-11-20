@@ -7,7 +7,7 @@
  * see DECISIONS.md. Re-check every value before rank season and update
  * `lastVerified`.
  */
-import type { MatchType } from './types.js';
+import type { MatchType } from './types';
 
 export interface LengthFeeTier {
   minRanks: number;

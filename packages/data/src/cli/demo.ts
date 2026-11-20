@@ -17,7 +17,7 @@ import {
   type RankEntry,
   type Tier,
 } from '@pairwise/engine';
-import { SEED_PROGRAMS, toEngineProgram } from '../seed.js';
+import { SEED_PROGRAMS, toEngineProgram } from '../seed';
 
 const [s1 = 'internal-medicine', s2 = 'pediatrics'] = process.argv.slice(2);
 const pick = (code: string) => SEED_PROGRAMS.filter((p) => p.specialtyCode === code);

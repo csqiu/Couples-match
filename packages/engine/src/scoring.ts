@@ -2,9 +2,9 @@
  * Soft layer (Section 5.3): each partner's value for a program, the pair score,
  * and per-pair posterior summaries. Fitting lives in learning.ts.
  */
-import { DEFAULT_PARAMS, DEFAULT_SETTINGS, TIER_A_STRONG_BONUS } from './defaults.js';
-import { pairFeatures } from './features.js';
-import { linearMoments, posteriorMoments } from './posterior.js';
+import { DEFAULT_PARAMS, DEFAULT_SETTINGS, TIER_A_STRONG_BONUS } from './defaults';
+import { pairFeatures } from './features';
+import { linearMoments, posteriorMoments } from './posterior';
 import {
   NO_MATCH,
   type Band,
@@ -15,7 +15,7 @@ import {
   type PartnerIndex,
   type Posterior,
   type ScoreSummary,
-} from './types.js';
+} from './types';
 
 export function cloneParams(p: ModelParams): ModelParams {
   return {

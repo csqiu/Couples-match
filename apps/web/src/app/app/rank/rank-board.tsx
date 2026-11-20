@@ -1,0 +1,347 @@
+'use client';
+import {
+  closestCorners,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  type KeyboardCoordinateGetter,
+} from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { isValidProgramCode } from '@pairwise/engine';
+import { ChevronDown, ChevronUp, GripVertical, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { Select } from '@/components/ui/field';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/components/ui/toast';
+import { findTier, flatten, group, moveTo, nudge, sameOrder, TIERS, type Board, type Tier } from '@/lib/board';
+import { cn } from '@/lib/cn';
+import { removeProgram } from '../programs/actions';
+import { saveCode, saveList } from './actions';
+
+export interface BoardEntry {
+  programId: string;
+  tier: Tier;
+  acceptable: boolean;
+  nrmpCode: string;
+  name: string;
+  place: string;
+}
+
+/**
+ * Keyboard dragging across the three tier lists: ↑/↓ jump to the nearest row (or empty
+ * tier box) above or below, so a program can move between tiers without a mouse.
+ * dnd-kit's default getter only handles a single list well.
+ */
+const tierAwareCoordinates: KeyboardCoordinateGetter = (event, args) => {
+  const { active, collisionRect, droppableRects, droppableContainers } = args.context;
+  if ((event.code !== 'ArrowUp' && event.code !== 'ArrowDown') || !active || !collisionRect) {
+    return sortableKeyboardCoordinates(event, args);
+  }
+  event.preventDefault();
+  const up = event.code === 'ArrowUp';
+  let best: { top: number; left: number; d: number } | null = null;
+  for (const c of droppableContainers.getEnabled()) {
+    if (c.id === active.id) continue;
+    const rect = droppableRects.get(c.id);
+    if (!rect) continue;
+    const d = up ? collisionRect.top - rect.top : rect.top - collisionRect.top;
+    if (d > 1 && (!best || d < best.d)) best = { top: rect.top, left: rect.left, d };
+  }
+  return best ? { x: best.left, y: best.top } : undefined;
+};
+
+const TIER_COPY: Record<Tier, { title: string; body: string }> = {
+  A: { title: 'Tier A', body: 'I’d take this over any lower program, wherever my partner lands.' },
+  B: { title: 'Tier B', body: 'Strong preference, but I’d trade down to be with my partner.' },
+  C: { title: 'Tier C', body: 'Acceptable fallback.' },
+};
+
+export function RankBoard({ initial }: { initial: BoardEntry[] }) {
+  const [board, setBoard] = useState<Board<BoardEntry>>(() => group(initial));
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [, startSave] = useTransition();
+  const toast = useToast();
+  const dragStart = useRef<Board<BoardEntry> | null>(null);
+
+  // Live updates (e.g. from another tab) replace local state unless a drag is in progress.
+  const initialKey = initial.map((e) => `${e.programId}:${e.tier}:${e.acceptable}:${e.nrmpCode}`).join('|');
+  useEffect(() => {
+    if (!activeId) setBoard(group(initial));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialKey]);
+
+  const byId = useMemo(() => new Map(flatten(board).map((e) => [e.programId, e])), [board]);
+  const rankOf = useMemo(() => new Map(flatten(board).map((e, i) => [e.programId, i + 1])), [board]);
+
+  function persist(next: Board<BoardEntry>, prev: Board<BoardEntry>, message?: string) {
+    setBoard(next);
+    startSave(async () => {
+      const res = await saveList(flatten(next).map(({ programId, tier, acceptable }) => ({ programId, tier, acceptable })));
+      if (res.error) {
+        setBoard(prev);
+        toast({ message: `Couldn’t save: ${res.error}` });
+      } else if (message) {
+        toast({ message, action: { label: 'Undo', onClick: () => persist(prev, next) } });
+      }
+    });
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: tierAwareCoordinates }),
+  );
+
+  const containerOf = (id: string): Tier | null =>
+    id.startsWith('zone-') ? (id.slice(5) as Tier) : findTier(board, id);
+
+  function onDragStart(e: DragStartEvent) {
+    setActiveId(String(e.active.id));
+    dragStart.current = board;
+  }
+
+  function onDragOver(e: DragOverEvent) {
+    const id = String(e.active.id);
+    const overId = e.over ? String(e.over.id) : null;
+    if (!overId) return;
+    const from = containerOf(id);
+    const to = containerOf(overId);
+    if (!from || !to || from === to) return;
+    // Crossing into another tier: insert where the pointer is.
+    const index = overId.startsWith('zone-') ? board[to].length : board[to].findIndex((it) => it.programId === overId);
+    setBoard((b) => moveTo(b, id, to, index < 0 ? undefined : index));
+  }
+
+  function onDragEnd(e: DragEndEvent) {
+    const id = String(e.active.id);
+    const overId = e.over ? String(e.over.id) : null;
+    setActiveId(null);
+    const start = dragStart.current ?? board;
+    let next = board;
+    if (overId && !overId.startsWith('zone-')) {
+      const tier = findTier(board, id)!;
+      if (findTier(board, overId) === tier) next = moveTo(board, id, tier, board[tier].findIndex((it) => it.programId === overId));
+    }
+    if (sameOrder(start, next)) return setBoard(next);
+    const entry = byId.get(id)!;
+    const toTier = findTier(next, id)!;
+    persist(next, start, findTier(start, id) !== toTier ? `Moved ${entry.name} to Tier ${toTier}` : `Moved ${entry.name}`);
+  }
+
+  const active = activeId ? byId.get(activeId) : null;
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
+      onDragCancel={() => {
+        setActiveId(null);
+        if (dragStart.current) setBoard(dragStart.current);
+      }}
+      accessibility={{
+        screenReaderInstructions: {
+          draggable: 'To pick up a program, press space or enter. Use the arrow keys to move it, including into another tier. Press space or enter to drop, or escape to cancel.',
+        },
+      }}
+    >
+      <div className="flex flex-col gap-4" data-testid="rank-board">
+        {TIERS.map((tier) => (
+          <TierZone key={tier} tier={tier} count={board[tier].length}>
+            <SortableContext items={board[tier].map((e) => e.programId)} strategy={verticalListSortingStrategy}>
+              {board[tier].map((entry) => (
+                <Row
+                  key={entry.programId}
+                  entry={entry}
+                  rank={rankOf.get(entry.programId)!}
+                  isFirst={rankOf.get(entry.programId) === 1}
+                  isLast={rankOf.get(entry.programId) === byId.size}
+                  onNudge={(dir) => persist(nudge(board, entry.programId, dir), board)}
+                  onTier={(t) => persist(moveTo(board, entry.programId, t), board, `Moved ${entry.name} to Tier ${t}`)}
+                  onAcceptable={(v) => {
+                    const next = { ...board, [tier]: board[tier].map((e) => (e.programId === entry.programId ? { ...e, acceptable: v } : e)) };
+                    persist(next, board);
+                  }}
+                  onRemove={async () => {
+                    const prev = board;
+                    setBoard({ ...board, [tier]: board[tier].filter((e) => e.programId !== entry.programId) });
+                    const res = await removeProgram(entry.programId);
+                    if (res.error) {
+                      setBoard(prev);
+                      toast({ message: res.error });
+                    } else toast({ message: `Removed ${entry.name}` });
+                  }}
+                />
+              ))}
+            </SortableContext>
+          </TierZone>
+        ))}
+      </div>
+      <DragOverlay>{active ? <RowCard entry={active} rank={rankOf.get(active.programId)!} overlay /> : null}</DragOverlay>
+    </DndContext>
+  );
+}
+
+function TierZone({ tier, count, children }: { tier: Tier; count: number; children: React.ReactNode }) {
+  // A tier box only takes drops itself while empty; otherwise its rows do. (If a non-empty
+  // box were droppable, the keyboard's "up" from its first row would land on the box itself,
+  // and keyboard users could never move a program into another tier.)
+  const { setNodeRef, isOver } = useDroppable({ id: `zone-${tier}`, disabled: count > 0 });
+  return (
+    <section
+      ref={setNodeRef}
+      aria-labelledby={`tier-${tier}`}
+      className={cn('rounded-2xl border bg-surface p-3 sm:p-4', isOver ? 'border-accent' : 'border-border')}
+    >
+      <header className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 px-1">
+        <h2 id={`tier-${tier}`} className={cn('font-semibold', tier === 'A' ? 'text-tier-a' : tier === 'B' ? 'text-tier-b' : 'text-tier-c')}>
+          {TIER_COPY[tier].title} <span className="text-sm font-normal text-muted">({count})</span>
+        </h2>
+        <p className="text-sm text-muted">{TIER_COPY[tier].body}</p>
+      </header>
+      <ul className="flex min-h-14 flex-col gap-2" data-testid={`tier-${tier}`}>
+        {children}
+        {count === 0 ? (
+          <li className="flex min-h-14 items-center justify-center rounded-xl border border-dashed border-border text-xs text-muted">
+            Drag programs here
+          </li>
+        ) : null}
+      </ul>
+    </section>
+  );
+}
+
+function Row(props: {
+  entry: BoardEntry;
+  rank: number;
+  isFirst: boolean;
+  isLast: boolean;
+  onNudge: (dir: -1 | 1) => void;
+  onTier: (t: Tier) => void;
+  onAcceptable: (v: boolean) => void;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.entry.programId,
+  });
+  return (
+    <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn(isDragging && 'opacity-40')}>
+      <RowCard
+        {...props}
+        handle={
+          <button
+            ref={setActivatorNodeRef}
+            {...attributes}
+            {...listeners}
+            className="flex min-h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted hover:bg-surface-2 active:cursor-grabbing"
+            aria-label={`Drag ${props.entry.name}`}
+          >
+            <GripVertical className="h-5 w-5" aria-hidden />
+          </button>
+        }
+      />
+    </li>
+  );
+}
+
+function RowCard({
+  entry,
+  rank,
+  overlay,
+  handle,
+  isFirst,
+  isLast,
+  onNudge,
+  onTier,
+  onAcceptable,
+  onRemove,
+}: {
+  entry: BoardEntry;
+  rank: number;
+  overlay?: boolean;
+  handle?: React.ReactNode;
+  isFirst?: boolean;
+  isLast?: boolean;
+  onNudge?: (dir: -1 | 1) => void;
+  onTier?: (t: Tier) => void;
+  onAcceptable?: (v: boolean) => void;
+  onRemove?: () => void;
+}) {
+  const [code, setCode] = useState(entry.nrmpCode);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  useEffect(() => setCode(entry.nrmpCode), [entry.nrmpCode]);
+
+  return (
+    <div
+      className={cn(
+        'flex flex-wrap items-center gap-x-2 gap-y-2 rounded-xl border border-border bg-bg px-2 py-2 sm:flex-nowrap',
+        overlay && 'shadow-lg',
+        !entry.acceptable && 'opacity-60',
+      )}
+    >
+      {handle ?? <span className="flex min-h-11 w-8 items-center justify-center text-muted"><GripVertical className="h-5 w-5" aria-hidden /></span>}
+      <span className="w-7 shrink-0 text-right text-sm font-semibold tabular-nums text-muted" aria-label={`Rank ${rank}`}>{rank}</span>
+      <div className="min-w-0 flex-1 basis-40">
+        <p className={cn('truncate text-sm font-medium', !entry.acceptable && 'line-through')}>{entry.name}</p>
+        <p className="truncate text-xs text-muted">{entry.place}{!entry.acceptable ? ' · not acceptable (left off your list)' : ''}</p>
+      </div>
+      {overlay ? null : (
+        <div className="flex w-full items-center justify-end gap-1 sm:w-auto">
+          <label className="sr-only" htmlFor={`code-${entry.programId}`}>NRMP code for {entry.name}</label>
+          <input
+            id={`code-${entry.programId}`}
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase());
+              setCodeError(null);
+            }}
+            onBlur={async () => {
+              if (code === entry.nrmpCode) return;
+              if (code && !isValidProgramCode(code)) return setCodeError('9 characters, e.g. 1234140C0');
+              const res = await saveCode(entry.programId, code);
+              if (res.error) setCodeError(res.error);
+            }}
+            placeholder="NRMP code"
+            maxLength={9}
+            aria-invalid={!!codeError}
+            title={codeError ?? 'Type the program code from R3'}
+            className={cn(
+              'min-h-11 w-28 rounded-lg border bg-surface px-2 font-mono text-xs uppercase placeholder:font-sans placeholder:normal-case',
+              codeError ? 'border-danger' : 'border-border',
+            )}
+          />
+          <Select
+            aria-label={`Tier for ${entry.name}`}
+            value={entry.tier}
+            onChange={(e) => onTier?.(e.target.value as Tier)}
+            className="min-h-11 w-16 px-2"
+          >
+            {TIERS.map((t) => <option key={t} value={t}>{t}</option>)}
+          </Select>
+          <span className="flex flex-col">
+            <button className="flex h-5.5 w-9 items-center justify-center rounded text-muted hover:bg-surface-2 disabled:opacity-30" disabled={isFirst} onClick={() => onNudge?.(-1)} aria-label={`Move ${entry.name} up`}>
+              <ChevronUp className="h-4 w-4" aria-hidden />
+            </button>
+            <button className="flex h-5.5 w-9 items-center justify-center rounded text-muted hover:bg-surface-2 disabled:opacity-30" disabled={isLast} onClick={() => onNudge?.(1)} aria-label={`Move ${entry.name} down`}>
+              <ChevronDown className="h-4 w-4" aria-hidden />
+            </button>
+          </span>
+          <Switch checked={entry.acceptable} onChange={(v) => onAcceptable?.(v)} label={`${entry.name} is acceptable`} />
+          <button className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-danger" onClick={onRemove} aria-label={`Remove ${entry.name}`}>
+            <Trash2 className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+      )}
+      {codeError ? <p className="w-full pl-17 text-xs text-danger" role="alert">{codeError}</p> : null}
+    </div>
+  );
+}

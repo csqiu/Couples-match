@@ -6,7 +6,7 @@ import {
   type ProgramInfo,
   type RankEntry,
   type Tier,
-} from '../src/index.js';
+} from '../src/index';
 
 /** Small seeded PRNG (mulberry32) so property tests are reproducible. */
 export function rng(seed: number) {

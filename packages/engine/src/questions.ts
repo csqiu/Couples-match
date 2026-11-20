@@ -1,7 +1,7 @@
 /**
  * Choosing the next comparison (Section 5.6) and knowing when to stop.
  */
-import { stronglyConnected } from './conflicts.js';
+import { stronglyConnected } from './conflicts';
 import {
   CALIBRATION_QUESTIONS,
   IMPACT_FOCUS_TOP,
@@ -13,13 +13,13 @@ import {
   STOP_ORDER_CONFIDENCE,
   STOP_TOP,
   TRADEOFF_BOOST,
-} from './defaults.js';
-import { THETA_DIM, pairFeatures, type PairFeatures } from './features.js';
-import { isHub, type Graph } from './graph.js';
-import { linearMoments, orderConfidence, posteriorMoments, predictiveApprox, type PosteriorMoments } from './posterior.js';
-import type { RankedList } from './rank.js';
-import { effectiveComparisons } from './conflicts.js';
-import type { Band, Comparison, Pair, PairId, Pin, Posterior } from './types.js';
+} from './defaults';
+import { THETA_DIM, pairFeatures, type PairFeatures } from './features';
+import { isHub, type Graph } from './graph';
+import { linearMoments, orderConfidence, posteriorMoments, predictiveApprox, type PosteriorMoments } from './posterior';
+import type { RankedList } from './rank';
+import { effectiveComparisons } from './conflicts';
+import type { Band, Comparison, Pair, PairId, Pin, Posterior } from './types';
 
 // ---------------------------------------------------------------------------
 // Reachability in the hard graph

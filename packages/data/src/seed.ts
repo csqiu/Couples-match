@@ -1,6 +1,6 @@
 import { NRMP_RULES, NO_MATCH, type MatchType, type ProgramInfo } from '@pairwise/engine';
 import seed from '../seed/programs.json' with { type: 'json' };
-import type { ProgramRecord } from './types.js';
+import type { ProgramRecord } from './types';
 
 export interface SeedMetro {
   name: string;

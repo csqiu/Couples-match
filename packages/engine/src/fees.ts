@@ -1,6 +1,6 @@
-import { FEE_TIER_WARNING_MARGIN } from './defaults.js';
-import { NRMP_RULES } from './rules.js';
-import type { Pair } from './types.js';
+import { FEE_TIER_WARNING_MARGIN } from './defaults';
+import { NRMP_RULES } from './rules';
+import type { Pair } from './types';
 
 export interface PartnerFees {
   uniqueCodes: number;

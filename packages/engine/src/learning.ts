@@ -14,12 +14,12 @@
  *     v_NM below every Tier C value.
  *   z = 0 maps exactly to DEFAULT_PARAMS, so the prior is centered on the defaults.
  */
-import { effectiveComparisons } from './conflicts.js';
-import { BT_BETA, DEFAULT_PARAMS, DEFAULT_SETTINGS, MH_STEP_SD, MH_STEPS, PARTICLE_COUNT, PRIOR_LOG_SD } from './defaults.js';
-import { THETA_DIM, dot, pairFeatures, paramsToTheta, thetaToParams } from './features.js';
-export { posteriorMoments, type PosteriorMoments } from './posterior.js';
-import { createRng, type Rng } from './rng.js';
-import type { Comparison, CoupleSettings, ModelParams, Pair, PairId, Posterior } from './types.js';
+import { effectiveComparisons } from './conflicts';
+import { BT_BETA, DEFAULT_PARAMS, DEFAULT_SETTINGS, MH_STEP_SD, MH_STEPS, PARTICLE_COUNT, PRIOR_LOG_SD } from './defaults';
+import { THETA_DIM, dot, pairFeatures, paramsToTheta, thetaToParams } from './features';
+export { posteriorMoments, type PosteriorMoments } from './posterior';
+import { createRng, type Rng } from './rng';
+import type { Comparison, CoupleSettings, ModelParams, Pair, PairId, Posterior } from './types';
 
 export const LATENT_DIM = 12;
 

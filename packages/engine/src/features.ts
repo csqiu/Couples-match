@@ -7,8 +7,8 @@
  * This makes fitting, posterior moments and question selection cheap: a
  * comparison is just the difference of two feature vectors.
  */
-import { TIER_A_STRONG_BONUS } from './defaults.js';
-import { NO_MATCH, type CoupleSettings, type ModelParams, type Pair, type PartnerIndex, type Tier } from './types.js';
+import { TIER_A_STRONG_BONUS } from './defaults';
+import { NO_MATCH, type CoupleSettings, type ModelParams, type Pair, type PartnerIndex, type Tier } from './types';
 
 export const THETA_DIM = 12;
 /** Layout of θ. */

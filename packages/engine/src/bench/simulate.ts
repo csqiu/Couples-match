@@ -8,16 +8,16 @@
  * flipped at random to model noise. We then measure how close the engine's list
  * gets to their true list.
  */
-import { buildCandidates } from '../candidates.js';
-import { withDefaults } from '../defaults.js';
-import { pairFeatures, dot, paramsToTheta } from '../features.js';
-import { buildConstraintGraph } from '../graph.js';
-import { LATENT_DIM, fitModel, latentToParams, priorPosterior } from '../learning.js';
-import { allOpenQuestions, nextQuestions } from '../questions.js';
-import { rankPairs } from '../rank.js';
-import { createRng } from '../rng.js';
-import { defaultPosterior, scorePairs } from '../scoring.js';
-import type { Comparison, CoupleSettings, EngineInput, ModelParams, PairId, ProgramInfo, RankEntry, Tier } from '../types.js';
+import { buildCandidates } from '../candidates';
+import { withDefaults } from '../defaults';
+import { pairFeatures, dot, paramsToTheta } from '../features';
+import { buildConstraintGraph } from '../graph';
+import { LATENT_DIM, fitModel, latentToParams, priorPosterior } from '../learning';
+import { allOpenQuestions, nextQuestions } from '../questions';
+import { rankPairs } from '../rank';
+import { createRng } from '../rng';
+import { defaultPosterior, scorePairs } from '../scoring';
+import type { Comparison, CoupleSettings, EngineInput, ModelParams, PairId, ProgramInfo, RankEntry, Tier } from '../types';
 
 const METROS = [
   { name: 'Boston', lat: 42.36, lon: -71.06, cbsa: '14460' },

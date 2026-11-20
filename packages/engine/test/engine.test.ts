@@ -22,8 +22,8 @@ import {
   type EngineInput,
   type TierARuleMode,
   type TierAPriority,
-} from '../src/index.js';
-import { METROS, emptyInput, list, program, randomInput, randomParams, rng } from './helpers.js';
+} from '../src/index';
+import { METROS, emptyInput, list, program, randomInput, randomParams, rng } from './helpers';
 
 const MODES: TierARuleMode[] = ['hard', 'strong', 'off'];
 const PRIORITIES: TierAPriority[] = [null, 'partner1', 'partner2', 'case_by_case'];

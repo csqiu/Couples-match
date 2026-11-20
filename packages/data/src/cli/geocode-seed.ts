@@ -10,9 +10,9 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { haversineMi } from '@pairwise/engine';
-import { defaultGeocoder } from '../geocode.js';
-import { GEOCODE_REVIEW_THRESHOLD } from '../pipeline.js';
-import type { ProgramRecord } from '../types.js';
+import { defaultGeocoder } from '../geocode';
+import { GEOCODE_REVIEW_THRESHOLD } from '../pipeline';
+import type { ProgramRecord } from '../types';
 
 const path = new URL('../../seed/programs.json', import.meta.url);
 const doc = JSON.parse(readFileSync(path, 'utf8')) as { programs: ProgramRecord[] };

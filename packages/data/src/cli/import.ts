@@ -8,11 +8,11 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { CbsaIndex } from '../cbsa.js';
-import { parseCsv } from '../csv.js';
-import { defaultGeocoder, type GeocodeResult } from '../geocode.js';
-import { importPrograms } from '../pipeline.js';
-import type { StagingRow } from '../types.js';
+import { CbsaIndex } from '../cbsa';
+import { parseCsv } from '../csv';
+import { defaultGeocoder, type GeocodeResult } from '../geocode';
+import { importPrograms } from '../pipeline';
+import type { StagingRow } from '../types';
 
 const args = process.argv.slice(2);
 const file = args.find((a, i) => !a.startsWith('--') && !args[i - 1]?.startsWith('--'));

@@ -1,11 +1,11 @@
 /**
  * Conflict ("paradox") detection (Section 5.5).
  */
-import { SURPRISE_THRESHOLD } from './defaults.js';
-import { pairFeatures } from './features.js';
-import { posteriorMoments, predictiveExact } from './posterior.js';
-import { pathToLinks, type Graph } from './graph.js';
-import type { Comparison, EngineInput, Link, PairId, Posterior, RuleException } from './types.js';
+import { SURPRISE_THRESHOLD } from './defaults';
+import { pairFeatures } from './features';
+import { posteriorMoments, predictiveExact } from './posterior';
+import { pathToLinks, type Graph } from './graph';
+import type { Comparison, EngineInput, Link, PairId, Posterior, RuleException } from './types';
 
 export type Conflict =
   | { kind: 'cycle'; id: string; links: Link[] }

@@ -7,7 +7,7 @@
  *
  * `fetch` and the clock are injectable so this is testable offline.
  */
-import type { GeocodeSource } from './types.js';
+import type { GeocodeSource } from './types';
 
 export interface AddressQuery {
   street: string;

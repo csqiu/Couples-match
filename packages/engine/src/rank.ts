@@ -1,9 +1,9 @@
 /**
  * Producing the list (Section 5.7) and explaining it.
  */
-import { NRMP_RULES } from './rules.js';
-import { stronglyConnected } from './conflicts.js';
-import { edgeReasons, isHub, pathToLinks, shortestPath, type Graph } from './graph.js';
+import { NRMP_RULES } from './rules';
+import { stronglyConnected } from './conflicts';
+import { edgeReasons, isHub, pathToLinks, shortestPath, type Graph } from './graph';
 import {
   NO_MATCH,
   type Link,
@@ -12,7 +12,7 @@ import {
   type PartnerIndex,
   type Pin,
   type ScoreSummary,
-} from './types.js';
+} from './types';
 
 export interface RankedRow {
   rank: number;

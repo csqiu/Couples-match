@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activeCouple, tx, type Db, type User } from './db.js';
+import { activeCouple, tx, type Db, type User } from './db';
 
 const P1 = 'seed-mgh-internal-medicine';
 const P2 = 'seed-jhh-internal-medicine';

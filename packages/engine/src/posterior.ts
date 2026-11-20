@@ -2,9 +2,9 @@
  * Posterior summaries. Because S = θ·φ + bonus, a pair's score mean is mean(θ)·φ
  * and its variance is φᵀ Σ φ, so these never need to loop over particles per pair.
  */
-import { BT_BETA } from './defaults.js';
-import { THETA_DIM, dot, paramsToTheta, quadForm } from './features.js';
-import type { Posterior } from './types.js';
+import { BT_BETA } from './defaults';
+import { THETA_DIM, dot, paramsToTheta, quadForm } from './features';
+import type { Posterior } from './types';
 
 export interface PosteriorMoments {
   thetas: Float64Array[];

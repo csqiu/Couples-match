@@ -1,4 +1,4 @@
-import type { Band, DistanceBands, ProgramInfo } from './types.js';
+import type { Band, DistanceBands, ProgramInfo } from './types';
 
 const EARTH_RADIUS_MI = 3958.8;
 

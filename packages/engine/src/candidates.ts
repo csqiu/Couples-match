@@ -1,4 +1,4 @@
-import { bandFor, programDistanceMi } from './geo.js';
+import { bandFor, programDistanceMi } from './geo';
 import {
   NO_MATCH,
   type EngineInput,
@@ -7,7 +7,7 @@ import {
   type ProgramRef,
   type RankEntry,
   type Tier,
-} from './types.js';
+} from './types';
 
 const TIER_ORDER: Record<Tier, number> = { A: 0, B: 1, C: 2 };
 
