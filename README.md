@@ -100,8 +100,9 @@ above the other.
 | 4 | Backend (Supabase): database, security rules, accounts, partner invites, live sync | ✅ Done, deployed to Supabase (free tier) |
 | 5 | Web app: setup and invites, program search with map, rank and tier | ✅ Done |
 | 6 | “This or that” comparison cards, conflict resolution | ✅ Done |
-| 7 | Final list, versions, export | Next |
-| 8–9 | Full program import, admin, polish, deploy | |
+| 7 | Final list, versions, export | ✅ Done |
+| 8 | Full program import, admin review, user-added programs | Next |
+| 9 | Polish, accessibility pass, deploy | |
 
 ## Running it
 

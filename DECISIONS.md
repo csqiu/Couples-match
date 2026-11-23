@@ -385,3 +385,60 @@ option was taken. Newest phases are at the bottom.
 71. **The "Compare" step shows as done after 5 answers**, i.e. once the calibration
     questions are answered. The conflicts step has no checkmark, because whether it's
     clear depends on the engine run in the browser.
+
+## Phase 7: Final list, versions, export
+
+72. **The final list is the engine's full order** (up to 300 pairs), computed in the
+    Web Worker (`src/lib/final-list.ts`). The couple's chosen length shows the first
+    *n*.
+    - The length slider updates the fee estimate and checklist instantly in the
+      browser, and saves `settings.listLength` after a short pause.
+    - "Why is this here?" explains each row relative to the row above it: either the
+      chain of rules and answers, or "fits your answers better" with the two scores.
+73. **Up to 300 rows, not a virtualized table.** The spec asks for virtualization, but
+    300 rows render quickly. Rows use CSS `content-visibility: auto` so off-screen rows
+    cost little, and drag-and-drop and find-in-page keep working.
+74. **Drag to reorder.** Dropping a row above (or below) another asks the engine
+    (`proposeMove`):
+    - If allowed, it saves a `manual_drag` pin, with Undo.
+    - If blocked, it shows the blocking reasons in plain English with **Override with
+      an exception** (each blocking link is broken as in Phase 6, then the pin is saved)
+      or **Cancel**.
+75. **Proximity styling** lives in one place (`src/components/proximity.tsx`). It is used
+    by the final list, the comparison cards, the conflicts page and the version diff.
+    Each band has a tint (or dashed border), a text badge and an icon; color is never
+    the only signal.
+76. **Fees** are computed from `rules.ts` for whatever length is chosen (`feesFor`):
+    unique program codes per partner (No Match counts), extra-rank fee, length fee,
+    couples fee, and a warning when cutting a few pairs drops a fee tier. All are
+    labelled as unverified estimates; base registration fees aren't included.
+77. **Saving a version runs the engine on the server** (a server action using the same
+    `computeFinalList` code), not in the browser. What's frozen therefore can't be
+    affected by a stale browser tab. The spec suggests an Edge Function; a server
+    action runs the identical TypeScript without a Deno port.
+    - It stores `inputs_snapshot` (the exact engine input), `engine_version`, and the
+      ordered rows with names and NRMP codes.
+78. **Restore** uses a security-definer function (`restore_version`, migration 6),
+    because it rewrites *both* partners' lists, which row level security doesn't let
+    one partner do.
+    - The app first saves the current list as a version ("Before restoring …"), so
+      restoring never loses work.
+    - It restores lists, answers (locked state included), pins, exclusions, exceptions
+      and engine settings. App-only settings such as privacy are kept.
+79. **Version diff** compares any two versions, or a version against the current list.
+    Rows are shown in the newer order, marked moved up or down (old → new rank), added,
+    or removed.
+80. **Export.**
+    - **CSV:** rank, each partner's program and NRMP code, distance and band, downloaded
+      in the browser.
+    - **PDF:** a printable page (`/print/list`, optionally `?version=`) the browser
+      saves as PDF. It has one table per partner, because each partner types their own
+      list into R3, then both side by side, plus the checklist and fee estimate. Using
+      the browser's print-to-PDF avoids a PDF library and keeps text selectable; the
+      e2e test renders it to a real PDF.
+81. **The pre-certification checklist** checks: equal lengths (always true for a pair
+    list), NRMP codes present for every program per partner (naming the missing ones),
+    No Match pairs at the bottom, and no unresolved conflicts.
+82. **Not in Phase 7:** the whole-list map view, activity feed and account page that the
+    spec lists under "other screens". They aren't in the Phase 7 plan; they belong to
+    Phase 9 polish.
