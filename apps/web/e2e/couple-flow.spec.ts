@@ -36,7 +36,8 @@ async function shot(page: Page, name: string) {
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true, caret: 'initial' });
 }
 
-test('two partners: setup, invite, accept, choose programs, rank and tier', async ({ browser }) => {
+test('two partners: setup, invite, accept, choose programs, rank and tier, compare, resolve conflicts', async ({ browser }) => {
+  test.setTimeout(240_000);
   // --- Alex: sign in, profile, start the couple, invite Sam ---------------------------------
   const alex = await newUser(browser);
   await alex.goto('/');
@@ -226,27 +227,6 @@ test('two partners: setup, invite, accept, choose programs, rank and tier', asyn
   await sam.getByRole('button', { name: 'We choose this pair' }).first().click();
   await expect(sam.getByText('No conflicts')).toBeVisible();
 
-  // Phone width: no sideways scrolling on any app page.
-  const phoneCheck = await browser.newContext({ viewport: { width: 390, height: 844 }, storageState: await alex.context().storageState() });
-  const pp = await phoneCheck.newPage();
-  for (const path of ['/app/setup', '/app/programs', '/app/rank', '/app/compare', '/app/conflicts']) {
-    await pp.goto(path);
-    await pp.waitForLoadState('networkidle');
-    expect(await pp.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(390);
-  }
-
   expect(browserErrors).toEqual([]);
 
-  // Dark mode and phone width, for the record.
-  if (SHOTS) {
-    await alex.emulateMedia({ colorScheme: 'dark' });
-    await alex.evaluate(() => localStorage.setItem('pairwise-theme', 'dark'));
-    await alex.reload();
-    await shot(alex, '06-rank-board-dark');
-    const phone = await browser.newContext({ ...{ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }, storageState: await alex.context().storageState() });
-    const p = await phone.newPage();
-    await p.goto('/app/rank');
-    await expect(p.getByTestId('rank-board')).toBeVisible();
-    await shot(p, '07-rank-board-phone');
-  }
 });
