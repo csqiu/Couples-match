@@ -13,5 +13,5 @@ export const STEPS: Step[] = [
   { n: 3, slug: 'rank', title: 'Rank and tier', short: 'Rank' },
   { n: 4, slug: 'compare', title: 'This or that', short: 'Compare' },
   { n: 5, slug: 'conflicts', title: 'Resolve conflicts', short: 'Conflicts' },
-  { n: 6, slug: 'list', title: 'Final list', short: 'Final list', comingSoon: true },
+  { n: 6, slug: 'list', title: 'Final list', short: 'Final list' },
 ];

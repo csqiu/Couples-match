@@ -1,0 +1,63 @@
+import { describe, expect, it } from 'vitest';
+import { toCsv } from './csv-export';
+import { checkMove, checklistFor, computeFinalList, feesFor, type ListRow } from './final-list';
+import { couple, names } from './test-fixtures';
+
+const opts = { names, matchType: 'main' as const };
+
+describe('final list', () => {
+  const data = couple({ settings: { tierAPriority: 'partner1' } });
+  const list = computeFinalList(data, opts);
+
+  it('orders every pair, explains each row, and keeps No Match at the bottom', () => {
+    expect(list.rows).toHaveLength(5 * 5 - 1);
+    expect(list.rows.map((r) => r.rank)).toEqual(list.rows.map((_, i) => i + 1));
+    expect(list.rows[0].why).toBe('This is the top of your list.');
+    for (const r of list.rows.slice(1)) expect(r.why.length).toBeGreaterThan(10);
+    const firstNoMatch = list.rows.findIndex((r) => r.band === 'no_match');
+    expect(list.rows.slice(firstNoMatch).every((r) => r.band === 'no_match')).toBe(true);
+    expect(list.rows.find((r) => r.sides[1].id === 'NO_MATCH')?.sides[1].code).toBe('999999999');
+  });
+
+  it('estimates fees for any length, with the tier warning near a boundary', () => {
+    const rows: ListRow[] = Array.from({ length: 152 }, (_, i) => ({
+      ...list.rows[0],
+      rank: i + 1,
+      pairId: `p${i}`,
+      sides: [{ ...list.rows[0].sides[0], id: `a${i % 25}` }, { ...list.rows[0].sides[1], id: `b${i % 10}` }],
+    }));
+    const f = feesFor(rows, 152);
+    expect(f.partners[0]).toMatchObject({ uniqueCodes: 25, extraRankFeeUsd: 150, lengthFeeUsd: 100, couplesFeeUsd: 45, totalUsd: 295 });
+    expect(f.partners[1]).toMatchObject({ uniqueCodes: 10, extraRankFeeUsd: 0 });
+    expect(f.tierWarning).toEqual({ pairsToCut: 2, saveUsdPerPartner: 50 });
+    expect(feesFor(rows, 99).partners[0].lengthFeeUsd).toBe(0);
+  });
+
+  it('the checklist flags missing NRMP codes per partner', () => {
+    const items = checklistFor(list.rows, list.length, names, false);
+    expect(items.find((i) => i.label.startsWith('Alex'))?.ok).toBe(false);
+    const withCodes = list.rows.map((r) => ({ ...r, sides: r.sides.map((s) => ({ ...s, code: s.code || '1234140C0' })) as ListRow['sides'] }));
+    expect(checklistFor(withCodes, list.length, names, false).every((i) => i.ok)).toBe(true);
+  });
+
+  it('a drag that breaks a hard rule is blocked with a reason; an allowed one becomes a pin', () => {
+    const top = list.rows[0].pairId;
+    const last = list.rows[list.rows.length - 1].pairId; // a No Match pair
+    const blocked = checkMove(data, last, top, names);
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) expect(blocked.blocking[0].text).toMatch(/because/);
+
+    // Two adjacent pairs ordered only by score can be swapped.
+    const free = list.rows.findIndex((r, i) => i > 0 && /fits your answers better/.test(r.why));
+    expect(free).toBeGreaterThan(0);
+    const ok = checkMove(data, list.rows[free].pairId, list.rows[free - 1].pairId, names);
+    expect(ok).toEqual({ ok: true, pin: { higher: list.rows[free].pairId, lower: list.rows[free - 1].pairId, source: 'manual_drag' } });
+  });
+
+  it('exports CSV with both partners’ programs and codes', () => {
+    const csv = toCsv(list.rows.slice(0, 2), names);
+    const [header, first] = csv.trim().split('\n');
+    expect(header).toBe('Rank,Alex program,Alex NRMP code,Sam program,Sam NRMP code,Distance (mi),Band');
+    expect(first.startsWith('1,')).toBe(true);
+  });
+});

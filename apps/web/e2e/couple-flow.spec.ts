@@ -227,6 +227,78 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await sam.getByRole('button', { name: 'We choose this pair' }).first().click();
   await expect(sam.getByText('No conflicts')).toBeVisible();
 
+  // --- Step 6: final list, versions, export ------------------------------------------------------
+  await alex.goto('/app/list');
+  const finalList = alex.getByTestId('final-list');
+  await expect(finalList.getByRole('listitem').first()).toBeVisible();
+  expect(await finalList.getByRole('listitem').count()).toBeGreaterThan(5);
+  await expect(finalList.getByRole('listitem').first()).toHaveAttribute('data-band', /together|commutable|drivable|apart/);
+  await alex.getByRole('button', { name: 'Why is rank 2 here?' }).click();
+  await expect(finalList.getByRole('listitem').nth(1).locator('p.mt-2')).toHaveText(/./);
+  await expect(alex.getByTestId('fees')).toContainText('Alex: $');
+  await expect(alex.getByTestId('checklist')).toContainText('No Match pairs are at the bottom');
+
+  // Length slider, by keyboard: Home then four steps right = 5 ranks.
+  const slider = alex.getByLabel(/List length/);
+  await slider.focus();
+  await alex.keyboard.press('Home');
+  for (let i = 0; i < 4; i++) await alex.keyboard.press('ArrowRight');
+  await expect(alex.getByText('List length: 5 ranks')).toBeVisible();
+  await expect(finalList.getByRole('listitem')).toHaveCount(5);
+
+  const [csvDownload] = await Promise.all([alex.waitForEvent('download'), alex.getByRole('button', { name: 'CSV' }).click()]);
+  const csv = readFileSync(await csvDownload.path(), 'utf8');
+  expect(csv.split('\n')[0]).toBe('Rank,Alex program,Alex NRMP code,Sam program,Sam NRMP code,Distance (mi),Band');
+  expect(csv.trim().split('\n')).toHaveLength(6);
+
+  await alex.getByLabel('Version name').fill('v1');
+  await alex.getByRole('button', { name: 'Save version' }).click();
+  await expect(alex.getByText('Saved “v1”.')).toBeVisible();
+  await alex.waitForTimeout(1500);
+  await shot(alex, '11-final-list');
+
+  // Drag rank 3 above rank 2 by keyboard: either allowed (saved as a pin) or blocked with reasons, then overridden.
+  const rowHandle = alex.getByRole('button', { name: 'Drag rank 3' });
+  await rowHandle.focus();
+  await alex.keyboard.press('Space');
+  await alex.waitForTimeout(300);
+  await alex.keyboard.press('ArrowUp');
+  await alex.waitForTimeout(300);
+  await alex.keyboard.press('Space');
+  const blockedDialog = alex.getByRole('alertdialog');
+  const moved = alex.getByText('Moved. Saved as your ordering.');
+  await expect(blockedDialog.or(moved).first()).toBeVisible();
+  if (await blockedDialog.isVisible()) {
+    await expect(blockedDialog).toContainText('because');
+    await alex.getByRole('button', { name: 'Override with an exception' }).click();
+    await expect(moved).toBeVisible();
+  }
+  await alex.getByLabel('Version name').fill('v2');
+  await alex.getByRole('button', { name: 'Save version' }).click();
+  await expect(alex.getByText('Saved “v2”.')).toBeVisible();
+
+  await alex.goto('/app/versions');
+  await expect(alex.getByTestId('versions').getByRole('listitem')).toHaveCount(2);
+  await alex.getByLabel('Older').selectOption({ label: 'v1' });
+  await alex.getByLabel('Newer').selectOption({ label: 'v2' });
+  await alex.getByRole('button', { name: 'Compare' }).click();
+  await expect(alex.getByTestId('diff')).toContainText('v1 → v2: 2 moved');
+  await shot(alex, '12-versions-diff');
+
+  await alex.getByRole('button', { name: 'Restore v1' }).click();
+  await alex.getByRole('button', { name: 'Restore', exact: true }).click();
+  await expect(alex.getByText('Restored “v1”.')).toBeVisible();
+  await alex.reload();
+  await expect(alex.getByTestId('versions').getByRole('listitem')).toHaveCount(3); // the current list was saved first
+  await expect(alex.getByText('Before restoring “v1”')).toBeVisible();
+
+  await alex.goto('/print/list');
+  await expect(alex.getByTestId('print-partner-0')).toContainText('Alex’s R3 entries');
+  await expect(alex.getByTestId('print-partner-1').getByRole('row')).toHaveCount(6); // header + 5 ranks
+  const pdf = await alex.pdf({ format: 'Letter' });
+  expect(pdf.byteLength).toBeGreaterThan(5_000);
+  await shot(alex, '13-print');
+
   expect(browserErrors).toEqual([]);
 
 });

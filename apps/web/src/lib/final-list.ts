@@ -9,8 +9,9 @@ import {
   describeExplanation,
   describeLink,
   explainOrder,
-  feeEstimate,
+  extraRankFeeUsd,
   inversionReport,
+  lengthFeeUsd,
   NO_MATCH,
   NRMP_RULES,
   proposeMove,
@@ -18,7 +19,6 @@ import {
   type Band,
   type EngineInput,
   type EngineResult,
-  type FeeEstimate,
   type Link,
   type MatchType,
   type Pin,
@@ -50,14 +50,72 @@ export interface ChecklistItem {
 }
 
 export interface FinalList {
+  /** Every candidate pair in order (up to 300). The list the couple submits is the first `length`. */
   rows: ListRow[];
-  /** How many candidate pairs exist (the length slider's upper bound, capped at 300). */
-  totalPairs: number;
+  /** The couple's chosen length (clamped to the rows available). */
   length: number;
-  fees: FeeEstimate;
   trades: string[];
-  checklist: ChecklistItem[];
   hasCycles: boolean;
+}
+
+export interface PartnerFee {
+  uniqueCodes: number;
+  extraRankFeeUsd: number;
+  lengthFeeUsd: number;
+  couplesFeeUsd: number;
+  totalUsd: number;
+}
+
+export interface Fees {
+  ranks: number;
+  partners: [PartnerFee, PartnerFee];
+  totalUsd: number;
+  /** Trimming this many pairs or fewer drops a length-fee tier. */
+  tierWarning: { pairsToCut: number; saveUsdPerPartner: number } | null;
+}
+
+/** NRMP fee estimate for the first n rows (rules.ts holds the numbers). */
+export function feesFor(rows: ListRow[], n: number): Fees {
+  const top = rows.slice(0, n);
+  const partner = (k: 0 | 1): PartnerFee => {
+    const uniqueCodes = new Set(top.map((r) => r.sides[k].id)).size; // No Match counts as a code.
+    const extra = extraRankFeeUsd(uniqueCodes);
+    const length = lengthFeeUsd(top.length);
+    const couples = NRMP_RULES.couplesFeePerPartnerUsd;
+    return { uniqueCodes, extraRankFeeUsd: extra, lengthFeeUsd: length, couplesFeeUsd: couples, totalUsd: extra + length + couples };
+  };
+  const partners: [PartnerFee, PartnerFee] = [partner(0), partner(1)];
+  let tierWarning: Fees['tierWarning'] = null;
+  const tier = NRMP_RULES.lengthFeeTiers.find((t) => top.length >= t.minRanks && top.length <= t.maxRanks);
+  if (tier && top.length - (tier.minRanks - 1) <= 5) {
+    tierWarning = { pairsToCut: top.length - (tier.minRanks - 1), saveUsdPerPartner: lengthFeeUsd(top.length) - lengthFeeUsd(tier.minRanks - 1) };
+  }
+  return { ranks: top.length, partners, totalUsd: partners[0].totalUsd + partners[1].totalUsd, tierWarning };
+}
+
+/** The pre-certification checklist for the first n rows. */
+export function checklistFor(rows: ListRow[], n: number, names: [string, string], hasCycles: boolean): ChecklistItem[] {
+  const top = rows.slice(0, n);
+  const missing = (k: 0 | 1) => [...new Set(top.map((r) => r.sides[k]).filter((s) => s.id !== NO_MATCH && !s.code).map((s) => s.name))];
+  const firstNoMatch = top.findIndex((r) => r.band === 'no_match');
+  const noMatchAtBottom = firstNoMatch === -1 || top.slice(firstNoMatch).every((r) => r.band === 'no_match');
+  return [
+    { ok: top.length > 0, label: `Both lists have ${top.length} ranks`, detail: 'Each row is one rank on each partner’s R3 list.' },
+    ...([0, 1] as const).map((k) => {
+      const m = missing(k);
+      return {
+        ok: m.length === 0,
+        label: `${names[k]}: NRMP codes entered for every program`,
+        detail: m.length ? `Missing (add them on the Rank step): ${m.join('; ')}` : undefined,
+      };
+    }),
+    {
+      ok: noMatchAtBottom,
+      label: 'No Match pairs are at the bottom',
+      detail: noMatchAtBottom ? undefined : 'NRMP recommends ranking every pair where you both match first.',
+    },
+    { ok: !hasCycles, label: 'No unresolved conflicts', detail: hasCycles ? 'Resolve them on the Conflicts step.' : undefined },
+  ];
 }
 
 export interface ListOptions {
@@ -78,7 +136,7 @@ function run(data: CoupleData) {
 
 export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList {
   const { input, result } = run(data);
-  const { list, pairs } = result;
+  const { list } = result;
   const ctx = { programs: input.programs, partnerNames: opts.names };
   const noMatchCode = NRMP_RULES.noMatchCode[opts.matchType];
   const codeOf = (k: 0 | 1, id: string) => input.lists[k].find((e) => e.programId === id)?.nrmpCode ?? '';
@@ -89,17 +147,17 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
     return { id, name: p.name, place: [p.city, p.state].filter(Boolean).join(', '), code: codeOf(k, id) ?? '' };
   };
 
-  const rows: ListRow[] = list.rows.map((r, i) => ({
-    rank: r.rank,
-    pairId: r.pair.id,
-    sides: [side(0, r.pair.programs[0]), side(1, r.pair.programs[1])],
-    distanceMi: r.pair.distanceMi,
-    band: r.pair.band,
-    bandLabel: BAND_LABEL[r.pair.band],
-    why: i === 0 ? 'This is the top of your list.' : describeExplanation(ctx, explainOrder(list, list.rows[i - 1].pair.id, r.pair.id)),
+  const byId = new Map(result.pairs.map((p) => [p.id, p]));
+  const ordered = list.order.slice(0, NRMP_RULES.maxRanksPerPartner).map((id) => byId.get(id)!);
+  const rows: ListRow[] = ordered.map((pair, i) => ({
+    rank: i + 1,
+    pairId: pair.id,
+    sides: [side(0, pair.programs[0]), side(1, pair.programs[1])],
+    distanceMi: pair.distanceMi,
+    band: pair.band,
+    bandLabel: BAND_LABEL[pair.band],
+    why: i === 0 ? 'This is the top of your list.' : describeExplanation(ctx, explainOrder(list, ordered[i - 1].id, pair.id)),
   }));
-
-  const fees = feeEstimate(list.rows.map((r) => r.pair));
 
   const trades = inversionReport(list, 5).map((t) => {
     const who = opts.names[t.partner];
@@ -111,37 +169,7 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
     return `#${t.rank}: ${who} gets ${got} ahead of ${better} (first at #${t.betterProgramFirstRank}), because ${why}.`;
   });
 
-  // Pre-certification checklist.
-  const missing = (k: 0 | 1) => [...new Set(rows.map((r) => r.sides[k]).filter((s) => s.id !== NO_MATCH && !s.code).map((s) => s.name))];
-  const firstNoMatch = rows.findIndex((r) => r.band === 'no_match');
-  const noMatchAtBottom = firstNoMatch === -1 || rows.slice(firstNoMatch).every((r) => r.band === 'no_match');
-  const checklist: ChecklistItem[] = [
-    { ok: true, label: `Both lists have ${rows.length} ranks`, detail: 'Each row is one rank on each partner’s list.' },
-    ...([0, 1] as const).map((k) => {
-      const m = missing(k);
-      return {
-        ok: m.length === 0,
-        label: `${opts.names[k]}: NRMP codes entered for every program`,
-        detail: m.length ? `Missing: ${m.join('; ')}` : undefined,
-      };
-    }),
-    {
-      ok: noMatchAtBottom,
-      label: 'No Match pairs are at the bottom',
-      detail: noMatchAtBottom ? undefined : 'NRMP recommends ranking every pair where you both match first.',
-    },
-    { ok: !list.hasCycles, label: 'No unresolved conflicts', detail: list.hasCycles ? 'Resolve them on the Conflicts step.' : undefined },
-  ];
-
-  return {
-    rows,
-    totalPairs: Math.min(NRMP_RULES.maxRanksPerPartner, pairs.length),
-    length: list.length,
-    fees,
-    trades,
-    checklist,
-    hasCycles: list.hasCycles,
-  };
+  return { rows, length: Math.min(list.length, rows.length), trades, hasCycles: list.hasCycles };
 }
 
 export type MoveResult =

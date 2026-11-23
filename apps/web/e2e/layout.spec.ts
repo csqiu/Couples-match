@@ -16,6 +16,8 @@ const PAGES: Array<[string, string]> = [
   ['/app/rank', 'Rank and tier'],
   ['/app/compare', 'This or that'],
   ['/app/conflicts', 'Resolve conflicts'],
+  ['/app/list', 'Final list'],
+  ['/app/versions', 'Versions'],
 ];
 
 test('every app page fits a phone screen, in light and dark mode', async ({ browser }) => {
@@ -36,7 +38,7 @@ test('every app page fits a phone screen, in light and dark mode', async ({ brow
       await expect(page.getByRole('heading', { level: 1, name: new RegExp(heading) })).toBeVisible();
       await page.waitForTimeout(500);
       expect(await page.evaluate(() => document.documentElement.scrollWidth), `${path} (${scheme})`).toBeLessThanOrEqual(390);
-      if (SHOTS && (path === '/app/rank' || path === '/app/compare')) {
+      if (SHOTS && (path === '/app/rank' || path === '/app/compare' || path === '/app/list')) {
         await page.waitForTimeout(1500);
         await page.screenshot({ path: `${SHOTS}/phone-${scheme}${path.replace(/\//g, '-')}.png`, fullPage: true, caret: 'initial' });
       }

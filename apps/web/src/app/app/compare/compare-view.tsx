@@ -1,9 +1,10 @@
 'use client';
 import type { ComparisonRow, CoupleData } from '@pairwise/db';
-import { Car, CarFront, Heart, Plane, TriangleAlert, Undo2 } from 'lucide-react';
+import { Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { MiniMap } from '@/components/mini-map';
+import { BandBadge as ProximityBadge } from '@/components/proximity';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -15,18 +16,8 @@ import { answer, undoAnswer } from './actions';
 
 type LocalAnswer = { tempId: string; realId?: string; row: Pick<ComparisonRow, 'id' | 'pair_left' | 'pair_right' | 'winner' | 'answered_by' | 'both_agreed' | 'locked' | 'seq'> };
 
-export const BAND_ICON = { together: Heart, commutable: CarFront, drivable: Car, apart: Plane, no_match: TriangleAlert } as const;
-
 export function BandBadge({ pair }: { pair: PairView }) {
-  const Icon = BAND_ICON[pair.band];
-  const tone = pair.band === 'together' || pair.band === 'commutable' ? 'accent' : pair.band === 'no_match' ? 'warn' : 'neutral';
-  return (
-    <Badge tone={tone}>
-      <Icon className="h-3.5 w-3.5" aria-hidden />
-      {pair.bandLabel}
-      {pair.distanceMi != null ? ` · ${Math.round(pair.distanceMi)} mi` : ''}
-    </Badge>
-  );
+  return <ProximityBadge band={pair.band} bandLabel={pair.bandLabel} distanceMi={pair.distanceMi} />;
 }
 
 export function PairCard({
