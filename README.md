@@ -99,8 +99,8 @@ above the other.
 | 3 | Program data: seed of 57 programs, import + geocoding pipeline | ✅ Done (source research deferred, see [docs/data-sources.md](docs/data-sources.md)) |
 | 4 | Backend (Supabase): database, security rules, accounts, partner invites, live sync | ✅ Done, deployed to Supabase (free tier) |
 | 5 | Web app: setup and invites, program search with map, rank and tier | ✅ Done |
-| 6 | “This or that” comparison cards, conflict resolution | Next |
-| 7 | Final list, versions, export | |
+| 6 | “This or that” comparison cards, conflict resolution | ✅ Done |
+| 7 | Final list, versions, export | Next |
 | 8–9 | Full program import, admin, polish, deploy | |
 
 ## Running it

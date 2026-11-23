@@ -348,3 +348,40 @@ option was taken. Newest phases are at the bottom.
     - Running it in this sandbox needs `NODE_USE_ENV_PROXY=1`, because Node's fetch
       ignores HTTPS_PROXY. The Playwright config routes the browser through `HTTPS_PROXY`
       when it is set.
+
+## Phase 6: Comparisons and conflicts
+
+65. **The engine runs in the browser, in a Web Worker** (`src/lib/engine.worker.ts`),
+    as the spec intends.
+    - The server loads the couple's rows through RLS (`loadCoupleBundle`). The worker
+      builds the engine input, fits the model, and returns the next question, list
+      confidence and conflicts (`src/lib/analysis.ts`, which is pure and unit-tested).
+    - If Web Workers aren't available, it runs on the main thread instead.
+66. **Answers appear immediately** and save in the background. A "Saving… / All
+    answers saved" status shows when it's safe to leave; leaving mid-save can lose the
+    answer, which the e2e test caught. "Undo last" deletes the saved answer and its pin.
+67. **"I'm certain"** saves the answer as `locked` and adds a pin (`source =
+    comparison`). Breaking that pin in a cycle deletes the pin and unlocks the answer,
+    which stays as a soft answer.
+68. **Answering together vs. separately.**
+    - Together: one answer counts for both partners (`both_agreed = true`).
+    - Separately: each answer is the person's own. Each partner is first asked the
+      questions the other answered and they haven't, so answers can be compared. A
+      different answer becomes a disagreement, which doesn't count until it is settled
+      on the conflicts page (an agreed answer is added).
+    - In separate mode a lone answer counts until the other partner answers differently
+      (decision 9).
+69. **Conflict actions:**
+    - *Cycle:* tap one statement to drop it. A pin is deleted; an automatic or rule link
+      gets a `rule_exceptions` row scoped to those two pairs.
+    - *Tier A collision:* "<Partner 1> / <Partner 2> gets priority" or "Decide case by
+      case", stored as `settings.tierAPriority`.
+    - *Surprising answer ("Still true?"):* "Yes" locks it and adds a pin, and it is never
+      flagged again. The engine now skips locked answers. "Actually, the other one"
+      flips it; "Remove" deletes it. Answers are never removed automatically.
+70. **Mini-maps** are small, non-interactive MapLibre maps, one per pair card. They are
+    updated in place between questions rather than recreated, so the browser doesn't run
+    out of map (WebGL) contexts.
+71. **The "Compare" step shows as done after 5 answers**, i.e. once the calibration
+    questions are answered. The conflicts step has no checkmark, because whether it's
+    clear depends on the engine run in the browser.
