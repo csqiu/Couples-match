@@ -168,10 +168,68 @@ test('two partners: setup, invite, accept, choose programs, rank and tier', asyn
   await expect(sam.getByText('Alex (3)')).toBeVisible({ timeout: 20_000 });
   await shot(sam, '08-partner-view-live');
 
+  // --- Phase 6: Sam builds a list so there are pairs to compare ------------------------------
+  for (const name of ['Boston Children\'s Hospital — Pediatrics', 'Children\'s National Hospital — Pediatrics', 'University of California San Francisco — Pediatrics']) {
+    await sam.getByLabel('Search programs').fill(name.split(' — ')[0]);
+    await sam.getByRole('button', { name: `Add ${name}` }).click();
+    await expect(sam.getByRole('button', { name: `Remove ${name}` }).first()).toBeVisible();
+  }
+  await sam.goto('/app/rank');
+  await sam.getByLabel('Tier for Boston Children\'s Hospital — Pediatrics').selectOption('A');
+  await expect(sam.getByText('Moved Boston Children\'s Hospital — Pediatrics to Tier A')).toBeVisible();
+  // Alex keeps one non-Tier-A program, so the Tier A priority question arises.
+  await alex.getByLabel('Tier for Massachusetts General Hospital — Internal Medicine').selectOption('B');
+  await expect(alex.getByText('Moved Massachusetts General Hospital — Internal Medicine to Tier B')).toBeVisible();
+
+  // --- Step 4: this or that ---------------------------------------------------------------------
+  await alex.goto('/app/compare');
+  const choose = alex.getByRole('button', { name: 'Choose this pair' });
+  await expect(choose).toHaveCount(2);
+  await expect(alex.getByTestId('confidence')).toHaveText(/\d+%/);
+  const answered = alex.getByText(/\d+ answers? so far/);
+  await expect(answered).toHaveText(/^0 answers/);
+  await choose.first().click();
+  await expect(answered).toHaveText(/^1 answer /);
+  await alex.getByRole('switch', { name: 'I’m certain' }).click();
+  await choose.nth(1).click();
+  await expect(answered).toHaveText(/^2 answers/);
+  await alex.getByRole('button', { name: 'Undo last' }).click();
+  await expect(answered).toHaveText(/^1 answer /);
+  await alex.waitForTimeout(1500); // mini-maps paint
+  await shot(alex, '09-compare');
+
+  // --- Step 5: Tier A priority ------------------------------------------------------------------
+  await alex.goto('/app/conflicts');
+  await expect(alex.getByRole('heading', { name: 'Who gets priority for Tier A?' })).toBeVisible();
+  await shot(alex, '10-conflicts');
+  await alex.getByRole('button', { name: 'Alex gets priority' }).click();
+  await expect(alex.getByText('No conflicts')).toBeVisible();
+
+  // --- Answering separately: a disagreement, settled together -----------------------------------
+  await alex.goto('/app/setup');
+  await alex.getByText('Separately', { exact: true }).click();
+  await alex.getByRole('button', { name: 'Save settings' }).click();
+  await expect(alex.getByText('Settings saved.')).toBeVisible();
+  await alex.goto('/app/compare');
+  await expect(alex.getByRole('button', { name: 'Choose this pair' })).toHaveCount(2);
+  await alex.getByRole('button', { name: 'Choose this pair' }).first().click();
+  await expect(alex.getByText(/^2 answers/)).toBeVisible();
+  await expect(alex.getByTestId('save-status')).toHaveText('All answers saved.');
+
+  await sam.goto('/app/compare');
+  await expect(sam.getByText('Alex answered this one')).toBeVisible();
+  await sam.getByRole('button', { name: 'Choose this pair' }).nth(1).click();
+  await expect(sam.getByTestId('save-status')).toHaveText('All answers saved.');
+  await sam.goto('/app/conflicts');
+  await expect(sam.getByRole('heading', { name: 'You answered differently' })).toBeVisible();
+  await expect(sam.getByText(/Sam \(you\) picked the second pair/)).toBeVisible();
+  await sam.getByRole('button', { name: 'We choose this pair' }).first().click();
+  await expect(sam.getByText('No conflicts')).toBeVisible();
+
   // Phone width: no sideways scrolling on any app page.
   const phoneCheck = await browser.newContext({ viewport: { width: 390, height: 844 }, storageState: await alex.context().storageState() });
   const pp = await phoneCheck.newPage();
-  for (const path of ['/app/setup', '/app/programs', '/app/rank']) {
+  for (const path of ['/app/setup', '/app/programs', '/app/rank', '/app/compare', '/app/conflicts']) {
     await pp.goto(path);
     await pp.waitForLoadState('networkidle');
     expect(await pp.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(390);

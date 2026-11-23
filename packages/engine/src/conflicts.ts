@@ -200,7 +200,8 @@ export function findConflicts(g: Graph, posterior: Posterior, comparisons: Compa
 
   const { counted, disagreements } = effectiveComparisons(comparisons);
   for (const c of counted) {
-    if (c.winner === 'tie') continue;
+    // Ties can't be surprising; locked answers were confirmed ("Still true? Yes"), so don't ask again.
+    if (c.winner === 'tie' || c.locked) continue;
     const [won, lost] = c.winner === 'left' ? [c.left, c.right] : [c.right, c.left];
     if (!g.index.has(won) || !g.index.has(lost)) continue;
     const pOther = 1 - preferenceProbability(g, posterior, won, lost);

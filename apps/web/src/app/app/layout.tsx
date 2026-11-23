@@ -18,8 +18,16 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         .eq('couple_id', ctx.couple.id)
         .eq('user_id', ctx.user.id)
     : { count: 0 };
+  const { count: answers } = ctx.couple
+    ? await supabase.from('comparisons').select('id', { count: 'exact', head: true }).eq('couple_id', ctx.couple.id)
+    : { count: 0 };
   const setupDone = !!ctx.couple && !!ctx.profile.specialty;
-  const done = [...(setupDone ? ['setup'] : []), ...((count ?? 0) > 0 ? ['programs', 'rank'] : [])];
+  const done = [
+    ...(setupDone ? ['setup'] : []),
+    ...((count ?? 0) > 0 ? ['programs', 'rank'] : []),
+    // The calibration questions are done: a reasonable point to call this step started in earnest.
+    ...((answers ?? 0) >= 5 ? ['compare'] : []),
+  ];
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:px-6">

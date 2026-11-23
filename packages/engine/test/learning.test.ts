@@ -132,6 +132,11 @@ describe('Fitting', () => {
       .map((c) => c.id);
     expect(flagged).toContain('surprise:odd');
     expect(flagged.length).toBeLessThan(answers.length / 4); // consistent answers mostly aren't flagged
+
+    // Once the couple confirms it ("Still true? Yes" locks it), it isn't flagged again.
+    const confirmed = [...answers, { ...odd, locked: true }];
+    const again = findConflicts(graph, post, confirmed).map((c) => c.id);
+    expect(again).not.toContain('surprise:odd');
   });
 });
 
