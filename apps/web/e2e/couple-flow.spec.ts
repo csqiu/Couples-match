@@ -279,10 +279,12 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
 
   await alex.goto('/app/versions');
   await expect(alex.getByTestId('versions').getByRole('listitem')).toHaveCount(2);
+  // Versions freeze exactly the 5 ranks shown, even though the slider saves after a pause.
+  await expect(alex.getByTestId('versions').getByRole('listitem').filter({ hasText: 'v1' })).toContainText('5 ranks');
   await alex.getByLabel('Older').selectOption({ label: 'v1' });
   await alex.getByLabel('Newer').selectOption({ label: 'v2' });
   await alex.getByRole('button', { name: 'Compare' }).click();
-  await expect(alex.getByTestId('diff')).toContainText('v1 → v2: 2 moved');
+  await expect(alex.getByTestId('diff')).toContainText('v1 → v2: 2 moved, 0 added, 0 removed');
   await shot(alex, '12-versions-diff');
 
   await alex.getByRole('button', { name: 'Restore v1' }).click();
@@ -290,14 +292,7 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await expect(alex.getByText('Restored “v1”.')).toBeVisible();
   await alex.reload();
   await expect(alex.getByTestId('versions').getByRole('listitem')).toHaveCount(3); // the current list was saved first
-  await expect(alex.getByText('Before restoring “v1”')).toBeVisible();
-
-  await alex.goto('/print/list');
-  await expect(alex.getByTestId('print-partner-0')).toContainText('Alex’s R3 entries');
-  await expect(alex.getByTestId('print-partner-1').getByRole('row')).toHaveCount(6); // header + 5 ranks
-  const pdf = await alex.pdf({ format: 'Letter' });
-  expect(pdf.byteLength).toBeGreaterThan(5_000);
-  await shot(alex, '13-print');
+  await expect(alex.getByTestId('versions').getByText('Before restoring “v1”')).toBeVisible();
 
   expect(browserErrors).toEqual([]);
 

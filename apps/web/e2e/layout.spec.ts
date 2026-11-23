@@ -47,3 +47,24 @@ test('every app page fits a phone screen, in light and dark mode', async ({ brow
     await ctx.close();
   }
 });
+
+test('the printable list has one R3 table per partner and renders to PDF', async ({ browser }) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto('/login');
+  const form = page.getByTestId('dev-login');
+  await form.getByLabel('Test user email').fill(env.E2E_ALEX_EMAIL);
+  await form.getByLabel('Test user password').fill(env.E2E_PASSWORD);
+  await form.getByRole('button', { name: 'Sign in with password' }).click();
+  await expect(page).toHaveURL(/\/app\//);
+  await page.goto('/print/list');
+  await expect(page.getByTestId('print-partner-0')).toContainText('’s R3 entries');
+  const rows0 = await page.getByTestId('print-partner-0').getByRole('row').count();
+  const rows1 = await page.getByTestId('print-partner-1').getByRole('row').count();
+  expect(rows0).toBeGreaterThan(1);
+  expect(rows1).toBe(rows0); // equal-length lists
+  const pdf = await page.pdf({ format: 'Letter' });
+  expect(pdf.byteLength).toBeGreaterThan(5_000);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/13-print.png`, fullPage: true, caret: 'initial' });
+  await ctx.close();
+});

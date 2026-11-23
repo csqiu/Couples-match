@@ -46,11 +46,12 @@ export async function setListLength(length: number): Promise<Result> {
  * Freezes the current list: computed here on the server from the couple's rows,
  * with the exact engine inputs and version so it can be reproduced later.
  */
-export async function saveVersion(name: string, note: string): Promise<Result> {
+export async function saveVersion(name: string, note: string, length?: number): Promise<Result> {
   const ctx = await requireCouple();
   const clean = name.trim().slice(0, 120);
   if (!clean) return { error: 'Give the version a name.' };
-  const { snapshot } = await serverFinalList(ctx);
+  // Freeze exactly the length the couple is looking at (the slider may not have saved yet).
+  const { snapshot } = await serverFinalList(ctx, length);
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('list_versions')

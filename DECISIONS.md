@@ -396,8 +396,9 @@ option was taken. Newest phases are at the bottom.
     - "Why is this here?" explains each row relative to the row above it: either the
       chain of rules and answers, or "fits your answers better" with the two scores.
 73. **Up to 300 rows, not a virtualized table.** The spec asks for virtualization, but
-    300 rows render quickly. Rows use CSS `content-visibility: auto` so off-screen rows
-    cost little, and drag-and-drop and find-in-page keep working.
+    300 rows render quickly without it, and drag-and-drop, keyboard navigation and
+    find-in-page keep working. CSS `content-visibility` was tried; it was removed
+    because rows of different heights on phones jumped and left blank gaps.
 74. **Drag to reorder.** Dropping a row above (or below) another asks the engine
     (`proposeMove`):
     - If allowed, it saves a `manual_drag` pin, with Undo.
@@ -418,6 +419,9 @@ option was taken. Newest phases are at the bottom.
     action runs the identical TypeScript without a Deno port.
     - It stores `inputs_snapshot` (the exact engine input), `engine_version`, and the
       ordered rows with names and NRMP codes.
+    - The browser sends the length currently shown, and exactly that is frozen. The
+      slider saves after a short pause, and an e2e run caught a version saved before
+      the slider's value landed.
 78. **Restore** uses a security-definer function (`restore_version`, migration 6),
     because it rewrites *both* partners' lists, which row level security doesn't let
     one partner do.

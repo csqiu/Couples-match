@@ -258,7 +258,7 @@ export function ListView({
               onSubmit={async (e) => {
                 e.preventDefault();
                 setSaving(true);
-                const res = await saveVersion(versionName, versionNote);
+                const res = await saveVersion(versionName, versionNote, n);
                 setSaving(false);
                 if (res.error) toast({ message: res.error });
                 else {
@@ -287,7 +287,7 @@ function Row({ row, open, onWhy }: { row: ListRow; open: boolean; onWhy: () => v
   return (
     <li
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, contentVisibility: 'auto', containIntrinsicSize: '0 64px' }}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn('rounded-xl border px-2 py-2', BAND_ROW[row.band], isDragging && 'relative z-10 opacity-80 shadow-lg')}
       data-band={row.band}
     >
