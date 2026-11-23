@@ -98,8 +98,9 @@ above the other.
 | 2 | Learning from your answers, smart question choice | ✅ Done |
 | 3 | Program data: seed of 57 programs, import + geocoding pipeline | ✅ Done (source research deferred, see [docs/data-sources.md](docs/data-sources.md)) |
 | 4 | Backend (Supabase): database, security rules, accounts, partner invites, live sync | ✅ Done, deployed to Supabase (free tier) |
-| 5 | Web app: setup, program search with map, rank and tier | Next |
-| 6–7 | Comparison cards, conflicts, final list, versions, export | |
+| 5 | Web app: setup and invites, program search with map, rank and tier | ✅ Done |
+| 6 | “This or that” comparison cards, conflict resolution | Next |
+| 7 | Final list, versions, export | |
 | 8–9 | Full program import, admin, polish, deploy | |
 
 ## Running it
@@ -119,6 +120,20 @@ Ubuntu, install them with `apt install postgresql-16 postgresql-16-postgis-3`. T
 then start a throwaway database by themselves. Alternatively, point `DATABASE_URL` at a
 local Supabase (`supabase start`).
 
+**The web app** (`apps/web`):
+
+```bash
+pnpm --filter @pairwise/web dev        # http://localhost:3000 (reads apps/web/.env.local)
+pnpm --filter @pairwise/web build
+pnpm --filter @pairwise/web test       # unit tests
+pnpm --filter @pairwise/web e2e        # two-partner browser test against the Supabase project
+```
+
+The end-to-end test signs in as two test accounts (`alex.e2e@example.test` and
+`sam.e2e@example.test`). They use a password sign-in that exists only in development
+(`PAIRWISE_DEV_LOGIN=1`) and is switched off in production builds. Their password lives in
+`apps/web/.env.local`. Reset their data first with `supabase/tests/e2e-reset.sql`.
+
 **Supabase project:** `pairwise` in the Infinite Games organization (free tier, US East),
 at `https://julbfusuwcjptyobguxm.supabase.co`. All five migrations, the specialties and
 the 57 seed programs are loaded, and the invite email function is deployed. The
@@ -132,7 +147,7 @@ tests.
 ## Repository layout
 
 ```
-apps/web            Next.js app                                  (Phase 5+)
+apps/web            Next.js app: sign-in, invites, setup, programs + map, rank and tier
 packages/engine     scoring, rules, conflict detection, ranking  ← the product's brain
 packages/data       specialties, seed programs, import + geocoding pipeline
 packages/db         database types, rows → engine input, live-sync helpers, database tests

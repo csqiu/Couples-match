@@ -17,7 +17,7 @@ import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalList
 import { CSS } from '@dnd-kit/utilities';
 import { isValidProgramCode } from '@pairwise/engine';
 import { ChevronDown, ChevronUp, GripVertical, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, useTransition } from 'react';
 import { Select } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
@@ -70,6 +70,8 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
   const [, startSave] = useTransition();
   const toast = useToast();
   const dragStart = useRef<Board<BoardEntry> | null>(null);
+  // Stable id so dnd-kit's accessibility ids match between server and client render.
+  const dndId = useId();
 
   // Live updates (e.g. from another tab) replace local state unless a drag is in progress.
   const initialKey = initial.map((e) => `${e.programId}:${e.tier}:${e.acceptable}:${e.nrmpCode}`).join('|');
@@ -146,6 +148,7 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
 
   return (
     <DndContext
+      id={dndId}
       sensors={sensors}
       collisionDetection={closestCorners}
       onDragStart={onDragStart}

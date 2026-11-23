@@ -279,3 +279,72 @@ option was taken. Newest phases are at the bottom.
     *before* creating an invite, rather than creating one and revoking it. It is
     deployed (JWT required) and compiles on Supabase's runtime. It is still untested
     end to end, because no email key exists yet.
+
+## Phase 5: Web app (steps 1–3)
+
+53. **Next.js 16 (App Router) with Tailwind 4.** Pages read data in server components;
+    writes go through server actions, as the spec asks. Two things are new in Next 16:
+    session refresh lives in `src/proxy.ts` (middleware was renamed), and Turbopack is
+    the default bundler.
+    - Turbopack can't map `./x.js` imports to `x.ts` files, so the packages now import
+      their siblings without an extension. TypeScript, Vitest, tsx and Next all accept
+      that.
+54. **shadcn/ui-style components, written by hand.** The shadcn generator's site is
+    blocked from the build environment. `src/components/ui/` follows the same pattern:
+    Tailwind with `class-variance-authority`, no Radix needed so far.
+    - Colors are CSS variables, with light, dark and system modes; the toggle is stored
+      in localStorage.
+    - One accent color (teal), and touch targets of at least 44px.
+55. **Branding is in one file, `src/brand.ts`** (name, tagline, description, support
+    email).
+56. **Invite fallback while email isn't set up.** Partner A first tries the
+    `send-invite` Edge Function. If it replies `email_not_configured`, the server creates
+    the invite itself and shows partner A a copyable link to send.
+    - The link still works only once, only for the invited email, and only for 7 days.
+      The email-match check at accept time is what protects it.
+    - Once email is configured, the token goes only into the email again.
+57. **Dev-only password sign-in.** It is used by automated tests and is enabled only
+    when `PAIRWISE_DEV_LOGIN=1` *and* `NODE_ENV` isn't production.
+    - The two test accounts were created directly in `auth.users` with a random password
+      kept in the git-ignored `apps/web/.env.local`.
+    - Real users only get magic links or Google.
+58. **The match year rolls over in April.** From April on, people are preparing for
+    next year's March Match; setup offers that year and the one after.
+59. **Rank and tier board.** It uses dnd-kit with three sortable lists. Saving rewrites
+    the whole list in one statement (ranks 1..n: Tier A, then B, then C), relying on the
+    deferrable unique constraint. Last write wins, and every move offers **Undo**.
+    - Keyboard dragging needed a custom coordinate getter, because dnd-kit's default
+      handles only a single list. ↑/↓ jump to the nearest row or empty tier box.
+      Non-empty tier boxes aren't drop targets; otherwise ↑ from a tier's first row
+      would land on its own box.
+    - A keyboard move into another tier lands at the edge of that tier: the end of the
+      tier above, or the start of the tier below. Pointer drags drop where released.
+    - Each row also has a tier menu, up and down arrows, an acceptable switch, an NRMP
+      code field (format-checked, saved per couple, confirmed with a toast) and remove.
+    - The drag context has a stable `id` (`useId`), so its accessibility ids match
+      between server and client rendering.
+60. **Map.** MapLibre GL 6 with OpenFreeMap tiles (positron and dark styles, no API key).
+    - My programs are filled teal dots; my partner's are rings, with a toggle to hide
+      them.
+    - MapLibre 6's worker can't be located by the bundler, so
+      `scripts/copy-maplibre-worker.mjs` copies it to `public/maplibre/` before dev and
+      build.
+61. **Live sync** uses the Phase 4 helper: Postgres Changes trigger a debounced
+    `router.refresh()`, and presence shows "<partner> is ranking/answering…". Both were
+    verified live, including the private-channel access policy, which only real
+    Supabase could test.
+62. **"Private tiers" is a UI promise, as noted in decision 42.** The programs page shows
+    the partner's programs but never their tiers. Phase 5 shows only my own tiers
+    anyway.
+63. **User-added programs ("Add a program not listed") are in Phase 8**, as the spec's
+    build plan says. Phase 5 searches the shared program list only.
+64. **End-to-end test** (`apps/web/e2e/couple-flow.spec.ts`). It drives two browsers
+    against the real Supabase project.
+    - It checks setup, invite, accept, search and add, the map pins, the tier menu,
+      arrows, acceptable switch, code validation, keyboard drag across tiers, that
+      everything is still there after a reload, presence, and live sync.
+    - It also asserts no browser errors, and no sideways scrolling at 390px on every app
+      page.
+    - Running it in this sandbox needs `NODE_USE_ENV_PROXY=1`, because Node's fetch
+      ignores HTTPS_PROXY. The Playwright config routes the browser through `HTTPS_PROXY`
+      when it is set.

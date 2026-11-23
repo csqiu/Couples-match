@@ -33,7 +33,7 @@ async function newUser(browser: Browser) {
 }
 
 async function shot(page: Page, name: string) {
-  if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true, caret: 'initial' });
 }
 
 test('two partners: setup, invite, accept, choose programs, rank and tier', async ({ browser }) => {
