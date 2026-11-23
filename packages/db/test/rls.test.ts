@@ -228,7 +228,7 @@ describe('Row level security', () => {
       expect(callable('anon')).toEqual(['invite_preview']);
       expect(callable('auth')).toEqual([
         'accept_invite', 'create_invite', 'delete_my_account', 'invite_preview', 'is_active_member',
-        'is_admin', 'is_couple_member', 'leave_couple', 'revoke_invite',
+        'is_admin', 'is_couple_member', 'leave_couple', 'restore_version', 'revoke_invite',
       ]);
       // Every security-definer function pins its search_path.
       const unpinned = await db.query(`

@@ -645,6 +645,7 @@ export type Database = {
         Args: { p_older_than?: string }
         Returns: number
       }
+      restore_version: { Args: { p_version: string }; Returns: undefined }
       revoke_invite: { Args: { p_invite: string }; Returns: undefined }
     }
     Enums: {
