@@ -3168,5 +3168,114 @@
   "lat": 40.9452911,
   "lon": -74.0735899,
   "matched": "Paramus, Bergen County, New Jersey, United States"
+ },
+ "Paris, TX": {
+  "lat": 33.6617962,
+  "lon": -95.555513,
+  "matched": "Paris, Lamar County, Texas, United States"
+ },
+ "Park Ridge, IL": {
+  "lat": 42.0112329,
+  "lon": -87.8406031,
+  "matched": "Park Ridge, Maine Township, Cook County, Illinois, 60068, United States"
+ },
+ "ParkRidge, IL": null,
+ "Parkersburg, WV": {
+  "lat": 39.2667309,
+  "lon": -81.5620755,
+  "matched": "Parkersburg, Wood County, West Virginia, United States"
+ },
+ "Parma, OH": {
+  "lat": 41.3822398,
+  "lon": -81.7355692,
+  "matched": "Parma, Cuyahoga County, Ohio, United States"
+ },
+ "Pasadena CA, CA": null,
+ "Pasadena, CA": {
+  "lat": 34.1476507,
+  "lon": -118.144155,
+  "matched": "Pasadena, Los Angeles County, California, United States"
+ },
+ "Passaic, NJ": {
+  "lat": 40.8566936,
+  "lon": -74.1286298,
+  "matched": "Passaic, Passaic County, New Jersey, 07055, United States"
+ },
+ "Patchogue, NY": {
+  "lat": 40.7656539,
+  "lon": -73.0151084,
+  "matched": "Village of Patchogue, Town of Brookhaven, Suffolk County, New York, United States"
+ },
+ "Paterson, NJ": {
+  "lat": 40.9167654,
+  "lon": -74.171811,
+  "matched": "Paterson, Passaic County, New Jersey, United States"
+ },
+ "Pawtucket, RI": {
+  "lat": 41.8789531,
+  "lon": -71.3821203,
+  "matched": "Pawtucket, Providence County, Rhode Island, United States"
+ },
+ "Payson, AZ": {
+  "lat": 34.2406479,
+  "lon": -111.323026,
+  "matched": "Payson, Gila County, Arizona, 85072, United States"
+ },
+ "Pembroke Pines, FL": {
+  "lat": 26.0061943,
+  "lon": -80.2872086,
+  "matched": "Pembroke Pines, Broward County, Florida, United States"
+ },
+ "Pennington, NJ": {
+  "lat": 40.3281213,
+  "lon": -74.7909992,
+  "matched": "Pennington, Mercer County, New Jersey, 08534, United States"
+ },
+ "Pennnington, NJ": null,
+ "Pensacola, FL": {
+  "lat": 30.421309,
+  "lon": -87.2169149,
+  "matched": "Pensacola, Escambia County, Florida, United States"
+ },
+ "Peoria, IL": {
+  "lat": 40.6938609,
+  "lon": -89.5891008,
+  "matched": "Peoria, Peoria County, Illinois, United States"
+ },
+ "Perrysburg, OH": {
+  "lat": 41.5571178,
+  "lon": -83.6279321,
+  "matched": "Perrysburg, Wood County, Ohio, 43551, United States"
+ },
+ "Petoskey, MI": {
+  "lat": 45.373343,
+  "lon": -84.95533,
+  "matched": "Petoskey, Emmet County, Michigan, United States"
+ },
+ "Phenix City, AL": {
+  "lat": 32.4709761,
+  "lon": -85.0007653,
+  "matched": "Phenix City, Russell County, Alabama, United States"
+ },
+ "Philadelphai, PA": null,
+ "Philadelphia, PA": {
+  "lat": 39.9527237,
+  "lon": -75.1635262,
+  "matched": "Philadelphia, Philadelphia County, Pennsylvania, United States"
+ },
+ "Phillipsburg, NJ": {
+  "lat": 40.6915611,
+  "lon": -75.1952543,
+  "matched": "Phillipsburg, Warren County, New Jersey, 08865, United States"
+ },
+ "Phoenix, AZ": {
+  "lat": 33.4484367,
+  "lon": -112.074141,
+  "matched": "Phoenix, Maricopa County, Arizona, United States"
+ },
+ "Phoenixville, PA": {
+  "lat": 40.1338784,
+  "lon": -75.5172827,
+  "matched": "Phoenixville, Chester County, Pennsylvania, United States"
  }
 }

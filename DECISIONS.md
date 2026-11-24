@@ -582,3 +582,71 @@ option was taken. Newest phases are at the bottom.
     - `APP_URL` falls back to Vercel's production address.
     - A production build (`next build && next start`) was checked: it serves the
       security headers, has no console errors, and has no test sign-in.
+
+## The NRMP Main Match program list
+
+100. **Source:** the NRMP Main Residency Match Program Directory, saved and parsed on
+     branch `claude/blissful-davinci-wyvz59` (merged here; `nrmp-directory/`). The owner
+     approved its use (`docs/data-sources.md`).
+101. **One program per NRMP track.**
+     - Codes: in R3 a couple ranks codes, and a program can have several tracks
+       (categorical, preliminary, advanced, physician-only, primary care, and extra
+       tracks such as C1). So each track is its own program, `id = nrmp-<code>`, with
+       its official code.
+     - **Names:** "Institution — Specialty", plus a label where needed:
+       "(Advanced)", "(Physician only)", "(Primary care)", "(Preliminary)", "(track 2)".
+       The institution is the directory's own abbreviated name ("MGB-Massachusetts Gen
+       Hosp"), minus the trailing "-City-ST".
+     - **Specialties:** preliminary Internal Medicine and Surgery tracks go under the
+       existing "Internal Medicine - Preliminary" and "Surgery - Preliminary"
+       specialties, because that's how applicants look for them.
+     - **Codes are 9 or 10 characters.** The directory has 10-character codes for a
+       program's 11th track onwards (e.g. `2978140C10`). The code check in `rules.ts`
+       and the database rule on typed codes now accept both.
+102. **Only rankable tracks.** Active and Initial are loaded; Withdrawn (211) and Not
+     Participating (185) are left out, giving 7,096 programs. "Initial" tracks haven't
+     been activated yet, but usually will be before rank lists are due.
+103. **Specialties.** The directory has 49 specialty names. 25 were added to the
+     vocabulary: mostly combined programs such as "Emergency Medicine/Internal
+     Medicine", plus a few smaller ones (Nuclear Medicine, Medical Genetics, and so on).
+     Five more were alternative spellings of specialties we had.
+104. **The official NRMP code wins.**
+     - When a program has a code from the directory, that's the code on the final list,
+       CSV and PDF, even if one was typed by hand.
+     - The rank page shows it read-only. The typing box remains only for programs
+       without one (couple-added ones).
+     - So the "codes entered for every program" checklist item passes by itself for
+       directory programs.
+105. **Locations are city-level.**
+     - The directory has city and state, no street address. Each of its 983 cities was
+       looked up once on OpenStreetMap (allowing Puerto Rico) and saved in
+       `packages/data/seed/nrmp-cities.json`.
+     - These locations are stored with confidence 0.5 (city centre).
+     - Distance bands start at 30 miles ("together"), so city-level is enough for
+       between-city trade-offs. Two programs in the same city count as 0 miles apart.
+     - **Exact positions where we have them:** each seed program was matched by hand to
+       its NRMP track (`seed/nrmp-seed-map.json`, 56 of 57). Its address is then used
+       for *every* track at that institution in that city. That covers 696 tracks at
+       big academic centres.
+     - Admins can still fix any location by hand in Review, and a re-import keeps it.
+106. **Seed programs are merged into their NRMP tracks** (`merge_programs`), so anyone who
+     had listed one keeps their place, answers and codes. Boston Medical Center
+     Pediatrics has no categorical track in the directory and stays as it was.
+107. **Directory programs count as verified.** They're official, so they go straight into
+     search for everyone and don't wait in the admin queue.
+108. **Loading.** `nrmp:load` signs in as an admin and saves through `import_programs` in
+     batches of 1,000. That's the same admin-only path as the CSV screen, with no
+     service key. Migration 8 adds `nrmp_code` to it.
+     - Re-running after a new directory export updates programs in place.
+     - It was run with the admin test account; any admin account works.
+109. **Search** now has to cope with thousands of programs and the directory's
+     abbreviations:
+     - each word must match, and common words also match their abbreviations
+       (General → Gen, Hospital → Hosp, University → Univ, Medical → Med, Center → Ctr);
+     - NRMP codes match too;
+     - there's a state filter;
+     - it shows "Showing 60 of 1,327" when there are more.
+110. **Not done:** fellowship (SMS) programs. The directory export is Main Match only.
+     Supplemental lists for advanced programs (the preliminary year to go with an
+     advanced position) aren't modelled. Couples can rank preliminary and advanced
+     tracks as separate programs.
