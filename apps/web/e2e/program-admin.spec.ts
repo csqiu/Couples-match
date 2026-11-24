@@ -76,7 +76,7 @@ test('add a program not listed, admin merges it, admin imports a CSV', async ({ 
   await expect(added.or(similar)).toBeVisible({ timeout: 30_000 });
   if (await similar.isVisible()) await similar.click();
   await expect(added).toBeVisible({ timeout: 30_000 });
-  await expect(alex.getByRole('button', { name: `Remove ${NEW_NAME}` })).toBeVisible();
+  await expect(alex.getByRole('button', { name: `Remove ${NEW_NAME}` }).first()).toBeVisible();
   await alex.getByLabel('Search programs').fill('E2E Tufts');
   await expect(alex.getByTestId('search-results').getByText('Added by you · not checked yet')).toBeVisible();
   await shot(alex, '41-add-program-added');

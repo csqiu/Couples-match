@@ -37,7 +37,7 @@ export default async function PrintList({ searchParams }: { searchParams: Promis
   const th = 'border-b border-border py-1.5 pr-3 text-left text-xs font-semibold';
   const td = 'border-b border-border py-1 pr-3 align-top text-sm';
   return (
-    <main className="mx-auto max-w-4xl px-6 py-8 print:max-w-none print:px-0 print:py-0">
+    <main id="main" tabIndex={-1} className="outline-none mx-auto max-w-4xl px-6 py-8 print:max-w-none print:px-0 print:py-0">
       <div className="mb-6 flex items-center justify-between gap-3 print:hidden">
         <Link href="/app/list" className={buttonVariants({ variant: 'secondary' })}>Back</Link>
         <PrintButton />

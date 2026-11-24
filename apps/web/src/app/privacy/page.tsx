@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: 'Privacy' };
 
 export default function Privacy() {
   return (
-    <main className="mx-auto max-w-2xl px-4 py-12 text-sm leading-relaxed">
+    <main id="main" tabIndex={-1} className="outline-none mx-auto max-w-2xl px-4 py-12 text-sm leading-relaxed">
       <Link href="/" className="text-lg font-semibold">{BRAND.name}</Link>
       <h1 className="mt-8 text-2xl font-semibold">Privacy</h1>
       <div className="mt-6 flex flex-col gap-4 text-muted">

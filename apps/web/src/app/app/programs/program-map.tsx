@@ -102,7 +102,7 @@ export function ProgramMap({ points, className }: { points: MapPoint[]; classNam
     }
   }, [points]);
 
-  return <div ref={el} className={className} role="img" aria-label={`Map of ${points.length} programs`} />;
+  return <div ref={el} className={className} role="region" aria-label={`Map of ${points.length} programs`} />;
 }
 
 /** How many of my pins are drawn — read by the end-to-end test. */

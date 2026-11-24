@@ -101,7 +101,7 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await expect(alex.locator('.maplibregl-canvas')).toBeVisible();
   // The pins rendered (the map's worker loaded and the program layer is drawn).
   await expect
-    .poll(() => alex.evaluate(() => document.querySelector('.maplibregl-canvas')?.closest('[role=img]')?.getAttribute('aria-label')))
+    .poll(() => alex.evaluate(() => document.querySelector('[role=region][aria-label^="Map of"]')?.getAttribute('aria-label')))
     .toBe('Map of 4 programs');
   await expect.poll(() => alex.evaluate(() => (window as unknown as { __pairwiseMapPins?: number }).__pairwiseMapPins ?? 0)).toBe(4);
   await expect(alex.getByText('Mine (4)')).toBeVisible();

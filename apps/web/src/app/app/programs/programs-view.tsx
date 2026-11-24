@@ -116,7 +116,7 @@ export function ProgramsView({
                     size="sm"
                     disabled={pending === p.id}
                     onClick={() => toggle(p)}
-                    aria-label={added ? `Remove ${p.name}` : `Add ${p.name}`}
+                    aria-label={added ? `Added: remove ${p.name}` : `Add ${p.name}`}
                   >
                     {added ? <><Check className="h-4 w-4" aria-hidden /> Added</> : <><Plus className="h-4 w-4" aria-hidden /> Add</>}
                   </Button>

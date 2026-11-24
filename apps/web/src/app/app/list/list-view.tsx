@@ -4,7 +4,7 @@ import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalList
 import { CSS } from '@dnd-kit/utilities';
 import type { CoupleData } from '@pairwise/db';
 import { NRMP_RULES, type MatchType } from '@pairwise/engine';
-import { CircleAlert, CircleCheck, Download, GripVertical, History, Info, Printer, Save } from 'lucide-react';
+import { CircleAlert, CircleCheck, Download, GripVertical, History, Info, Map as MapIcon, Printer, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { BAND_NAME, BAND_ROW, BandBadge } from '@/components/proximity';
@@ -116,6 +116,9 @@ export function ListView({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href="/app/map" className={buttonVariants({ variant: 'secondary' })}>
+            <MapIcon className="h-4 w-4" aria-hidden /> Map
+          </Link>
           <Link href="/app/versions" className={buttonVariants({ variant: 'secondary' })}>
             <History className="h-4 w-4" aria-hidden /> Versions
           </Link>

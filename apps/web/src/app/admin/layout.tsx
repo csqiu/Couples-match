@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           <ThemeToggle />
         </nav>
       </header>
-      <main className="min-w-0 pb-12">{children}</main>
+      <main id="main" tabIndex={-1} className="min-w-0 pb-12 outline-none">{children}</main>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { LogOut } from 'lucide-react';
+import { CircleUser, History } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { BRAND } from '@/brand';
@@ -7,6 +7,9 @@ import { ProgressRail } from '@/components/progress-rail';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { displayName, requireContext } from '@/lib/context';
 import { createClient } from '@/lib/supabase/server';
+
+const headerIcon =
+  'inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text';
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const ctx = await requireContext();
@@ -42,19 +45,19 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
               Admin
             </Link>
           ) : null}
+          {ctx.couple ? (
+            <Link href="/app/activity" className={headerIcon} aria-label="Activity" title="Activity">
+              <History className="h-5 w-5" aria-hidden />
+            </Link>
+          ) : null}
           <ThemeToggle />
-          <form action="/auth/signout" method="post">
-            <button
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text"
-              aria-label="Sign out"
-            >
-              <LogOut className="h-5 w-5" aria-hidden />
-            </button>
-          </form>
+          <Link href="/app/account" className={headerIcon} aria-label="Account" title="Account">
+            <CircleUser className="h-5 w-5" aria-hidden />
+          </Link>
         </div>
       </header>
       <ProgressRail done={done} locked={!setupDone} />
-      <main className="min-w-0 pb-12">{children}</main>
+      <main id="main" tabIndex={-1} className="min-w-0 pb-12 outline-none">{children}</main>
     </div>
   );
 }

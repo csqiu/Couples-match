@@ -6,7 +6,17 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { buttonVariants } from '@/components/ui/button';
 import { getContext } from '@/lib/context';
 
-export default async function Home() {
+const HOW = [
+  ['Set up together', 'Each of you signs in, picks your specialty, and one of you invites the other.'],
+  ['Choose programs', 'Each of you adds every program you’d be willing to go to.'],
+  ['Rank and tier', 'Put your own programs in order, and mark the ones you’d take over any other (Tier A).'],
+  ['This or that', 'Answer a few questions like “both at your #1s, far apart, or both at your #4s in one city?”'],
+  ['Fix contradictions', 'If answers go in a circle, we show why and you decide.'],
+  ['Your final list', 'One ordered list of pairs, color-coded by distance, ready to type into R3.'],
+];
+
+export default async function Home({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
+  const { deleted } = await searchParams;
   if (await getContext()) redirect('/app');
   const points = [
     { icon: Heart, title: 'Honest preferences, not strategy', body: 'The Match reads your list from the top, so the best list is simply your true order. We help you find it.' },
@@ -14,7 +24,7 @@ export default async function Home() {
     { icon: Scale, title: 'Trade-offs you can see', body: 'A few "this or that" questions learn how much being close matters to you, and catch contradictions.' },
   ];
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+    <main id="main" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-6 outline-none sm:px-6">
       <header className="flex items-center justify-between">
         <span className="text-lg font-semibold">{BRAND.name}</span>
         <div className="flex items-center gap-1">
@@ -24,6 +34,11 @@ export default async function Home() {
           </Link>
         </div>
       </header>
+      {deleted ? (
+        <p className="mt-6 rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent" role="status">
+          Your account and everything in it have been deleted.
+        </p>
+      ) : null}
       <section className="py-16 sm:py-24">
         <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">{BRAND.tagline}</h1>
         <p className="mt-5 max-w-xl text-lg text-muted">{BRAND.description}</p>
@@ -39,6 +54,23 @@ export default async function Home() {
             <p className="mt-1 text-sm text-muted">{body}</p>
           </div>
         ))}
+      </section>
+      <section className="pb-20" aria-labelledby="how">
+        <h2 id="how" className="text-2xl font-semibold tracking-tight">How it works</h2>
+        <p className="mt-1 text-sm text-muted">Take as many sittings as you like. Everything saves as you go.</p>
+        <ol className="mt-6 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+          {HOW.map(([title, body], i) => (
+            <li key={title} className="flex gap-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent" aria-hidden>
+                {i + 1}
+              </span>
+              <span>
+                <span className="block font-medium">{title}</span>
+                <span className="block text-sm text-muted">{body}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
       </section>
     </main>
   );

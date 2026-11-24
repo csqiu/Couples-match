@@ -23,6 +23,11 @@
   --tier-b: #3f5f8a;
   --tier-c: #6b6b64;
   --focus: #0f766e;
+  /* Map lines by distance band (the map also uses line style, never color alone). */
+  --band-together: #0f766e;
+  --band-commutable: #2b8a3e;
+  --band-drivable: #b26b00;
+  --band-apart: #b42318;
 }
 .dark {
   --bg: #121412;
@@ -41,6 +46,10 @@
   --tier-b: #8fb0dc;
   --tier-c: #a3a39b;
   --focus: #3cc2b3;
+  --band-together: #3cc2b3;
+  --band-commutable: #74c476;
+  --band-drivable: #f0b45c;
+  --band-apart: #f97066;
 }
 
 @theme inline {
@@ -53,6 +62,10 @@
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
   --color-accent-soft: var(--accent-soft);
+  --color-band-together: var(--band-together);
+  --color-band-commutable: var(--band-commutable);
+  --color-band-drivable: var(--band-drivable);
+  --color-band-apart: var(--band-apart);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-danger: var(--danger);
@@ -76,4 +89,14 @@ body {
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+/* Respect "reduce motion": no animated transitions or pulsing placeholders. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -23,6 +23,17 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
     group: s.match_type === 'main' ? 'Residency (Main Residency Match)' : `Fellowship (${s.match_name})`,
   }));
   const settings = (ctx.couple?.settings ?? {}) as StoredSettings;
+  // If a couple ended recently, say so: otherwise the partner who stayed just finds themselves back at setup.
+  const { data: ended } = ctx.couple
+    ? { data: null }
+    : await supabase
+        .from('couples')
+        .select('dissolved_at')
+        .eq('status', 'dissolved')
+        .gt('dissolved_at', new Date(Date.now() - 30 * 86400_000).toISOString())
+        .order('dissolved_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
   const matchLabel = ctx.specialty
     ? ctx.specialty.match_type === 'main'
       ? 'the Main Residency Match'
@@ -35,6 +46,12 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
         <h1 className="text-2xl font-semibold tracking-tight">Welcome{ctx.profile.display_name ? `, ${ctx.profile.display_name}` : ''}</h1>
         <p className="mt-1 text-sm text-muted">A few details, then you’ll pick and rank your programs.</p>
       </div>
+      {ended?.dissolved_at ? (
+        <p className="rounded-xl bg-warn-soft px-4 py-3 text-sm text-warn" role="status">
+          Your couple ended on {new Date(ended.dissolved_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}. Its lists are
+          kept for 30 days, then deleted. You can start a new couple below.
+        </p>
+      ) : null}
       {joined ? (
         <p className="rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent" role="status">
           You’ve joined {displayName(ctx.partner)}. You can each build your own list now.

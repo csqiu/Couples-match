@@ -13,7 +13,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { next = '/app', email, error } = await searchParams;
   if (await getContext()) redirect(next.startsWith('/') ? next : '/app');
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12">
+    <main id="main" tabIndex={-1} className="outline-none mx-auto flex max-w-md flex-col gap-6 px-4 py-12">
       <Link href="/" className="text-lg font-semibold">{BRAND.name}</Link>
       <Card>
         <h1 className="text-xl font-semibold">Sign in</h1>
