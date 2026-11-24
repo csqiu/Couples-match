@@ -646,6 +646,9 @@ export type Database = {
         Returns: number
       }
       restore_version: { Args: { p_version: string }; Returns: undefined }
+      import_programs: { Args: { p_programs: Json }; Returns: { inserted: number; updated: number }[] }
+      merge_programs: { Args: { p_from: string; p_to: string }; Returns: undefined }
+      program_duplicates: { Args: never; Returns: { program_a: string; program_b: string; distance_mi: number }[] }
       revoke_invite: { Args: { p_invite: string }; Returns: undefined }
     }
     Enums: {

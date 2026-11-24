@@ -1,4 +1,4 @@
-export const PROGRAM_COLUMNS = 'id, name, institution, city, state, lat, lon, specialty_code, specialty_name, cbsa_name';
+export const PROGRAM_COLUMNS = 'id, name, institution, city, state, lat, lon, specialty_code, specialty_name, cbsa_name, created_by_couple';
 
 export interface ProgramLite {
   id: string;
@@ -11,6 +11,8 @@ export interface ProgramLite {
   specialty_code: string;
   specialty_name: string;
   cbsa_name: string | null;
+  /** Set for a program this couple added themselves (not yet checked by an admin). */
+  created_by_couple: string | null;
 }
 
 export interface MapPoint {

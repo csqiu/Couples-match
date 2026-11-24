@@ -10,6 +10,7 @@ import { Input, Select } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { addProgram, removeProgram, searchPrograms } from './actions';
+import { AddProgramForm } from './add-program-form';
 import type { MapPoint, ProgramLite } from './types';
 
 const ProgramMap = dynamic(() => import('./program-map').then((m) => m.ProgramMap), {
@@ -104,6 +105,7 @@ export function ProgramsView({
                 <li key={p.id} className="flex items-center gap-3 py-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{p.name}</p>
+                    {p.created_by_couple ? <p className="text-xs text-warn">Added by you · not checked yet</p> : null}
                     <p className="flex items-center gap-1 truncate text-xs text-muted">
                       <MapPin className="h-3 w-3 shrink-0" aria-hidden /> {p.city}, {p.state}
                       {specialty === '' ? <> · {p.specialty_name}</> : null}
@@ -123,6 +125,14 @@ export function ProgramsView({
             })}
             {!results.length && !searching ? <li className="py-8 text-center text-sm text-muted">No programs match.</li> : null}
           </ul>
+          <AddProgramForm
+            specialties={specialties}
+            defaultSpecialty={specialty || mySpecialty}
+            initialName={query}
+            onAddExisting={async (p) => {
+              if (!mineIds.has(p.id)) await toggle(p);
+            }}
+          />
         </Card>
 
         <div className="flex min-w-0 flex-col gap-3">
