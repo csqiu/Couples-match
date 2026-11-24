@@ -19,7 +19,7 @@ export async function loadCoupleBundle(ctx: AppContext & { couple: NonNullable<A
   const [ranks, comparisons, pins, exclusions, exceptions] = await Promise.all([
     supabase.from('individual_ranks').select('user_id, program_id, rank, tier, acceptable, note, nrmp_code').eq('couple_id', id),
     supabase.from('comparisons').select('id, pair_left, pair_right, winner, answered_by, both_agreed, locked, seq').eq('couple_id', id).order('seq'),
-    supabase.from('pins').select('id, higher_pair, lower_pair, source, comparison_id').eq('couple_id', id),
+    supabase.from('pins').select('id, higher_pair, lower_pair, source, comparison_id, moved_pair').eq('couple_id', id).order('created_at').order('id'),
     supabase.from('pair_exclusions').select('program_a, program_b, reason').eq('couple_id', id),
     supabase.from('rule_exceptions').select('higher_pair, lower_pair').eq('couple_id', id),
   ]);
@@ -27,7 +27,7 @@ export async function loadCoupleBundle(ctx: AppContext & { couple: NonNullable<A
   const { data: programs } = programIds.length
     ? await supabase
         .from('programs')
-        .select('id, name, institution, city, state, lat, lon, cbsa_code, nrmp_code, is_advanced')
+        .select('id, name, short_name, institution, city, state, lat, lon, cbsa_code, nrmp_code, is_advanced')
         .in('id', programIds)
     : { data: [] };
 

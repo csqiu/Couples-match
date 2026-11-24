@@ -48,8 +48,9 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
       </div>
       {ended?.dissolved_at ? (
         <p className="rounded-xl bg-warn-soft px-4 py-3 text-sm text-warn" role="status">
-          Your couple ended on {new Date(ended.dissolved_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}. Its lists are
-          kept for 30 days, then deleted. You can start a new couple below.
+          Your couple ended on {new Date(ended.dissolved_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}. Your own
+          program list is saved with you and comes along when you start or join your next couple. The couple’s shared
+          answers and versions are deleted after 30 days.
         </p>
       ) : null}
       {joined ? (

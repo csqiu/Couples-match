@@ -15,7 +15,7 @@ const questions = flag('questions', 40);
 const noise = flag('noise', 0.1);
 
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-const rows: Array<{ seed: number; before: number; active: number; random: number }> = [];
+const rows: Array<{ seed: number; before: number; active: number; random: number; relBefore: number; relActive: number; relRandom: number }> = [];
 const curves: { active: number[][]; random: number[][] } = { active: [], random: [] };
 const t0 = performance.now();
 
@@ -24,7 +24,7 @@ for (let seed = 1; seed <= couples; seed++) {
   const truth = hiddenParams(seed);
   const a = simulateCouple(input, truth, { strategy: 'active', questions, noise });
   const r = simulateCouple(input, truth, { strategy: 'random', questions, noise });
-  rows.push({ seed, before: a.tauBefore, active: a.tauAfter, random: r.tauAfter });
+  rows.push({ seed, before: a.tauBefore, active: a.tauAfter, random: r.tauAfter, relBefore: a.relevantBefore, relActive: a.relevantAfter, relRandom: r.relevantAfter });
   curves.active.push(a.tauByQuestion);
   curves.random.push(r.tauByQuestion);
   console.log(
@@ -36,6 +36,10 @@ console.log('\nKendall τ vs. true order over the top 100 pairs (mean of', coupl
 console.log(`  before any questions: ${mean(rows.map((r) => r.before)).toFixed(3)}`);
 console.log(`  after ${questions} active:      ${mean(rows.map((r) => r.active)).toFixed(3)}  (min ${Math.min(...rows.map((r) => r.active)).toFixed(3)})`);
 console.log(`  after ${questions} random:      ${mean(rows.map((r) => r.random)).toFixed(3)}  (min ${Math.min(...rows.map((r) => r.random)).toFixed(3)})`);
+console.log('\nSame, counting only orderings that can change where the couple matches (moot ones left out)');
+console.log(`  before any questions: ${mean(rows.map((r) => r.relBefore)).toFixed(3)}`);
+console.log(`  after ${questions} active:      ${mean(rows.map((r) => r.relActive)).toFixed(3)}  (min ${Math.min(...rows.map((r) => r.relActive)).toFixed(3)})`);
+console.log(`  after ${questions} random:      ${mean(rows.map((r) => r.relRandom)).toFixed(3)}  (min ${Math.min(...rows.map((r) => r.relRandom)).toFixed(3)})`);
 console.log(`  active beat random on ${rows.filter((r) => r.active > r.random).length}/${couples} couples`);
 const at = (s: 'active' | 'random', q: number) => mean(curves[s].map((c) => c[Math.min(q, c.length - 1)]));
 console.log('\n  questions:  ' + [0, 5, 10, 20, 30, 40].map((q) => String(q).padStart(6)).join(''));

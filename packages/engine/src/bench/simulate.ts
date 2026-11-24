@@ -88,6 +88,33 @@ export function kendallTau(trueOrder: PairId[], position: Map<PairId, number>, k
   return concordant + discordant ? (concordant - discordant) / (concordant + discordant) : 1;
 }
 
+/**
+ * Kendall's tau over the true top `k`, counting only the orderings that can change
+ * where the couple matches: a pair of rows is left out when a swapped pair (see
+ * isMootComparison) is above both in the true order.
+ */
+export function kendallTauRelevant(trueOrder: PairId[], position: Map<PairId, number>, k = 100): number {
+  const truePos = new Map(trueOrder.map((id, i) => [id, i]));
+  const items = trueOrder.slice(0, k);
+  const sides = (id: PairId) => id.split('|');
+  let concordant = 0;
+  let discordant = 0;
+  for (let i = 0; i < items.length; i++) {
+    const [a1, b1] = sides(items[i]);
+    for (let j = i + 1; j < items.length; j++) {
+      const [a2, b2] = sides(items[j]);
+      if (a1 !== a2 && b1 !== b2) {
+        const above = [`${a1}|${b2}`, `${a2}|${b1}`].some((c) => (truePos.get(c) ?? Infinity) < i);
+        if (above) continue;
+      }
+      const d = position.get(items[i])! - position.get(items[j])!;
+      if (d < 0) concordant++;
+      else if (d > 0) discordant++;
+    }
+  }
+  return concordant + discordant ? (concordant - discordant) / (concordant + discordant) : 1;
+}
+
 export interface SimulationOptions {
   strategy: 'active' | 'random';
   questions?: number;
@@ -100,6 +127,9 @@ export interface SimulationResult {
   tauBefore: number;
   tauAfter: number;
   tauByQuestion: number[];
+  /** Same, counting only orderings that can change the outcome (kendallTauRelevant). */
+  relevantBefore: number;
+  relevantAfter: number;
   answered: number;
 }
 
@@ -120,12 +150,14 @@ export function simulateCouple(input: EngineInput, truth: ModelParams, opts: Sim
   const prior = priorPosterior(input.seed, particles);
   const comparisons: Comparison[] = [];
   const tauByQuestion: number[] = [];
+  const relevant: number[] = [];
   const fit = () => fitModel(prior, comparisons, { pairs, settings: input.settings, seed: input.seed });
 
   for (let q = 0; q <= questions; q++) {
     const posterior = fit();
     const list = rankPairs(graph, scorePairs(pairs, posterior, input.settings), { length: 10_000 });
     tauByQuestion.push(kendallTau(trueOrder, list.position, topK));
+    relevant.push(kendallTauRelevant(trueOrder, list.position, topK));
     if (q === questions) break;
 
     const pick =
@@ -147,6 +179,8 @@ export function simulateCouple(input: EngineInput, truth: ModelParams, opts: Sim
     tauBefore: tauByQuestion[0],
     tauAfter: tauByQuestion[tauByQuestion.length - 1],
     tauByQuestion,
+    relevantBefore: relevant[0],
+    relevantAfter: relevant[relevant.length - 1],
     answered: comparisons.length,
   };
 }

@@ -28,6 +28,8 @@ export interface ProgramInfo {
   cbsaCode?: string | null;
   nrmpCode?: string | null;
   isAdvanced?: boolean;
+  /** Abbreviation set in the database ("Hopkins Plastics"); the app derives one when absent. */
+  shortName?: string;
 }
 
 /** One row of a partner's individual rank list. */
@@ -85,6 +87,12 @@ export interface Pin {
   source: PinSource;
   /** When source = comparison, the comparison it came from (for explanations). */
   comparisonId?: string;
+  /**
+   * For a manual drag: which pair the couple moved. 'higher' = dragged up above `lower`,
+   * so it should land where `lower` was; 'lower' = dragged down below `higher`.
+   * Absent on older pins (and on other sources): the pin only constrains the order.
+   */
+  moved?: 'higher' | 'lower';
 }
 
 /** A program pair the couple will never accept. */

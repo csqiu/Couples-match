@@ -352,6 +352,7 @@ export type Database = {
           higher_pair: string
           id: string
           lower_pair: string
+          moved_pair: string | null
           source: Database["public"]["Enums"]["pin_source"]
         }
         Insert: {
@@ -362,6 +363,7 @@ export type Database = {
           higher_pair: string
           id?: string
           lower_pair: string
+          moved_pair?: string | null
           source: Database["public"]["Enums"]["pin_source"]
         }
         Update: {
@@ -372,6 +374,7 @@ export type Database = {
           higher_pair?: string
           id?: string
           lower_pair?: string
+          moved_pair?: string | null
           source?: Database["public"]["Enums"]["pin_source"]
         }
         Relationships: [
@@ -447,6 +450,7 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           name: string
           nrmp_code: string | null
+          short_name: string | null
           source: string
           specialty_code: string
           specialty_name: string
@@ -473,6 +477,7 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           name: string
           nrmp_code?: string | null
+          short_name?: string | null
           source: string
           specialty_code: string
           specialty_name: string
@@ -499,6 +504,7 @@ export type Database = {
           match_type?: Database["public"]["Enums"]["match_type"]
           name?: string
           nrmp_code?: string | null
+          short_name?: string | null
           source?: string
           specialty_code?: string
           specialty_name?: string
@@ -521,6 +527,30 @@ export type Database = {
             referencedColumns: ["code"]
           },
         ]
+      }
+      saved_rank_lists: {
+        Row: {
+          entries: Json
+          from_couple: string | null
+          match_type: Database["public"]["Enums"]["match_type"]
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          entries: Json
+          from_couple?: string | null
+          match_type: Database["public"]["Enums"]["match_type"]
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          entries?: Json
+          from_couple?: string | null
+          match_type?: Database["public"]["Enums"]["match_type"]
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       rule_exceptions: {
         Row: {
@@ -646,6 +676,7 @@ export type Database = {
         Returns: number
       }
       restore_version: { Args: { p_version: string }; Returns: undefined }
+      restore_saved_rank_list: { Args: { p_couple: string }; Returns: number }
       import_programs: { Args: { p_programs: Json }; Returns: { inserted: number; updated: number }[] }
       merge_programs: { Args: { p_from: string; p_to: string }; Returns: undefined }
       program_duplicates: { Args: never; Returns: { program_a: string; program_b: string; distance_mi: number }[] }

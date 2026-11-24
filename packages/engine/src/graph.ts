@@ -48,6 +48,13 @@ export interface Graph {
   tierACollision: TierACollision | null;
   /** Pins that refer to pairs that are not candidates (excluded, or a program was removed). */
   ignoredPins: number[];
+  /**
+   * Manual drags that say which pair was moved, in the order they were made. rank.ts
+   * replays them one by one so each pair lands where it was dropped.
+   */
+  drags: Array<{ higher: number; lower: number; moved: 'higher' | 'lower' }>;
+  /** Edges that exist only because of drags: edge key → index of the first drag that adds it. */
+  dragStage: Map<number, number>;
   /** Lazily computed strongly connected components (see conflicts.ts). */
   _scc?: { compOf: Int32Array; comps: number[][] };
 }
@@ -74,6 +81,8 @@ function createGraph(pairs: Pair[], settings: CoupleSettings): Graph {
     settings,
     tierACollision: null,
     ignoredPins: [],
+    drags: [],
+    dragStage: new Map(),
   };
 }
 
@@ -305,12 +314,20 @@ export function buildConstraintGraph(pairs: Pair[], input: EngineInput): Graph {
       g.ignoredPins.push(i);
       return;
     }
+    const edge = x * g.size + y;
+    const existed = g.reasons.has(edge);
     addEdge(g, x, y, {
       kind: 'pin',
       source: pin.source,
       ...(pin.id ? { pinId: pin.id } : {}),
       ...(pin.comparisonId ? { comparisonId: pin.comparisonId } : {}),
     });
+    if (pin.source === 'manual_drag' && pin.moved) {
+      if (!existed) g.dragStage.set(edge, g.drags.length);
+      g.drags.push({ higher: x, lower: y, moved: pin.moved });
+    } else {
+      g.dragStage.delete(edge);
+    }
   });
 
   return g;

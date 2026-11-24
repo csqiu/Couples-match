@@ -62,6 +62,13 @@ export const STOP_ORDER_CONFIDENCE = 0.9;
 export const STOP_ADJACENT_FRACTION = 0.9;
 export const STOP_TOP = 100;
 export const MAX_QUESTIONS = 40;
+/**
+ * A comparison between (a1, b1) and (a2, b2) is moot when a "swapped" pair (a1, b2) or
+ * (a2, b1) sits above both: whenever both are reachable in the Match, the swapped pair is
+ * too, so their order never decides the outcome. "Above" means a hard rule, or the
+ * current list with at least this much model confidence. See DECISIONS.md.
+ */
+export const MOOT_CONFIDENCE = 0.9;
 
 /** An answer is "surprising" when the model predicts the opposite with at least this probability. */
 export const SURPRISE_THRESHOLD = 0.85;

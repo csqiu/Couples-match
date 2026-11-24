@@ -669,3 +669,55 @@ option was taken. Newest phases are at the bottom.
      - We have no `service_role` key anywhere, so there's no secret key to migrate.
      - Once the deployed app uses the new key, the legacy keys can be switched off under
        Settings → API Keys. That's reversible.
+
+## Bug-log fixes (November 2026)
+
+112. **Moot comparisons are never asked** (bug log #9–#11). Take (a1, b1) and (a2, b2)
+     where the partners are at different programs in each. If both pairs are reachable
+     in the Match, partner 1 can get a1 and partner 2 can get b2, so the "swapped"
+     pair (a1, b2) is reachable too, and likewise (a2, b1). If a swapped pair sits above
+     both, the Match stops there first, and the order of the two never decides the
+     outcome.
+     - "Above" means a hard rule, or above in the current list with ≥ 90% model
+       confidence (`MOOT_CONFIDENCE`). Hard rules alone wouldn't cover the case in the bug
+       log: Hopkins–Penn is farther apart than Hopkins–X, so no rule puts it on top.
+     - Pairs that share a program have no swapped pair and stay askable. An excluded
+       swapped pair doesn't count, so the question comes back.
+     - It's an approximation: it assumes whether you can get a program doesn't depend
+       on your partner's outcome.
+     - List confidence counts a moot neighbour as settled.
+     - Benchmark (`pnpm --filter @pairwise/engine bench`), counting only orderings that
+       can change the outcome: 0.974 → 0.970 after 40 questions, within noise. The old
+       all-orderings figure fell from 0.962 to 0.943, as expected: it scores the moot
+       orderings the engine no longer asks about. The bench now prints both.
+113. **Drags land where they were dropped.** A drag pin used to say only "above", so a pair
+     dragged up stayed behind everything that scored higher, and the target was pushed
+     down to it instead. Pins now record which pair was moved (`pins.moved_pair`), and
+     `rankPairs` replays the drags in the order they were made, each on the list as it
+     stood just before it:
+     - dragged up: the pair takes the target's place; the rows in between move down one;
+     - dragged down: it lands right below the target; the rows in between move up one;
+     - pairs that must stay above it by a hard rule come along.
+     Older pins (no `moved_pair`) still constrain the order but aren't replayed.
+114. **No Match rows end the list in a fixed order** (#15) while "No Match at the bottom"
+     is on: partner 1 matches and partner 2 doesn't, in partner 1's order (1–NM, 2–NM, …),
+     then the reverse (NM–1, NM–2, …). No Match–No Match is never a candidate. Their model
+     scores no longer order them.
+115. **Short program names** (#14) are derived from the full name
+     (`packages/data/src/short-name.ts`): a table of well-known institutions (Hopkins, MGH,
+     UCSF…), filler words dropped, and resident abbreviations for specialties (IM, Ortho,
+     Plastics…). `programs.short_name` overrides it where an admin sets one. Used where
+     space is tight (cards, the map, the final list's side panel); the full name stays in
+     exports and print.
+116. **A program list belongs to its person, not the couple** (bug log #1). Rank rows still
+     live with a couple (the engine, row level security and versions all work per couple),
+     but the list now outlives it:
+     - When a couple ends (leaving, or a partner deleting their account), each partner's
+       list is saved to them in `saved_rank_lists`: ranks, tiers, notes, NRMP codes.
+     - Starting or joining the next couple in the same match brings it back automatically.
+     - "Bring back my list" on the Programs step does it by hand, into an empty list only
+       (for lists saved before this change). Lists from couples that had already ended were
+       backfilled by the migration.
+     - Programs a couple added by hand belong to that couple and are deleted with it, so
+       they're left out.
+     - One saved list per person: the latest couple to end wins. It's deleted with the account.

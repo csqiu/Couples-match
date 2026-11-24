@@ -8,13 +8,23 @@ import { createClient } from '@/lib/supabase/server';
 
 type Result = { error?: string; id?: string };
 
-/** A manual drag the hard rules allow: saved as an ordering the couple asserted. */
-export async function addDragPin(higher: string, lower: string): Promise<Result> {
+/**
+ * A manual drag the hard rules allow: saved as an ordering the couple asserted, with
+ * which pair they moved so the engine puts it exactly where it was dropped.
+ */
+export async function addDragPin(higher: string, lower: string, moved: 'higher' | 'lower' = 'higher'): Promise<Result> {
   const ctx = await requireCouple();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('pins')
-    .insert({ couple_id: ctx.couple.id, higher_pair: higher, lower_pair: lower, source: 'manual_drag', created_by: ctx.user.id })
+    .insert({
+      couple_id: ctx.couple.id,
+      higher_pair: higher,
+      lower_pair: lower,
+      source: 'manual_drag',
+      moved_pair: moved === 'lower' ? 'lower' : 'higher',
+      created_by: ctx.user.id,
+    })
     .select('id')
     .single();
   if (error) return { error: error.message };
@@ -31,15 +41,37 @@ export async function removePin(id: string): Promise<Result> {
   return {};
 }
 
-export async function setListLength(length: number): Promise<Result> {
+async function updateSettings(change: (s: StoredSettings) => StoredSettings): Promise<Result> {
   const ctx = await requireCouple();
-  const n = Math.max(1, Math.min(NRMP_RULES.maxRanksPerPartner, Math.round(length)));
-  const settings: StoredSettings = { ...((ctx.couple.settings ?? {}) as StoredSettings), listLength: n };
   const supabase = await createClient();
+  // Read the latest settings, so a partner's change to another field isn't overwritten.
+  const { data: row } = await supabase.from('couples').select('settings').eq('id', ctx.couple.id).single();
+  const settings = change({ ...(((row?.settings ?? ctx.couple.settings) ?? {}) as StoredSettings) });
   const { error } = await supabase.from('couples').update({ settings: settings as never }).eq('id', ctx.couple.id);
   if (error) return { error: error.message };
   revalidatePath('/app', 'layout');
   return {};
+}
+
+export async function setListLength(length: number): Promise<Result> {
+  const n = Math.max(1, Math.min(NRMP_RULES.maxRanksPerPartner, Math.round(length)));
+  return updateSettings((s) => ({ ...s, listLength: n }));
+}
+
+/** Pairs added to the final list by hand (from "Not on your list"), or taken off again. */
+export async function setIncluded(pairId: string, included: boolean): Promise<Result> {
+  if (!/^[^|]+\|[^|]+$/.test(pairId)) return { error: 'Unknown pair.' };
+  return updateSettings((s) => {
+    const ids = new Set(s.includedPairs ?? []);
+    if (included) ids.add(pairId);
+    else ids.delete(pairId);
+    return { ...s, includedPairs: [...ids] };
+  });
+}
+
+/** Locked: the No Match rows stay at the end in their fixed order. Unlocked: they can be dragged. */
+export async function setNoMatchUnlocked(unlocked: boolean): Promise<Result> {
+  return updateSettings((s) => ({ ...s, noMatchUnlocked: unlocked }));
 }
 
 /**

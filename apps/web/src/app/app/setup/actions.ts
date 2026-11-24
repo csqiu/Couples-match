@@ -97,6 +97,25 @@ export async function invitePartner(_: FormState, form: FormData): Promise<FormS
   };
 }
 
+/**
+ * A fresh invite link to copy and send yourself, whether or not email is set up
+ * (bug log #2). It replaces any earlier invite or link.
+ */
+export async function newInviteLink(_: FormState, form: FormData): Promise<FormState> {
+  const ctx = await requireContext();
+  if (!ctx.couple) return { error: 'Start your couple first.' };
+  const email = String(form.get('email') ?? '').trim().toLowerCase() || ctx.openInvite?.email || '';
+  if (!email) return { error: 'Enter your partner’s email first: the link only works for that address.' };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('create_invite', { p_couple: ctx.couple.id, p_email: email });
+  if (error || !data?.[0]) return { error: friendly(error?.message ?? 'Could not create the link.') };
+  revalidatePath('/app/setup');
+  return {
+    ok: `New link for ${email}. Send it to them yourself — it works once, only for that email, for 7 days. Earlier links no longer work.`,
+    inviteLink: `${APP_URL}/invite/${data[0].token}`,
+  };
+}
+
 export async function revokeInvite(inviteId: string) {
   const supabase = await createClient();
   await supabase.rpc('revoke_invite', { p_invite: inviteId });

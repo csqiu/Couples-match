@@ -1,13 +1,12 @@
 'use client';
 import type { ComparisonRow, CoupleData } from '@pairwise/db';
-import { Undo2 } from 'lucide-react';
+import { Check, ChevronsUp, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { MiniMap } from '@/components/mini-map';
 import { BandBadge as ProximityBadge } from '@/components/proximity';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import type { PairView, QuestionView } from '@/lib/analysis';
 import { cn } from '@/lib/cn';
@@ -45,11 +44,12 @@ export function PairCard({
       <div className="flex flex-1 flex-col gap-3 p-4">
         <BandBadge pair={pair} />
         {pair.sides.map((side, k) => (
-          <div key={k}>
-            <p className="text-xs text-muted">{names[k]}</p>
+          <div key={k} className={cn('border-l-4 pl-3', k === 0 ? 'border-partner-1' : 'border-partner-2')}>
+            <p className={cn('text-base font-semibold', k === 0 ? 'text-partner-1' : 'text-partner-2')}>{names[k]}</p>
             {side ? (
               <>
-                <p className="font-medium leading-snug">{side.name}</p>
+                <p className="font-medium leading-snug" title={side.name}>{side.short}</p>
+                {side.short !== side.name ? <p className="text-xs leading-snug text-muted">{side.name}</p> : null}
                 <p className="flex items-center gap-2 text-sm text-muted">
                   {side.place}
                   {side.tier && hideTierOf !== k ? <Badge tone={side.tier}>Tier {side.tier}</Badge> : null}
@@ -82,7 +82,6 @@ export function CompareView({
   privateTiers: boolean;
 }) {
   const [local, setLocal] = useState<LocalAnswer[]>([]);
-  const [certain, setCertain] = useState(false);
   const [saving, setSaving] = useState(0);
   const [, startSave] = useTransition();
   const toast = useToast();
@@ -99,7 +98,9 @@ export function CompareView({
   const hideTierOf = privateTiers ? (role === 'a' ? 1 : 0) : null;
   const partnerName = role === 'a' ? names[1] : names[0];
 
-  function choose(q: QuestionView, winner: 'left' | 'right' | 'tie') {
+  /** `strong`: "Strong preference for this pair" — saved as a locked answer (a pin the list can't override). */
+  function choose(q: QuestionView, winner: 'left' | 'right' | 'tie', strong = false) {
+    const certain = strong && winner !== 'tie';
     const tempId = `local-${Date.now()}`;
     const row: LocalAnswer['row'] = {
       id: tempId,
@@ -108,12 +109,11 @@ export function CompareView({
       winner,
       answered_by: me,
       both_agreed: answerMode === 'together',
-      locked: certain && winner !== 'tie',
+      locked: certain,
       seq: Number.MAX_SAFE_INTEGER - 1000 + local.length,
     };
     setLocal((xs) => [...xs, { tempId, row }]);
     const wasCertain = certain;
-    setCertain(false);
     setSaving((n) => n + 1);
     startSave(async () => {
       const res = await answer({ left: q.left.id, right: q.right.id, winner, certain: wasCertain }).finally(() =>
@@ -155,9 +155,12 @@ export function CompareView({
             matters to you{answerMode === 'together' ? ' as a couple' : ''}.
           </p>
         </div>
-        <Link href="/app/conflicts" className={buttonVariants({ variant: 'secondary' })}>
-          Conflicts{result.conflicts.length ? ` (${result.conflicts.length})` : ''}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/app/conflicts" className={buttonVariants({ variant: 'secondary' })}>
+            Conflicts{result.conflicts.length ? ` (${result.conflicts.length})` : ''}
+          </Link>
+          <Link href="/app/list" className={buttonVariants({ variant: 'secondary' })}>Final list</Link>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-border bg-surface p-4">
@@ -170,7 +173,9 @@ export function CompareView({
         </div>
         <p className="mt-2 text-xs text-muted">
           {result.answered} answer{result.answered === 1 ? '' : 's'} so far.
-          {result.done ? ' Your list is in good shape — you can stop here or keep going.' : ''}
+          {result.done
+            ? ' Your list is in good shape — you can stop here or keep going.'
+            : ' Your full list is ready on the Final list step at any time; more answers just sharpen it.'}
           {local.length ? (
             <span className="ml-1" aria-live="polite" data-testid="save-status">
               {saving > 0 ? 'Saving…' : 'All answers saved.'}
@@ -185,27 +190,16 @@ export function CompareView({
             <p className="rounded-xl bg-accent-soft px-4 py-2 text-sm text-accent">{partnerName} answered this one — what’s your take? (You’ll see if you differ.)</p>
           ) : null}
           <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
-            <PairCard
-              pair={q.left}
-              names={names}
-              hideTierOf={hideTierOf}
-              action={<Button className="w-full" disabled={busy} onClick={() => choose(q, 'left')}>Choose this pair</Button>}
-            />
+            <PairCard pair={q.left} names={names} hideTierOf={hideTierOf} action={<ChoiceButtons disabled={busy} onChoose={(strong) => choose(q, 'left', strong)} />} />
             <div className="flex items-center justify-center">
               <span className="text-sm font-medium text-muted">or</span>
             </div>
-            <PairCard
-              pair={q.right}
-              names={names}
-              hideTierOf={hideTierOf}
-              action={<Button className="w-full" disabled={busy} onClick={() => choose(q, 'right')}>Choose this pair</Button>}
-            />
+            <PairCard pair={q.right} names={names} hideTierOf={hideTierOf} action={<ChoiceButtons disabled={busy} onChoose={(strong) => choose(q, 'right', strong)} />} />
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <label className="flex items-center gap-1 text-sm">
-              <Switch checked={certain} onChange={setCertain} label="I’m certain" />
-              I’m certain <span className="text-muted">(this order can’t be overridden)</span>
-            </label>
+            <p className="text-xs text-muted">
+              <strong className="font-semibold text-text">Strong preference</strong> locks this order: nothing later can put the other pair above it.
+            </p>
             <div className="flex gap-2">
               {lastMine ? (
                 <Button
@@ -228,6 +222,25 @@ export function CompareView({
           <Link href="/app/conflicts" className={buttonVariants()}>Check conflicts</Link>
         </Empty>
       )}
+    </div>
+  );
+}
+
+/** Two answers per card: a plain choice, and a strong one that locks the order (bug log #8). */
+function ChoiceButtons({ disabled, onChoose }: { disabled: boolean; onChoose: (strong: boolean) => void }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <Button className="w-full" disabled={disabled} onClick={() => onChoose(false)}>
+        <Check className="h-4 w-4" aria-hidden /> Choose this pair
+      </Button>
+      <Button
+        variant="secondary"
+        className="w-full border-2 border-accent font-semibold text-accent hover:bg-accent-soft"
+        disabled={disabled}
+        onClick={() => onChoose(true)}
+      >
+        <ChevronsUp className="h-4 w-4" aria-hidden /> Strong preference for this pair
+      </Button>
     </div>
   );
 }

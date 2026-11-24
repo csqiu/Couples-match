@@ -28,8 +28,15 @@ export default async function ProgramsPage() {
     .order('name')
     .limit(SEARCH_LIMIT);
 
+  // A list saved when an earlier couple ended, offered back while this list is empty (bug log #1).
+  const { data: saved } = mine.length
+    ? { data: null }
+    : await supabase.from('saved_rank_lists').select('entries, match_type').eq('user_id', ctx.user.id).maybeSingle();
+  const savedCount = saved && saved.match_type === ctx.couple.match_type && Array.isArray(saved.entries) ? saved.entries.length : 0;
+
   return (
     <ProgramsView
+      savedCount={savedCount}
       mySpecialty={ctx.profile.specialty!}
       specialties={specialties ?? []}
       initialResults={(initial ?? []) as ProgramLite[]}

@@ -27,7 +27,7 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
   const [hidden, setHidden] = useState<Set<MapBand>>(new Set());
   const [selected, setSelected] = useState<number | null>(null);
 
-  const rows = useMemo(() => result?.rows.slice(0, Math.min(listLength, result.length)) ?? [], [result, listLength]);
+  const rows = useMemo(() => result?.rows.slice(0, result.length) ?? [], [result]);
   const shown = Math.min(top, rows.length);
   const map = useMemo(() => listMap(rows, data.programs, shown), [rows, data.programs, shown]);
   const visible = useMemo(() => map.lines.filter((l) => !hidden.has(l.band)), [map, hidden]);

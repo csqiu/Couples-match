@@ -14,7 +14,7 @@ async function snapshot(db: Db, coupleId: string) {
     [ranks.map((r) => r.program_id)],
   );
   const comparisons = await db.query<CoupleData['comparisons'][number]>('select id, pair_left, pair_right, winner, answered_by, both_agreed, locked, seq from comparisons where couple_id = $1', [coupleId]);
-  const pins = await db.query<CoupleData['pins'][number]>('select id, higher_pair, lower_pair, source, comparison_id from pins where couple_id = $1', [coupleId]);
+  const pins = await db.query<CoupleData['pins'][number]>('select id, higher_pair, lower_pair, source, comparison_id, moved_pair from pins where couple_id = $1 order by created_at, id', [coupleId]);
   return buildEngineInput({ couple, programs, ranks, comparisons, pins, exclusions: [], exceptions: [] });
 }
 
@@ -38,6 +38,9 @@ describe('Restoring a version', () => {
         [coupleId, left, right, a.id],
       );
       await db.query(`insert into pins (couple_id, higher_pair, lower_pair, source, comparison_id, created_by) values ($1, $2, $3, 'comparison', $4, $5)`, [coupleId, left, right, cmp, a.id]);
+      // Two drags, made in this order: the second one dragged down.
+      await db.query(`insert into pins (couple_id, higher_pair, lower_pair, source, created_by, moved_pair, created_at) values ($1, $2, $3, 'manual_drag', $4, 'higher', now() + interval '1 second')`, [coupleId, right, `${IM[0]}|${PEDS[1]}`, a.id]);
+      await db.query(`insert into pins (couple_id, higher_pair, lower_pair, source, created_by, moved_pair, created_at) values ($1, $2, $3, 'manual_drag', $4, 'lower', now() + interval '2 second')`, [coupleId, left, `${IM[1]}|${PEDS[0]}`, a.id]);
       await db.query(`update couples set settings = '{"balance": 1.3, "privacy": "shared"}' where id = $1`, [coupleId]);
 
       const snap = await snapshot(db, coupleId);
@@ -65,7 +68,11 @@ describe('Restoring a version', () => {
       ]);
       expect(ranks[0].nrmp_code).toBe('1234140C0');
       expect(await db.query('select id, locked from comparisons where couple_id = $1', [coupleId])).toEqual([{ id: cmp, locked: true }]);
-      expect(await db.query('select comparison_id from pins where couple_id = $1', [coupleId])).toEqual([{ comparison_id: cmp }]);
+      expect(await db.query('select comparison_id, moved_pair from pins where couple_id = $1 order by created_at', [coupleId])).toEqual([
+        { comparison_id: cmp, moved_pair: null },
+        { comparison_id: null, moved_pair: 'higher' },
+        { comparison_id: null, moved_pair: 'lower' },
+      ]);
       const { settings } = await db.one<{ settings: Record<string, unknown> }>('select settings from couples where id = $1', [coupleId]);
       expect(settings.balance).toBe(1.3);
       expect(settings.privacy).toBe('private_tiers'); // app-only setting untouched
