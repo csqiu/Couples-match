@@ -20,6 +20,6 @@ function handle(req: EngineRequest): unknown {
     case 'list':
       return computeFinalList(req.data, req.opts);
     case 'move':
-      return checkMove(req.data, req.moving, req.target, req.names);
+      return checkMove(req.data, req.moving, req.target, req.names, req.moved);
   }
 }

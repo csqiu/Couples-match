@@ -5,7 +5,7 @@ import { checkMove, computeFinalList, type FinalList, type ListOptions, type Mov
 export type EngineRequest =
   | { kind: 'analyze'; data: CoupleData; opts: AnalyzeOptions }
   | { kind: 'list'; data: CoupleData; opts: ListOptions }
-  | { kind: 'move'; data: CoupleData; moving: string; target: string; names: [string, string] };
+  | { kind: 'move'; data: CoupleData; moving: string; target: string; names: [string, string]; moved?: 'higher' | 'lower' };
 
 export type EngineResponse<R extends EngineRequest> = R['kind'] extends 'analyze'
   ? Analysis
@@ -21,6 +21,6 @@ export function runLocally(req: EngineRequest): unknown {
     case 'list':
       return computeFinalList(req.data, req.opts);
     case 'move':
-      return checkMove(req.data, req.moving, req.target, req.names);
+      return checkMove(req.data, req.moving, req.target, req.names, req.moved);
   }
 }

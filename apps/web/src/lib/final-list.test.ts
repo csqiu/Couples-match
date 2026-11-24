@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { toCsv } from './csv-export';
-import { checkMove, checklistFor, computeFinalList, feesFor, type ListRow } from './final-list';
+import { checkMove, checklistFor, computeFinalList, feesFor, RANK_LIMIT, type ListRow } from './final-list';
 import { couple, names } from './test-fixtures';
 
 const opts = { names, matchType: 'main' as const };
@@ -51,7 +51,7 @@ describe('final list', () => {
     const free = list.rows.findIndex((r, i) => i > 0 && /fits your answers better/.test(r.why));
     expect(free).toBeGreaterThan(0);
     const ok = checkMove(data, list.rows[free].pairId, list.rows[free - 1].pairId, names);
-    expect(ok).toEqual({ ok: true, pin: { higher: list.rows[free].pairId, lower: list.rows[free - 1].pairId, source: 'manual_drag' } });
+    expect(ok).toEqual({ ok: true, pin: { higher: list.rows[free].pairId, lower: list.rows[free - 1].pairId, source: 'manual_drag', moved: 'higher' } });
   });
 
   it('exports CSV with both partners’ programs and codes', () => {
@@ -59,5 +59,40 @@ describe('final list', () => {
     const [header, first] = csv.trim().split('\n');
     expect(header).toBe('Rank,Alex program,Alex NRMP code,Sam program,Sam NRMP code,Distance (mi),Band');
     expect(first.startsWith('1,')).toBe(true);
+  });
+
+  it('No Match rows are locked at the end as 1–NM, 2–NM, …, NM–1, NM–2, …', () => {
+    const nm = list.rows.filter((r) => r.band === 'no_match');
+    expect(nm.every((r) => r.locked)).toBe(true);
+    expect(nm.map((r) => (r.sides[1].id === 'NO_MATCH' ? `a${r.sides[0].id}` : `b${r.sides[1].id}`))).toEqual([
+      ...data.ranks.filter((r) => r.user_id === 'user-a').map((r) => `a${r.program_id}`),
+      ...data.ranks.filter((r) => r.user_id === 'user-b').map((r) => `b${r.program_id}`),
+    ]);
+    expect(list.rows.slice(-nm.length)).toEqual(nm);
+    expect(list.rows.some((r) => r.sides[0].id === 'NO_MATCH' && r.sides[1].id === 'NO_MATCH')).toBe(false);
+    const unlocked = computeFinalList(couple({ settings: { tierAPriority: 'partner1', noMatchUnlocked: true } }), opts);
+    expect(unlocked.noMatchLocked).toBe(false);
+    expect(unlocked.rows.some((r) => r.locked)).toBe(false);
+  });
+
+  it('a shorter length cuts both-match pairs; they show in "Not on your list" and can be added back', () => {
+    const short = computeFinalList(couple({ settings: { tierAPriority: 'partner1', listLength: 12 } }), opts);
+    expect(short.target).toBe(12);
+    expect(short.rows).toHaveLength(12); // 4 both-match pairs + 8 No Match rows
+    expect(short.rows.filter((r) => r.band !== 'no_match')).toHaveLength(4);
+    expect(short.available).toHaveLength(16 - 4);
+    const pick = short.available[3].pairId;
+    const withPick = computeFinalList(couple({ settings: { tierAPriority: 'partner1', listLength: 12, includedPairs: [pick] } }), opts);
+    expect(withPick.rows).toHaveLength(13);
+    expect(withPick.rows.find((r) => r.pairId === pick)?.added).toBe(true);
+    expect(withPick.available.some((p) => p.pairId === pick)).toBe(false);
+  });
+
+  it('pairs added past the limit make the list longer than 300; only the first 300 count', () => {
+    const fake = (i: number): ListRow => ({ ...list.rows[0], rank: i + 1, pairId: `p${i}` });
+    const rows = Array.from({ length: RANK_LIMIT + 12 }, (_, i) => fake(i));
+    const items = checklistFor(rows, RANK_LIMIT, names, false);
+    expect(items.find((i) => i.label.includes(`${RANK_LIMIT}-rank limit`))).toMatchObject({ ok: false });
+    expect(feesFor(rows, RANK_LIMIT).ranks).toBe(RANK_LIMIT);
   });
 });
