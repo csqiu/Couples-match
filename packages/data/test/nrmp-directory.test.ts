@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applySeedPositions, directoryToPrograms, institutionName, type DirectoryRow } from '../src/nrmp-directory';
+import { applySeedPositions, directoryCity, directoryToPrograms, institutionName, type DirectoryRow } from '../src/nrmp-directory';
 import { SEED_PROGRAMS } from '../src/seed';
 import { stateAbbreviation, tidyCity } from '../src/us-states';
 
@@ -83,6 +83,9 @@ describe('NRMP directory import', () => {
     expect(tidyCity('LOS ANGELES')).toBe('Los Angeles');
     expect(tidyCity('WINSTON-SALEM')).toBe('Winston-Salem');
     expect(tidyCity('La Jolla')).toBe('La Jolla');
+    expect(directoryCity('Cincinnnati', 'OH')).toBe('Cincinnati');
+    expect(directoryCity('.', 'CT')).toBe('New Haven');
+    expect(directoryCity('7346474144', 'MI')).toBe('Ann Arbor');
     expect(stateAbbreviation('District Of Columbia')).toBe('DC');
     expect(stateAbbreviation('Puerto Rico')).toBe('PR');
   });

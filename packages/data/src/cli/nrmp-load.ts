@@ -13,7 +13,7 @@
  *      couples who listed a seed program keep their place, answers and codes.
  *
  * Needs, in the environment (or apps/web/.env.local):
- *   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+ *   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
  *   PAIRWISE_ADMIN_EMAIL, PAIRWISE_ADMIN_PASSWORD  (an account with profiles.is_admin)
  */
 import { existsSync, readFileSync } from 'node:fs';
@@ -56,9 +56,10 @@ if (dryRun) process.exit(0);
 
 const e = env();
 const url = e.NEXT_PUBLIC_SUPABASE_URL;
-const anon = e.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// The publishable key goes on the apikey header only (it isn't a JWT); the admin's session goes on Authorization.
+const anon = e.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 if (!url || !anon || !e.PAIRWISE_ADMIN_EMAIL || !e.PAIRWISE_ADMIN_PASSWORD) {
-  throw new Error('Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, PAIRWISE_ADMIN_EMAIL and PAIRWISE_ADMIN_PASSWORD.');
+  throw new Error('Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, PAIRWISE_ADMIN_EMAIL and PAIRWISE_ADMIN_PASSWORD.');
 }
 
 const auth = await fetch(`${url}/auth/v1/token?grant_type=password`, {

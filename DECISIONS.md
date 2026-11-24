@@ -621,6 +621,11 @@ option was taken. Newest phases are at the bottom.
      - The directory has city and state, no street address. Each of its 983 cities was
        looked up once on OpenStreetMap (allowing Puerto Rico) and saved in
        `packages/data/seed/nrmp-cities.json`.
+     - The directory has 37 bad city values: typos ("Cincinnnati", "San Franciso"), a
+       phone number, a room number, ".". They're corrected in a table in
+       `nrmp-directory.ts`, using the program name where the city itself was junk
+       (Yale → New Haven). That leaves 950 cities, all found. Each match was checked to
+       be in the right state.
      - These locations are stored with confidence 0.5 (city centre).
      - Distance bands start at 30 miles ("together"), so city-level is enough for
        between-city trade-offs. Two programs in the same city count as 0 miles apart.
@@ -650,3 +655,17 @@ option was taken. Newest phases are at the bottom.
      Supplemental lists for advanced programs (the preliminary year to go with an
      advanced position) aren't modelled. Couples can rank preliminary and advanced
      tracks as separate programs.
+
+111. **Supabase publishable key instead of the legacy `anon` key.**
+     - Supabase retires the JWT-based `anon` and `service_role` keys at the end of 2026.
+       Their replacement, the publishable key, has the same low privileges (row level
+       security applies) and can be rotated on its own.
+     - The app (browser, server and proxy) and the `nrmp:load` script now read
+       `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. There's no fallback to the old variable:
+       a missing key fails loudly instead of quietly using a legacy one.
+     - The `send-invite` function reads `SUPABASE_PUBLISHABLE_KEYS.default`. It keeps
+       the platform's JWT check, because it's called with the user's own session token,
+       not with an API key.
+     - We have no `service_role` key anywhere, so there's no secret key to migrate.
+     - Once the deployed app uses the new key, the legacy keys can be switched off under
+       Settings → API Keys. That's reversible.

@@ -139,10 +139,11 @@ The end-to-end tests sign in as three test accounts: `alex.e2e@example.test`,
 `apps/web/.env.local`. Reset their data first with `supabase/tests/e2e-reset.sql`.
 
 **Supabase project:** `pairwise` in the Infinite Games organization (free tier, US East),
-at `https://julbfusuwcjptyobguxm.supabase.co`. All seven migrations, the specialties and
-the 57 seed programs are loaded, and the invite email function is deployed. The
-project's public key is under Settings → API in the Supabase dashboard; it goes in
-`.env.local`.
+at `https://julbfusuwcjptyobguxm.supabase.co`. All eight migrations, the specialties and
+the NRMP program list are loaded, and the invite email function is deployed. The app
+uses the project's **publishable key** (`sb_publishable_…`, under Settings → API Keys in
+the Supabase dashboard), not the legacy `anon` key; it goes in `.env.local` as
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 
 **Environment variables** are listed in [`.env.example`](.env.example). Copy it to
 `.env.local` and fill it in; never commit real values. Nothing is needed to run the

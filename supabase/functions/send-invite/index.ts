@@ -8,7 +8,7 @@
 // POST { coupleId: string, email: string }  →  { inviteId, expiresAt }
 //
 // Secrets (set with `supabase secrets set`): RESEND_API_KEY, INVITE_FROM_EMAIL, APP_URL.
-// SUPABASE_URL and SUPABASE_ANON_KEY are provided by the platform.
+// SUPABASE_URL and SUPABASE_PUBLISHABLE_KEYS (JSON, by key name) are provided by the platform.
 
 import { createClient } from 'npm:@supabase/supabase-js@2.119.2';
 
@@ -43,7 +43,8 @@ Deno.serve(async (req) => {
   if (!body.coupleId || !body.email) return json(400, { error: 'coupleId_and_email_required' });
 
   // A client that acts as the caller, so RLS and the function's own checks apply.
-  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+  const publishableKey = JSON.parse(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS') ?? '{}').default as string;
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, publishableKey, {
     global: { headers: { Authorization: authorization } },
     auth: { persistSession: false },
   });

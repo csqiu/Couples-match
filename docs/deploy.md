@@ -27,7 +27,7 @@ These figures are from published 2025 pricing and weren’t checked live; confir
    | Name | Value |
    |---|---|
    | `NEXT_PUBLIC_SUPABASE_URL` | `https://julbfusuwcjptyobguxm.supabase.co` |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase dashboard → Settings → API → the `anon` public key |
+   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase dashboard → Settings → API Keys → “Publishable and secret API keys” → the `default` publishable key (starts `sb_publishable_`). Not the legacy `anon` key. |
    | `APP_URL` | Your public address, e.g. `https://pairwise.app` (optional: without it the Vercel production address is used) |
 
    Do **not** set `PAIRWISE_DEV_LOGIN`. (The test sign-in is switched off in production

@@ -8,7 +8,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseCsv } from '../csv';
 import { throttle } from '../geocode';
-import { stateAbbreviation, tidyCity } from '../us-states';
+import { directoryCity } from '../nrmp-directory';
+import { stateAbbreviation } from '../us-states';
 
 export interface CityPoint {
   lat: number;
@@ -22,7 +23,9 @@ if (!file) throw new Error('Usage: nrmp:cities <csv>');
 const out = new URL('../../seed/nrmp-cities.json', import.meta.url);
 const cities: Record<string, CityPoint | null> = existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : {};
 const rows = parseCsv(readFileSync(file, 'utf8').replace(/^﻿/, ''));
-const wanted = [...new Set(rows.map((r) => `${tidyCity(r['City'])}, ${stateAbbreviation(r['State'])}`))].sort();
+const wanted = [...new Set(rows.map((r) => `${directoryCity(r['City'], stateAbbreviation(r['State'])!)}, ${stateAbbreviation(r['State'])}`))].sort();
+// Forget cities no longer wanted (e.g. a typo that's now corrected).
+for (const k of Object.keys(cities)) if (!wanted.includes(k)) delete cities[k];
 const todo = wanted.filter((k) => !(k in cities));
 console.log(`${wanted.length} cities, ${todo.length} to look up`);
 

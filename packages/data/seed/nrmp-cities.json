@@ -1,16 +1,9 @@
 {
- "., CT": null,
- "., TN": {
-  "lat": 40.4124541,
-  "lon": -90.8368406,
-  "matched": "Tennessee, McDonough County, Illinois, United States"
- },
  ".Brooksville, FL": {
   "lat": 28.5552719,
   "lon": -82.3878709,
   "matched": "Brooksville, Hernando County, Florida, United States"
  },
- "7346474144, MI": null,
  "Abingdon, VA": {
   "lat": 36.7104018,
   "lon": -81.975249,
@@ -236,7 +229,6 @@
   "lon": -76.610759,
   "matched": "Baltimore, Maryland, United States"
  },
- "Baltinore, MD": null,
  "Bangor, ME": {
   "lat": 44.8016255,
   "lon": -68.7713289,
@@ -342,7 +334,6 @@
   "lon": -87.7936685,
   "matched": "Berwyn, Cook County, Illinois, 60402, United States"
  },
- "Bethelem, PA": null,
  "Bethesda, MD": {
   "lat": 38.9846816,
   "lon": -77.0942447,
@@ -518,7 +509,6 @@
   "lon": -82.3878709,
   "matched": "Brooksville, Hernando County, Florida, United States"
  },
- "Brookyln, NY": null,
  "Brunswick, GA": {
   "lat": 31.1499528,
   "lon": -81.4914894,
@@ -594,7 +584,11 @@
   "lon": -89.216655,
   "matched": "Carbondale, Jackson County, Illinois, 62901, United States"
  },
- "Carmel Hamlet, NY": null,
+ "Carmel, NY": {
+  "lat": 41.4266361,
+  "lon": -73.6788272,
+  "matched": "Town of Carmel, Putnam County, New York, United States"
+ },
  "Carmichael, CA": {
   "lat": 38.6270985,
   "lon": -121.3222422,
@@ -665,7 +659,6 @@
   "lon": -71.0619957,
   "matched": "Charlestown, Boston, Suffolk County, Massachusetts, 02129, United States"
  },
- "Charletson, SC": null,
  "Charlotte, NC": {
   "lat": 35.2272086,
   "lon": -80.8430827,
@@ -736,7 +729,6 @@
   "lon": -84.5127405,
   "matched": "Cincinnati, Hamilton County, Ohio, United States"
  },
- "Cincinnnati, OH": null,
  "Clarion, PA": {
   "lat": 41.2148975,
   "lon": -79.3857047,
@@ -831,6 +823,11 @@
   "lat": 42.5911431,
   "lon": -83.4907721,
   "matched": "Commerce Charter Township, Oakland County, Michigan, 48382, United States"
+ },
+ "concord, NC": {
+  "lat": 35.4094178,
+  "lon": -80.5800049,
+  "matched": "Concord, Cabarrus County, North Carolina, United States"
  },
  "Concord, NC": {
   "lat": 35.4094178,
@@ -1067,11 +1064,6 @@
   "lon": -75.1304588,
   "matched": "Doylestown, Bucks County, Pennsylvania, 18901, United States"
  },
- "DuBois, PA": {
-  "lat": 41.118651,
-  "lon": -78.7622342,
-  "matched": "DuBois, Clearfield County, Pennsylvania, 15801, United States"
- },
  "Duarte, CA": {
   "lat": 34.1394513,
   "lon": -117.9772873,
@@ -1081,6 +1073,11 @@
   "lat": 40.0996009,
   "lon": -83.1135563,
   "matched": "Dublin, Washington Township, Franklin County, Ohio, 43016, United States"
+ },
+ "DuBois, PA": {
+  "lat": 41.118651,
+  "lon": -78.7622342,
+  "matched": "DuBois, Clearfield County, Pennsylvania, 15801, United States"
  },
  "Duluth, MN": {
   "lat": 46.7838287,
@@ -1322,7 +1319,6 @@
   "lon": -78.9757512,
   "matched": "Fishersville, Augusta County, Virginia, 22939, United States"
  },
- "Fisherville, VA": null,
  "Fitchburg, MA": {
   "lat": 42.5838984,
   "lon": -71.8038268,
@@ -1373,7 +1369,6 @@
   "lon": -73.8438267,
   "matched": "Forest Hills, Queens, Queens County, New York, United States"
  },
- "Fort Bliss, TX": null,
  "Fort Collins, CO": {
   "lat": 40.5871782,
   "lon": -105.0770113,
@@ -1499,7 +1494,6 @@
   "lon": -94.7933252,
   "matched": "Galveston, Galveston County, Texas, United States"
  },
- "Galveton, TX": null,
  "Garden City, MI": {
   "lat": 42.3255929,
   "lon": -83.3310422,
@@ -1560,7 +1554,11 @@
   "lon": -97.0306325,
   "matched": "Grand Forks, Grand Forks County, North Dakota, United States"
  },
- "Grand Juction, CO": null,
+ "Grand Junction, CO": {
+  "lat": 39.0672568,
+  "lon": -108.56448,
+  "matched": "Grand Junction, Mesa County, Colorado, United States"
+ },
  "Grand Rapids, MI": {
   "lat": 42.9632425,
   "lon": -85.6678639,
@@ -1651,7 +1649,6 @@
   "lon": -96.1108066,
   "matched": "Greenville, Hunt County, Texas, United States"
  },
- "Greenvllle, SC": null,
  "Greenwich, CT": {
   "lat": 41.0264862,
   "lon": -73.6284598,
@@ -2027,6 +2024,11 @@
   "lon": -87.8611531,
   "matched": "Kankakee, Kankakee County, Illinois, 60901, United States"
  },
+ "kansas City, KS": {
+  "lat": 39.1134562,
+  "lon": -94.626497,
+  "matched": "Kansas City, Wyandotte County, Kansas, United States"
+ },
  "Kansas City, KS": {
   "lat": 39.1134562,
   "lon": -94.626497,
@@ -2087,7 +2089,6 @@
   "lon": -81.4075838,
   "matched": "Kissimmee, Osceola County, Florida, United States"
  },
- "Kissinnee, FL": null,
  "Klamath Falls, OR": {
   "lat": 42.224867,
   "lon": -121.78167,
@@ -2137,6 +2138,11 @@
   "lat": 42.5918039,
   "lon": -88.4345369,
   "matched": "Lake Geneva, Walworth County, Wisconsin, United States"
+ },
+ "lake success, NY": {
+  "lat": 40.7706572,
+  "lon": -73.7176312,
+  "matched": "Village of Lake Success, Town of North Hempstead, Nassau County, New York, United States"
  },
  "Lake Success, NY": {
   "lat": 40.7706572,
@@ -2223,7 +2229,6 @@
   "lon": -89.1306124,
   "matched": "Laurel, Jones County, Mississippi, United States"
  },
- "Lawerenceville, GA": null,
  "Lawrence, MA": {
   "lat": 42.7070354,
   "lon": -71.1631137,
@@ -2354,7 +2359,6 @@
   "lon": -118.2427676,
   "matched": "Los Angeles, Los Angeles County, California, United States"
  },
- "Los Angeles,CA, CA": null,
  "Louisville, KY": {
   "lat": 38.2542376,
   "lon": -85.759407,
@@ -2404,11 +2408,6 @@
   "lat": 33.924831,
   "lon": -118.2024154,
   "matched": "Lynwood, Los Angeles County, California, United States"
- },
- "MIami, FL": {
-  "lat": 25.7741566,
-  "lon": -80.1935973,
-  "matched": "Miami, Miami-Dade County, Florida, United States"
  },
  "Macon, GA": {
   "lat": 32.8406946,
@@ -2530,6 +2529,11 @@
   "lon": -95.7697934,
   "matched": "McAlester, Pittsburg County, Oklahoma, 74501, United States"
  },
+ "Mcallen, TX": {
+  "lat": 26.204114,
+  "lon": -98.2300605,
+  "matched": "McAllen, Hidalgo County, Texas, United States"
+ },
  "McAllen, TX": {
   "lat": 26.204114,
   "lon": -98.2300605,
@@ -2549,11 +2553,6 @@
   "lat": 40.3478472,
   "lon": -79.864215,
   "matched": "McKeesport, Allegheny County, Pennsylvania, United States"
- },
- "Mcallen, TX": {
-  "lat": 26.204114,
-  "lon": -98.2300605,
-  "matched": "McAllen, Hidalgo County, Texas, United States"
  },
  "Meadville, PA": {
   "lat": 41.641445,
@@ -2600,13 +2599,22 @@
   "lon": -111.831455,
   "matched": "Mesa, Maricopa County, Arizona, United States"
  },
- "Metaire, LA": null,
+ "Metairie, LA": {
+  "lat": 29.9899926,
+  "lon": -90.1505426,
+  "matched": "Metairie, Jefferson Parish, Louisiana, United States"
+ },
  "Miami Beach, FL": {
   "lat": 25.7929198,
   "lon": -80.1353006,
   "matched": "Miami Beach, Miami-Dade County, Florida, United States"
  },
  "Miami, FL": {
+  "lat": 25.7741566,
+  "lon": -80.1935973,
+  "matched": "Miami, Miami-Dade County, Florida, United States"
+ },
+ "MIami, FL": {
   "lat": 25.7741566,
   "lon": -80.1935973,
   "matched": "Miami, Miami-Dade County, Florida, United States"
@@ -2726,7 +2734,6 @@
   "lon": -86.3090775,
   "matched": "Montgomery, Montgomery County, Alabama, United States"
  },
- "Montogmery, AL": null,
  "Morehead, KY": {
   "lat": 38.1839705,
   "lon": -83.4326841,
@@ -2872,11 +2879,15 @@
   "lon": -73.6883239,
   "matched": "Village of New Hyde Park, Town of North Hempstead, Nassau County, New York, United States"
  },
- "New Hyde Park,New York 11040, NY": null,
  "New Milford, CT": {
   "lat": 41.5770993,
   "lon": -73.4105803,
   "matched": "New Milford, Western Connecticut Planning Region, Connecticut, United States"
+ },
+ "new orleans, LA": {
+  "lat": 29.9574657,
+  "lon": -90.0629493,
+  "matched": "New Orleans, Orleans Parish, Louisiana, United States"
  },
  "New Orleans, LA": {
   "lat": 29.9574657,
@@ -2903,7 +2914,6 @@
   "lon": -74.0060152,
   "matched": "New York, United States"
  },
- "NewYork, NY": null,
  "Newark, DE": {
   "lat": 39.6828358,
   "lon": -75.7515682,
@@ -3139,11 +3149,6 @@
   "lon": -78.5908345,
   "matched": "Oxford, Granville County, North Carolina, United States"
  },
- "PIttsburgh, PA": {
-  "lat": 40.4406968,
-  "lon": -80.0025666,
-  "matched": "Pittsburgh, Allegheny County, Pennsylvania, United States"
- },
  "Palm Springs, CA": {
   "lat": 33.8246269,
   "lon": -116.540303,
@@ -3179,7 +3184,6 @@
   "lon": -87.8406031,
   "matched": "Park Ridge, Maine Township, Cook County, Illinois, 60068, United States"
  },
- "ParkRidge, IL": null,
  "Parkersburg, WV": {
   "lat": 39.2667309,
   "lon": -81.5620755,
@@ -3190,7 +3194,6 @@
   "lon": -81.7355692,
   "matched": "Parma, Cuyahoga County, Ohio, United States"
  },
- "Pasadena CA, CA": null,
  "Pasadena, CA": {
   "lat": 34.1476507,
   "lon": -118.144155,
@@ -3231,7 +3234,6 @@
   "lon": -74.7909992,
   "matched": "Pennington, Mercer County, New Jersey, 08534, United States"
  },
- "Pennnington, NJ": null,
  "Pensacola, FL": {
   "lat": 30.421309,
   "lon": -87.2169149,
@@ -3257,7 +3259,6 @@
   "lon": -85.0007653,
   "matched": "Phenix City, Russell County, Alabama, United States"
  },
- "Philadelphai, PA": null,
  "Philadelphia, PA": {
   "lat": 39.9527237,
   "lon": -75.1635262,
@@ -3277,5 +3278,1475 @@
   "lat": 40.1338784,
   "lon": -75.5172827,
   "matched": "Phoenixville, Chester County, Pennsylvania, United States"
+ },
+ "Pikeville, KY": {
+  "lat": 37.4792672,
+  "lon": -82.5187629,
+  "matched": "Pikeville, Pike County, Kentucky, 41501, United States"
+ },
+ "Pine Bluff, AR": {
+  "lat": 34.2228884,
+  "lon": -92.004334,
+  "matched": "Pine Bluff, Jefferson County, Arkansas, United States"
+ },
+ "Piscataway, NJ": {
+  "lat": 40.5464326,
+  "lon": -74.4660542,
+  "matched": "Piscataway Township, Middlesex County, New Jersey, United States"
+ },
+ "Piscataway,, NJ": {
+  "lat": 40.5464326,
+  "lon": -74.4660542,
+  "matched": "Piscataway Township, Middlesex County, New Jersey, United States"
+ },
+ "Pittsburg, KS": {
+  "lat": 37.4108841,
+  "lon": -94.70496,
+  "matched": "Pittsburg, Crawford County, Kansas, 66762, United States"
+ },
+ "Pittsburg, TX": {
+  "lat": 32.9954021,
+  "lon": -94.9657688,
+  "matched": "Pittsburg, Camp County, Texas, 75686, United States"
+ },
+ "Pittsburgh, PA": {
+  "lat": 40.4406968,
+  "lon": -80.0025666,
+  "matched": "Pittsburgh, Allegheny County, Pennsylvania, United States"
+ },
+ "PIttsburgh, PA": {
+  "lat": 40.4406968,
+  "lon": -80.0025666,
+  "matched": "Pittsburgh, Allegheny County, Pennsylvania, United States"
+ },
+ "Pittsfield, MA": {
+  "lat": 42.4484778,
+  "lon": -73.2541069,
+  "matched": "Pittsfield, Berkshire County, Massachusetts, United States"
+ },
+ "Plainview, NY": {
+  "lat": 40.7765026,
+  "lon": -73.4670022,
+  "matched": "Plainview, Town of Oyster Bay, Nassau County, New York, 11803, United States"
+ },
+ "Plano, TX": {
+  "lat": 33.0136764,
+  "lon": -96.6925096,
+  "matched": "Plano, Collin County, Texas, United States"
+ },
+ "plantation, FL": {
+  "lat": 26.1275862,
+  "lon": -80.2331036,
+  "matched": "Plantation, Broward County, Florida, United States"
+ },
+ "Plantation, FL": {
+  "lat": 26.1275862,
+  "lon": -80.2331036,
+  "matched": "Plantation, Broward County, Florida, United States"
+ },
+ "Plattsburgh, NY": {
+  "lat": 44.6960855,
+  "lon": -73.4542915,
+  "matched": "City of Plattsburgh, Clinton County, New York, United States"
+ },
+ "Pleasanton, CA": {
+  "lat": 37.6624312,
+  "lon": -121.8746789,
+  "matched": "Pleasanton, Alameda County, California, United States"
+ },
+ "Pocatello, ID": {
+  "lat": 42.8620287,
+  "lon": -112.450627,
+  "matched": "Pocatello, Bannock County, Idaho, United States"
+ },
+ "Point Pleasant, WV": {
+  "lat": 38.8445251,
+  "lon": -82.1370889,
+  "matched": "Point Pleasant, Mason County, West Virginia, 25550, United States"
+ },
+ "Pomona, CA": {
+  "lat": 34.0553813,
+  "lon": -117.7517496,
+  "matched": "Pomona, Los Angeles County, California, United States"
+ },
+ "Pompano Beach, FL": {
+  "lat": 26.2378597,
+  "lon": -80.1247667,
+  "matched": "Pompano Beach, Broward County, Florida, United States"
+ },
+ "Ponce, PR": {
+  "lat": 18.011564,
+  "lon": -66.613958,
+  "matched": "Ponce, Puerto Rico, 00730, United States"
+ },
+ "Pontiac, MI": {
+  "lat": 42.6389216,
+  "lon": -83.2910468,
+  "matched": "Pontiac, Oakland County, Michigan, United States"
+ },
+ "Poplar Bluff, MO": {
+  "lat": 36.7563166,
+  "lon": -90.3944869,
+  "matched": "Poplar Bluff, Butler County, Missouri, 63901, United States"
+ },
+ "Port Angeles, WA": {
+  "lat": 48.118146,
+  "lon": -123.430741,
+  "matched": "Port Angeles, Clallam County, Washington, 98362, United States"
+ },
+ "Port Huron, MI": {
+  "lat": 42.9760854,
+  "lon": -82.4333742,
+  "matched": "Port Huron, Saint Clair County, Michigan, United States"
+ },
+ "Port Jefferson, NY": {
+  "lat": 40.9465118,
+  "lon": -73.0691257,
+  "matched": "Village of Port Jefferson, Town of Brookhaven, Suffolk County, New York, 11777, United States"
+ },
+ "Port St Lucie, FL": {
+  "lat": 27.2939333,
+  "lon": -80.3503283,
+  "matched": "Port Saint Lucie, Saint Lucie County, Florida, United States"
+ },
+ "Porterville, CA": {
+  "lat": 36.06523,
+  "lon": -119.0167679,
+  "matched": "Porterville, Tulare County, California, 93257, United States"
+ },
+ "Portland, ME": {
+  "lat": 43.6573605,
+  "lon": -70.2586618,
+  "matched": "Portland, Cumberland County, Maine, United States"
+ },
+ "Portland, OR": {
+  "lat": 45.5202471,
+  "lon": -122.674194,
+  "matched": "Portland, Multnomah County, Oregon, United States"
+ },
+ "Portsmouth, NH": {
+  "lat": 43.0751306,
+  "lon": -70.7601826,
+  "matched": "Portsmouth, Rockingham County, New Hampshire, United States"
+ },
+ "Pottsville, PA": {
+  "lat": 40.6851324,
+  "lon": -76.1953701,
+  "matched": "Pottsville, Schuylkill County, Pennsylvania, 17901, United States"
+ },
+ "Poughkeepsie, NY": {
+  "lat": 41.7065539,
+  "lon": -73.9283672,
+  "matched": "City of Poughkeepsie, Dutchess County, New York, 12601, United States"
+ },
+ "Powell, TN": {
+  "lat": 36.0317472,
+  "lon": -84.0279677,
+  "matched": "Powell, Knox County, East Tennessee, Tennessee, 37849, United States"
+ },
+ "Providence, RI": {
+  "lat": 41.8239891,
+  "lon": -71.4128343,
+  "matched": "Providence, Providence County, Rhode Island, United States"
+ },
+ "Provo, UT": {
+  "lat": 40.2337289,
+  "lon": -111.6587085,
+  "matched": "Provo, Utah County, Utah, United States"
+ },
+ "Pueblo, CO": {
+  "lat": 38.263995,
+  "lon": -104.6141867,
+  "matched": "Pueblo, Pueblo County, Colorado, United States"
+ },
+ "Pullman, WA": {
+  "lat": 46.7295818,
+  "lon": -117.1799363,
+  "matched": "Pullman, Whitman County, Washington, United States"
+ },
+ "Punxsutawney, PA": {
+  "lat": 40.9436303,
+  "lon": -78.971078,
+  "matched": "Punxsutawney, Jefferson County, Pennsylvania, 15767, United States"
+ },
+ "Puyallup, WA": {
+  "lat": 47.1849009,
+  "lon": -122.29214,
+  "matched": "Puyallup, Pierce County, Washington, United States"
+ },
+ "Queens Village, NY": {
+  "lat": 40.7267692,
+  "lon": -73.7415208,
+  "matched": "Queens Village, Queens, Queens County, New York, 11428, United States"
+ },
+ "Quincy, IL": {
+  "lat": 39.9356016,
+  "lon": -91.4098727,
+  "matched": "Quincy, Adams County, Illinois, United States"
+ },
+ "Raleigh, NC": {
+  "lat": 35.7803977,
+  "lon": -78.6390989,
+  "matched": "Raleigh, Wake County, North Carolina, United States"
+ },
+ "Rancho Cucamonga, CA": {
+  "lat": 34.1218412,
+  "lon": -117.5701482,
+  "matched": "Rancho Cucamonga, San Bernardino County, California, United States"
+ },
+ "Rancho Mirage, CA": {
+  "lat": 33.7583005,
+  "lon": -116.4347271,
+  "matched": "Rancho Mirage, Riverside County, California, United States"
+ },
+ "Randolph, VT": {
+  "lat": 43.9253287,
+  "lon": -72.6659422,
+  "matched": "Randolph, Orange County, Vermont, United States"
+ },
+ "Rapid City, SD": {
+  "lat": 44.0806041,
+  "lon": -103.228023,
+  "matched": "Rapid City, Pennington County, South Dakota, United States"
+ },
+ "Reading, PA": {
+  "lat": 40.335345,
+  "lon": -75.9279495,
+  "matched": "Reading, Berks County, Pennsylvania, United States"
+ },
+ "Redding, CA": {
+  "lat": 40.5863563,
+  "lon": -122.391675,
+  "matched": "Redding, Shasta County, California, United States"
+ },
+ "Redlands, CA": {
+  "lat": 34.0550328,
+  "lon": -117.1827445,
+  "matched": "Redlands, San Bernardino County, California, United States"
+ },
+ "Redwood City, CA": {
+  "lat": 37.4863239,
+  "lon": -122.232523,
+  "matched": "Redwood City, San Mateo County, California, 94063, United States"
+ },
+ "Reno, NV": {
+  "lat": 39.5261788,
+  "lon": -119.812658,
+  "matched": "Reno, Washoe County, Nevada, United States"
+ },
+ "Renton, WA": {
+  "lat": 47.4799078,
+  "lon": -122.2034496,
+  "matched": "Renton, King County, Washington, United States"
+ },
+ "Rexburg, ID": {
+  "lat": 43.826079,
+  "lon": -111.7837279,
+  "matched": "Rexburg, Madison County, Idaho, 83460, United States"
+ },
+ "Rhinebeck, NY": {
+  "lat": 41.9267604,
+  "lon": -73.912763,
+  "matched": "Town of Rhinebeck, Dutchess County, New York, United States"
+ },
+ "Richland, WA": {
+  "lat": 46.2804298,
+  "lon": -119.275205,
+  "matched": "Richland, Benton County, Washington, United States"
+ },
+ "Richmond, CA": {
+  "lat": 37.9357576,
+  "lon": -122.347748,
+  "matched": "Richmond, Contra Costa County, California, United States"
+ },
+ "Richmond, IN": {
+  "lat": 39.8286897,
+  "lon": -84.8898521,
+  "matched": "Richmond, Wayne County, Indiana, 47374, United States"
+ },
+ "Richmond, VA": {
+  "lat": 37.5385087,
+  "lon": -77.43428,
+  "matched": "Richmond, Virginia, United States"
+ },
+ "Riverdale, GA": {
+  "lat": 33.5726113,
+  "lon": -84.4132594,
+  "matched": "Riverdale, Clayton County, Georgia, United States"
+ },
+ "Riverhead, NY": {
+  "lat": 40.9168692,
+  "lon": -72.6624189,
+  "matched": "Town of Riverhead, Suffolk County, New York, United States"
+ },
+ "Riverside, CA": {
+  "lat": 33.9732079,
+  "lon": -117.3730926,
+  "matched": "Riverside, Riverside County, California, United States"
+ },
+ "Riverview, FL": {
+  "lat": 27.871197,
+  "lon": -82.3269883,
+  "matched": "Riverview, Hillsborough County, Florida, 33568, United States"
+ },
+ "Roanoke, VA": {
+  "lat": 37.270973,
+  "lon": -79.9414313,
+  "matched": "Roanoke, Virginia, United States"
+ },
+ "Rochester, MI": {
+  "lat": 42.680588,
+  "lon": -83.1338214,
+  "matched": "Rochester, Oakland County, Michigan, 48307, United States"
+ },
+ "Rochester, MN": {
+  "lat": 44.0234387,
+  "lon": -92.4630182,
+  "matched": "Rochester, Olmsted County, Minnesota, United States"
+ },
+ "Rochester, NY": {
+  "lat": 43.157285,
+  "lon": -77.615214,
+  "matched": "City of Rochester, Monroe County, New York, United States"
+ },
+ "Rockford, IL": {
+  "lat": 42.2713945,
+  "lon": -89.093966,
+  "matched": "Rockford, Rockford Township, Winnebago County, Illinois, United States"
+ },
+ "Rockville Centre, NY": {
+  "lat": 40.6574186,
+  "lon": -73.6450664,
+  "matched": "Village of Rockville Centre, Town of Hempstead, Nassau County, New York, 11570, United States"
+ },
+ "Rome, GA": {
+  "lat": 34.257038,
+  "lon": -85.1646726,
+  "matched": "Rome, Floyd County, Georgia, United States"
+ },
+ "Ronceverte, WV": {
+  "lat": 37.7497542,
+  "lon": -80.4628391,
+  "matched": "Ronceverte, Greenbrier County, West Virginia, 24970, United States"
+ },
+ "Roseburg, OR": {
+  "lat": 43.216505,
+  "lon": -123.3417381,
+  "matched": "Roseburg, Douglas County, Oregon, United States"
+ },
+ "Rosedale, MD": {
+  "lat": 39.3201074,
+  "lon": -76.5155191,
+  "matched": "Rosedale, Baltimore County, Maryland, 21237, United States"
+ },
+ "Roseville, CA": {
+  "lat": 38.7521235,
+  "lon": -121.2880059,
+  "matched": "Roseville, Placer County, California, United States"
+ },
+ "Roswell, GA": {
+  "lat": 34.02332,
+  "lon": -84.360022,
+  "matched": "Roswell, Fulton County, Georgia, United States"
+ },
+ "Round Rock, TX": {
+  "lat": 30.5085915,
+  "lon": -97.6788056,
+  "matched": "Round Rock, Williamson County, Texas, United States"
+ },
+ "Royal Oak, MI": {
+  "lat": 42.4894801,
+  "lon": -83.1446485,
+  "matched": "Royal Oak, Oakland County, Michigan, United States"
+ },
+ "Rupert, ID": {
+  "lat": 42.6190756,
+  "lon": -113.677234,
+  "matched": "Rupert, Minidoka County, Idaho, 83350, United States"
+ },
+ "Sacramento, CA": {
+  "lat": 38.5810606,
+  "lon": -121.493895,
+  "matched": "Sacramento, Sacramento County, California, United States"
+ },
+ "Safety Harbor, FL": {
+  "lat": 27.9908529,
+  "lon": -82.6931553,
+  "matched": "Safety Harbor, Pinellas County, Florida, 34695, United States"
+ },
+ "Saginaw, MI": {
+  "lat": 43.4200387,
+  "lon": -83.9490365,
+  "matched": "Saginaw, Carrollton Township, Saginaw County, Michigan, United States"
+ },
+ "Saint Joseph, MI": {
+  "lat": 42.1095808,
+  "lon": -86.4799538,
+  "matched": "Saint Joseph, Berrien County, Michigan, United States"
+ },
+ "Saint Louis, MO": {
+  "lat": 38.6254063,
+  "lon": -90.190009,
+  "matched": "Saint Louis, Missouri, United States"
+ },
+ "Saint Paul, MN": {
+  "lat": 44.9497487,
+  "lon": -93.0931028,
+  "matched": "Saint Paul, Ramsey County, Minnesota, United States"
+ },
+ "Salem, MA": {
+  "lat": 42.5214439,
+  "lon": -70.8956743,
+  "matched": "Salem, Essex County, Massachusetts, 01970, United States"
+ },
+ "Salem, OR": {
+  "lat": 44.9391565,
+  "lon": -123.033121,
+  "matched": "Salem, Marion County, Oregon, United States"
+ },
+ "Salem, VA": {
+  "lat": 37.293198,
+  "lon": -80.0556773,
+  "matched": "Salem, Virginia, 24153, United States"
+ },
+ "Salina, KS": {
+  "lat": 38.8402805,
+  "lon": -97.6114237,
+  "matched": "Salina, Saline County, Kansas, 67401, United States"
+ },
+ "Salinas, CA": {
+  "lat": 36.6744117,
+  "lon": -121.655037,
+  "matched": "Salinas, Monterey County, California, United States"
+ },
+ "Salisbury, MD": {
+  "lat": 38.366027,
+  "lon": -75.6009964,
+  "matched": "Salisbury, Wicomico County, Maryland, United States"
+ },
+ "Salt Lake City, UT": {
+  "lat": 40.7596198,
+  "lon": -111.886797,
+  "matched": "Salt Lake City, Salt Lake County, Utah, United States"
+ },
+ "San Angelo, TX": {
+  "lat": 31.4649685,
+  "lon": -100.4405094,
+  "matched": "San Angelo, Tom Green County, Texas, United States"
+ },
+ "San Antonio, TX": {
+  "lat": 29.4246002,
+  "lon": -98.4951405,
+  "matched": "San Antonio, Bexar County, Texas, United States"
+ },
+ "San Bernardino, CA": {
+  "lat": 34.1211115,
+  "lon": -117.301767,
+  "matched": "San Bernardino, San Bernardino County, California, United States"
+ },
+ "San Diego, CA": {
+  "lat": 32.7157062,
+  "lon": -117.1638284,
+  "matched": "San Diego, San Diego County, California, United States"
+ },
+ "San Dimas, CA": {
+  "lat": 34.1065404,
+  "lon": -117.8069361,
+  "matched": "San Dimas, Los Angeles County, California, 91773, United States"
+ },
+ "San Francisco, CA": {
+  "lat": 37.7879363,
+  "lon": -122.4075201,
+  "matched": "San Francisco, California, United States"
+ },
+ "San German, PR": {
+  "lat": 18.0808972,
+  "lon": -67.0408635,
+  "matched": "San Germán, Puerto Rico, 00753, United States"
+ },
+ "San Jose, CA": {
+  "lat": 37.3361663,
+  "lon": -121.890591,
+  "matched": "San Jose, Santa Clara County, California, United States"
+ },
+ "San Juan, PR": {
+  "lat": 18.465299,
+  "lon": -66.116666,
+  "matched": "San Juan, Puerto Rico, 00901, United States"
+ },
+ "San Mateo, CA": {
+  "lat": 37.5629997,
+  "lon": -122.3253265,
+  "matched": "San Mateo, San Mateo County, California, United States"
+ },
+ "Sandusky, OH": {
+  "lat": 41.4561002,
+  "lon": -82.7115813,
+  "matched": "Sandusky, Erie County, Ohio, 44870, United States"
+ },
+ "Sanford, FL": {
+  "lat": 28.8117345,
+  "lon": -81.2680223,
+  "matched": "Sanford, Seminole County, Florida, United States"
+ },
+ "Santa Ana, CA": {
+  "lat": 33.7494951,
+  "lon": -117.873221,
+  "matched": "Santa Ana, Orange County, California, United States"
+ },
+ "Santa Barbara, CA": {
+  "lat": 34.4221319,
+  "lon": -119.702667,
+  "matched": "Santa Barbara, Santa Barbara County, California, United States"
+ },
+ "Santa Clara, CA": {
+  "lat": 37.3541132,
+  "lon": -121.955174,
+  "matched": "Santa Clara, Santa Clara County, California, United States"
+ },
+ "Santa Cruz, CA": {
+  "lat": 36.9743626,
+  "lon": -122.0294673,
+  "matched": "Santa Cruz, Santa Cruz County, California, United States"
+ },
+ "Santa Fe, NM": {
+  "lat": 35.6876096,
+  "lon": -105.938456,
+  "matched": "Santa Fe, Santa Fe County, New Mexico, United States"
+ },
+ "Santa Maria, CA": {
+  "lat": 34.9531295,
+  "lon": -120.435857,
+  "matched": "Santa Maria, Santa Barbara County, California, United States"
+ },
+ "Santa Monica, CA": {
+  "lat": 34.0194704,
+  "lon": -118.491227,
+  "matched": "Santa Monica, Los Angeles County, California, United States"
+ },
+ "Santa Rosa, CA": {
+  "lat": 38.4404925,
+  "lon": -122.7141049,
+  "matched": "Santa Rosa, Sonoma County, California, United States"
+ },
+ "Sarasota, FL": {
+  "lat": 27.3365805,
+  "lon": -82.5308545,
+  "matched": "Sarasota, Sarasota County, Florida, United States"
+ },
+ "Saratoga Springs, NY": {
+  "lat": 43.0822315,
+  "lon": -73.785373,
+  "matched": "City of Saratoga Springs, Saratoga County, New York, 12866, United States"
+ },
+ "Savannah, GA": {
+  "lat": 32.0790074,
+  "lon": -81.0921335,
+  "matched": "Savannah, Chatham County, Georgia, United States"
+ },
+ "Sayre, PA": {
+  "lat": 41.9789631,
+  "lon": -76.515499,
+  "matched": "Sayre, Bradford County, Pennsylvania, United States"
+ },
+ "Schenectady, NY": {
+  "lat": 42.8142432,
+  "lon": -73.9395687,
+  "matched": "City of Schenectady, Schenectady County, New York, United States"
+ },
+ "Scottsdale, AZ": {
+  "lat": 33.5967034,
+  "lon": -111.8910185,
+  "matched": "Scottsdale, Maricopa County, Arizona, United States"
+ },
+ "Scranton, PA": {
+  "lat": 41.4086874,
+  "lon": -75.6621294,
+  "matched": "Scranton, Lackawanna County, Pennsylvania, United States"
+ },
+ "Searcy, AR": {
+  "lat": 35.2506406,
+  "lon": -91.7362488,
+  "matched": "Searcy, White County, Arkansas, United States"
+ },
+ "Seattle, WA": {
+  "lat": 47.6038321,
+  "lon": -122.330062,
+  "matched": "Seattle, King County, Washington, United States"
+ },
+ "Sebring, FL": {
+  "lat": 27.4957453,
+  "lon": -81.4410425,
+  "matched": "Sebring, Highlands County, Florida, United States"
+ },
+ "Secaucus, NJ": {
+  "lat": 40.7899291,
+  "lon": -74.0566735,
+  "matched": "Secaucus, Hudson County, New Jersey, United States"
+ },
+ "Sedalia, MO": {
+  "lat": 38.7098314,
+  "lon": -93.2295515,
+  "matched": "Sedalia, Pettis County, Missouri, United States"
+ },
+ "Seneca, SC": {
+  "lat": 34.6865321,
+  "lon": -82.9527288,
+  "matched": "Seneca, Oconee County, South Carolina, United States"
+ },
+ "Sharon, PA": {
+  "lat": 41.232947,
+  "lon": -80.5078056,
+  "matched": "Sharon, Mercer County, Pennsylvania, 16146, United States"
+ },
+ "Shiprock, NM": {
+  "lat": 36.7858919,
+  "lon": -108.6844894,
+  "matched": "Shiprock, San Juan County, New Mexico, 87420, United States"
+ },
+ "Shreveport, LA": {
+  "lat": 32.5135356,
+  "lon": -93.7477839,
+  "matched": "Shreveport, Caddo Parish, Louisiana, United States"
+ },
+ "Sierra Vista, AZ": {
+  "lat": 31.5647691,
+  "lon": -110.2742994,
+  "matched": "Sierra Vista, Cochise County, Arizona, United States"
+ },
+ "sioux city, IA": {
+  "lat": 42.4966815,
+  "lon": -96.4058782,
+  "matched": "Sioux City, Woodbury County, Iowa, United States"
+ },
+ "Sioux Falls, SD": {
+  "lat": 43.5476008,
+  "lon": -96.7293629,
+  "matched": "Sioux Falls, Sioux Falls Township, Minnehaha County, South Dakota, United States"
+ },
+ "Slc, UT": {
+  "lat": 41.7502487,
+  "lon": -111.8019215,
+  "matched": "Student Living Center, Logan, Cache County, Utah, United States"
+ },
+ "Sleepy Hollow, NY": {
+  "lat": 41.085652,
+  "lon": -73.8584684,
+  "matched": "Village of Sleepy Hollow, Town of Mount Pleasant, Westchester County, New York, United States"
+ },
+ "Smithtown, NY": {
+  "lat": 40.8559314,
+  "lon": -73.2006687,
+  "matched": "Town of Smithtown, Suffolk County, New York, United States"
+ },
+ "Smyrna, GA": {
+  "lat": 33.883887,
+  "lon": -84.5147454,
+  "matched": "Smyrna, Cobb County, Georgia, United States"
+ },
+ "Soldotna, AK": {
+  "lat": 60.4847228,
+  "lon": -151.065349,
+  "matched": "Soldotna, Kenai Peninsula Borough, Alaska, United States"
+ },
+ "Somerset, KY": {
+  "lat": 37.0920222,
+  "lon": -84.6041084,
+  "matched": "Somerset, Pulaski County, Kentucky, 42503, United States"
+ },
+ "Somerset, NJ": {
+  "lat": 40.4976041,
+  "lon": -74.4884868,
+  "matched": "Somerset, Franklin Township, Somerset County, New Jersey, 08874, United States"
+ },
+ "Somerton, AZ": {
+  "lat": 32.596586,
+  "lon": -114.709733,
+  "matched": "Somerton, Yuma County, Arizona, 85350, United States"
+ },
+ "Somerville, NJ": {
+  "lat": 40.5742696,
+  "lon": -74.60988,
+  "matched": "Somerville, Somerset County, New Jersey, United States"
+ },
+ "Sonora, CA": {
+  "lat": 37.985304,
+  "lon": -120.3835349,
+  "matched": "Sonora, Tuolumne County, California, United States"
+ },
+ "South Bend, IN": {
+  "lat": 41.6833813,
+  "lon": -86.2500066,
+  "matched": "South Bend, Saint Joseph County, Indiana, United States"
+ },
+ "South Gate, CA": {
+  "lat": 33.9463456,
+  "lon": -118.200981,
+  "matched": "South Gate, Los Angeles County, California, United States"
+ },
+ "South Hill, VA": {
+  "lat": 36.7265449,
+  "lon": -78.1291308,
+  "matched": "South Hill, Mecklenburg County, Virginia, 23970, United States"
+ },
+ "South Miami, FL": {
+  "lat": 25.7076017,
+  "lon": -80.2933846,
+  "matched": "South Miami, Miami-Dade County, Florida, 33143, United States"
+ },
+ "Southampton, NY": {
+  "lat": 40.8842482,
+  "lon": -72.3897131,
+  "matched": "Town of Southampton, Suffolk County, New York, United States"
+ },
+ "Southaven, MS": {
+  "lat": 34.9873822,
+  "lon": -90.0034862,
+  "matched": "Southaven, DeSoto County, Mississippi, United States"
+ },
+ "Southfield, MI": {
+  "lat": 42.4733689,
+  "lon": -83.2218731,
+  "matched": "Southfield, Oakland County, Michigan, United States"
+ },
+ "Southhaven, MS": {
+  "lat": 34.9917606,
+  "lon": -90.1275934,
+  "matched": "Southhaven, DeSoto County, Mississippi, 38680, United States"
+ },
+ "Spartanburg, SC": {
+  "lat": 34.9498007,
+  "lon": -81.9320157,
+  "matched": "Spartanburg, Spartanburg County, South Carolina, United States"
+ },
+ "Spokane, WA": {
+  "lat": 47.6571934,
+  "lon": -117.42351,
+  "matched": "Spokane, Spokane County, Washington, United States"
+ },
+ "Springfield, IL": {
+  "lat": 39.7990175,
+  "lon": -89.6439575,
+  "matched": "Springfield, Sangamon County, Illinois, United States"
+ },
+ "Springfield, MA": {
+  "lat": 42.1018764,
+  "lon": -72.5886727,
+  "matched": "Springfield, Hampden County, Massachusetts, United States"
+ },
+ "Springfield, MO": {
+  "lat": 37.2081729,
+  "lon": -93.2922715,
+  "matched": "Springfield, Greene County, Missouri, United States"
+ },
+ "Springfield, PA": {
+  "lat": 39.9306677,
+  "lon": -75.3201879,
+  "matched": "Springfield Township, Delaware County, Pennsylvania, 19064, United States"
+ },
+ "St Joseph, MI": {
+  "lat": 42.1095808,
+  "lon": -86.4799538,
+  "matched": "Saint Joseph, Berrien County, Michigan, United States"
+ },
+ "St Louis, MO": {
+  "lat": 38.6254063,
+  "lon": -90.190009,
+  "matched": "Saint Louis, Missouri, United States"
+ },
+ "St Paul, MN": {
+  "lat": 44.9497487,
+  "lon": -93.0931028,
+  "matched": "Saint Paul, Ramsey County, Minnesota, United States"
+ },
+ "St Petersburg, FL": {
+  "lat": 27.7712264,
+  "lon": -82.6340259,
+  "matched": "Saint Petersburg, Pinellas County, Florida, United States"
+ },
+ "St. Cloud, MN": {
+  "lat": 45.5616075,
+  "lon": -94.1642004,
+  "matched": "Saint Cloud, Stearns County, Minnesota, United States"
+ },
+ "St. Louis Park, MN": {
+  "lat": 44.9475726,
+  "lon": -93.3569023,
+  "matched": "Saint Louis Park, Hennepin County, Minnesota, United States"
+ },
+ "St. Louis, MO": {
+  "lat": 38.6254063,
+  "lon": -90.190009,
+  "matched": "Saint Louis, Missouri, United States"
+ },
+ "St. Paul, MN": {
+  "lat": 44.9497487,
+  "lon": -93.0931028,
+  "matched": "Saint Paul, Ramsey County, Minnesota, United States"
+ },
+ "St. Petersburg, FL": {
+  "lat": 27.7712264,
+  "lon": -82.6340259,
+  "matched": "Saint Petersburg, Pinellas County, Florida, United States"
+ },
+ "Stamford, CT": {
+  "lat": 41.0534302,
+  "lon": -73.5387341,
+  "matched": "Stamford, Western Connecticut Planning Region, Connecticut, United States"
+ },
+ "Stanford, CA": {
+  "lat": 37.427467,
+  "lon": -122.1702445,
+  "matched": "Stanford, Santa Clara County, California, 94305, United States"
+ },
+ "Staples, MN": {
+  "lat": 46.3550001,
+  "lon": -94.7933333,
+  "matched": "Staples, Todd County, Minnesota, 56479, United States"
+ },
+ "State College, PA": {
+  "lat": 40.7944504,
+  "lon": -77.8616386,
+  "matched": "State College, Centre County, Pennsylvania, United States"
+ },
+ "Staten Island, NY": {
+  "lat": 40.5834557,
+  "lon": -74.1496048,
+  "matched": "Staten Island, Richmond County, New York, United States"
+ },
+ "Statesville, NC": {
+  "lat": 35.7827676,
+  "lon": -80.8873574,
+  "matched": "Statesville, Iredell County, North Carolina, United States"
+ },
+ "Sterling Heights, MI": {
+  "lat": 42.5803122,
+  "lon": -83.0302033,
+  "matched": "Sterling Heights, Macomb County, Michigan, United States"
+ },
+ "Steubenville, OH": {
+  "lat": 40.3600714,
+  "lon": -80.6151034,
+  "matched": "Steubenville, Jefferson County, Ohio, 43952, United States"
+ },
+ "Stillwater, OK": {
+  "lat": 36.1156306,
+  "lon": -97.0585717,
+  "matched": "Stillwater, Payne County, Oklahoma, United States"
+ },
+ "Stockton, CA": {
+  "lat": 37.9577016,
+  "lon": -121.290779,
+  "matched": "Stockton, San Joaquin County, California, United States"
+ },
+ "Stony Brook, NY": {
+  "lat": 40.9256538,
+  "lon": -73.140943,
+  "matched": "Stony Brook, Town of Brookhaven, Suffolk County, New York, 11794, United States"
+ },
+ "Stratford, NJ": {
+  "lat": 39.8267807,
+  "lon": -75.0154461,
+  "matched": "Stratford, Camden County, New Jersey, 08084, United States"
+ },
+ "Sugar Land, TX": {
+  "lat": 29.6196787,
+  "lon": -95.6349463,
+  "matched": "Sugar Land, Fort Bend County, Texas, United States"
+ },
+ "Summerville, SC": {
+  "lat": 33.0186699,
+  "lon": -80.1762704,
+  "matched": "Summerville, Dorchester County, South Carolina, United States"
+ },
+ "Summit, NJ": {
+  "lat": 40.7182356,
+  "lon": -74.3592296,
+  "matched": "Summit, Union County, New Jersey, United States"
+ },
+ "Sumter, SC": {
+  "lat": 33.9204354,
+  "lon": -80.3414693,
+  "matched": "Sumter, Sumter County, South Carolina, United States"
+ },
+ "Sun City West, AZ": {
+  "lat": 33.6691873,
+  "lon": -112.3498066,
+  "matched": "Sun City West, Maricopa County, Arizona, 85375, United States"
+ },
+ "Sylmar, CA": {
+  "lat": 34.3076252,
+  "lon": -118.4492148,
+  "matched": "Sylmar, Sylmar Neighborhood Council District, Los Angeles, Los Angeles County, California, 91342, United States"
+ },
+ "Syracuse, NY": {
+  "lat": 43.0481221,
+  "lon": -76.1474244,
+  "matched": "City of Syracuse, Onondaga County, New York, United States"
+ },
+ "Tacoma, WA": {
+  "lat": 47.2455013,
+  "lon": -122.438329,
+  "matched": "Tacoma, Pierce County, Washington, United States"
+ },
+ "Tahlequah, OK": {
+  "lat": 35.91537,
+  "lon": -94.969956,
+  "matched": "Tahlequah;ᏓᎵᏆ, Cherokee County, Oklahoma, 74464, United States"
+ },
+ "Talihina, OK": {
+  "lat": 34.7524173,
+  "lon": -95.0419156,
+  "matched": "Talihina, LeFlore County, Oklahoma, United States"
+ },
+ "Tallahassee, FL": {
+  "lat": 30.4380832,
+  "lon": -84.2809332,
+  "matched": "Tallahassee, Leon County, Florida, United States"
+ },
+ "Tampa, FL": {
+  "lat": 27.9449854,
+  "lon": -82.4583107,
+  "matched": "Tampa, Hillsborough County, Florida, United States"
+ },
+ "Taylor, MI": {
+  "lat": 42.240872,
+  "lon": -83.2696509,
+  "matched": "Taylor, Wayne County, Michigan, 48180, United States"
+ },
+ "Teaneck, NJ": {
+  "lat": 40.8860164,
+  "lon": -74.0072568,
+  "matched": "Teaneck Township, Bergen County, New Jersey, United States"
+ },
+ "Temecula, CA": {
+  "lat": 33.4946353,
+  "lon": -117.147366,
+  "matched": "Temecula, Riverside County, California, United States"
+ },
+ "Temple, TX": {
+  "lat": 31.0983747,
+  "lon": -97.3429563,
+  "matched": "Temple, Bell County, Texas, United States"
+ },
+ "Terre Haute, IN": {
+  "lat": 39.4667025,
+  "lon": -87.4139119,
+  "matched": "Terre Haute, Vigo County, Indiana, United States"
+ },
+ "Texarkana, AR": {
+  "lat": 33.4254259,
+  "lon": -94.0430937,
+  "matched": "Texarkana, Miller County, Arkansas, 71854, United States"
+ },
+ "The Woodlands, TX": {
+  "lat": 30.1734194,
+  "lon": -95.504686,
+  "matched": "The Woodlands, Montgomery County, Texas, United States"
+ },
+ "Thermopolis, WY": {
+  "lat": 43.646067,
+  "lon": -108.212043,
+  "matched": "Thermopolis, Hot Springs County, Wyoming, 82443, United States"
+ },
+ "Thomasville, GA": {
+  "lat": 30.8365815,
+  "lon": -83.9787808,
+  "matched": "Thomasville, Thomas County, Georgia, 31792, United States"
+ },
+ "Thousand Oaks, CA": {
+  "lat": 34.1705609,
+  "lon": -118.8375937,
+  "matched": "Thousand Oaks, Ventura County, California, United States"
+ },
+ "Tifton, GA": {
+  "lat": 31.4549719,
+  "lon": -83.5108284,
+  "matched": "Tifton, Tift County, Georgia, 31794, United States"
+ },
+ "Toledo, OH": {
+  "lat": 41.6529143,
+  "lon": -83.5378173,
+  "matched": "Toledo, Lucas County, Ohio, United States"
+ },
+ "Toms River, NJ": {
+  "lat": 39.9528389,
+  "lon": -74.196741,
+  "matched": "Toms River, Ocean County, New Jersey, United States"
+ },
+ "Torrance, CA": {
+  "lat": 33.8371392,
+  "lon": -118.3413606,
+  "matched": "Torrance, Los Angeles County, California, United States"
+ },
+ "Torrington, CT": {
+  "lat": 41.8006523,
+  "lon": -73.1212214,
+  "matched": "Torrington, Northwest Hills Planning Region, Connecticut, 06790, United States"
+ },
+ "Traverse City, MI": {
+  "lat": 44.7606481,
+  "lon": -85.6165976,
+  "matched": "Traverse City, Grand Traverse County, Michigan, United States"
+ },
+ "Trenton, MI": {
+  "lat": 42.1406552,
+  "lon": -83.1800544,
+  "matched": "Trenton, Wayne County, Michigan, 48183, United States"
+ },
+ "Trenton, NJ": {
+  "lat": 40.2203074,
+  "lon": -74.7659,
+  "matched": "Trenton, Mercer County, New Jersey, United States"
+ },
+ "Trinity, FL": {
+  "lat": 28.1801635,
+  "lon": -82.6542124,
+  "matched": "Trinity, Pasco County, Florida, 35655, United States"
+ },
+ "Tucson, AZ": {
+  "lat": 32.2228765,
+  "lon": -110.974847,
+  "matched": "Tucson, Pima County, Arizona, United States"
+ },
+ "Tulare, CA": {
+  "lat": 36.2077351,
+  "lon": -119.3473421,
+  "matched": "Tulare, Tulare County, California, 93274, United States"
+ },
+ "Tulsa, OK": {
+  "lat": 36.1563122,
+  "lon": -95.9927516,
+  "matched": "Tulsa, Oklahoma, United States"
+ },
+ "Tupelo, MS": {
+  "lat": 34.2576067,
+  "lon": -88.7033859,
+  "matched": "Tupelo, Lee County, Mississippi, United States"
+ },
+ "Turnersville, NJ": {
+  "lat": 39.77317,
+  "lon": -75.0512813,
+  "matched": "Turnersville, Washington Township, Gloucester County, New Jersey, 08032, United States"
+ },
+ "Tuscaloosa, AL": {
+  "lat": 33.2095614,
+  "lon": -87.5675258,
+  "matched": "Tuscaloosa, Tuscaloosa County, Alabama, United States"
+ },
+ "Tyler, TX": {
+  "lat": 32.3512601,
+  "lon": -95.3010624,
+  "matched": "Tyler, Smith County, Texas, United States"
+ },
+ "Ukiah, CA": {
+  "lat": 39.1501662,
+  "lon": -123.2077861,
+  "matched": "Ukiah, Mendocino County, California, 95482, United States"
+ },
+ "Upland, CA": {
+  "lat": 34.1074483,
+  "lon": -117.6511798,
+  "matched": "Upland, San Bernardino County, California, United States"
+ },
+ "Urbana, IL": {
+  "lat": 40.1117174,
+  "lon": -88.207301,
+  "matched": "Urbana, Champaign County, Illinois, United States"
+ },
+ "Utica, NY": {
+  "lat": 43.1009031,
+  "lon": -75.2326641,
+  "matched": "City of Utica, Oneida County, New York, United States"
+ },
+ "Valdosta, GA": {
+  "lat": 30.8327022,
+  "lon": -83.2784851,
+  "matched": "Valdosta, Lowndes County, Georgia, United States"
+ },
+ "Valhalla, NY": {
+  "lat": 41.0745282,
+  "lon": -73.7749119,
+  "matched": "Valhalla, Town of Mount Pleasant, Westchester County, New York, 10595, United States"
+ },
+ "Valhalla,, NY": {
+  "lat": 41.0745282,
+  "lon": -73.7749119,
+  "matched": "Valhalla, Town of Mount Pleasant, Westchester County, New York, 10595, United States"
+ },
+ "Vallejo, CA": {
+  "lat": 38.1040864,
+  "lon": -122.2566367,
+  "matched": "Vallejo, Solano County, California, United States"
+ },
+ "Valparaiso, IN": {
+  "lat": 41.4672552,
+  "lon": -87.0604487,
+  "matched": "Valparaiso, Porter County, Indiana, United States"
+ },
+ "Vancouver, WA": {
+  "lat": 45.6306954,
+  "lon": -122.6744557,
+  "matched": "Vancouver, Clark County, Washington, United States"
+ },
+ "Ventura, CA": {
+  "lat": 34.2783355,
+  "lon": -119.293174,
+  "matched": "Ventura, Ventura County, California, United States"
+ },
+ "Verona, NJ": {
+  "lat": 40.829822,
+  "lon": -74.2401466,
+  "matched": "Verona, Essex County, New Jersey, 07044, United States"
+ },
+ "Victoria, TX": {
+  "lat": 28.7997547,
+  "lon": -97.0064246,
+  "matched": "Victoria, Victoria County, Texas, United States"
+ },
+ "Vincennes, IN": {
+  "lat": 38.6772691,
+  "lon": -87.5286325,
+  "matched": "Vincennes, Knox County, Indiana, 47591, United States"
+ },
+ "Vineland, NJ": {
+  "lat": 39.4862777,
+  "lon": -75.0254256,
+  "matched": "Vineland, Cumberland County, New Jersey, United States"
+ },
+ "Visalia, CA": {
+  "lat": 36.3302284,
+  "lon": -119.292058,
+  "matched": "Visalia, Tulare County, California, United States"
+ },
+ "Voorhees, NJ": {
+  "lat": 39.8512162,
+  "lon": -74.9619779,
+  "matched": "Voorhees Township, Camden County, New Jersey, 08043, United States"
+ },
+ "Waco, TX": {
+  "lat": 31.5545147,
+  "lon": -97.1325618,
+  "matched": "Waco, McLennan County, Texas, United States"
+ },
+ "Waianae, HI": {
+  "lat": 21.446678,
+  "lon": -158.185272,
+  "matched": "Waianae, Honolulu County, Hawaii, 96792, United States"
+ },
+ "Walnut Creek, CA": {
+  "lat": 37.9020731,
+  "lon": -122.0618702,
+  "matched": "Walnut Creek, Contra Costa County, California, United States"
+ },
+ "Warner Robins, GA": {
+  "lat": 32.6200973,
+  "lon": -83.606568,
+  "matched": "Warner Robins, Houston County, Georgia, 31098, United States"
+ },
+ "Warren, MI": {
+  "lat": 42.4932575,
+  "lon": -83.0062746,
+  "matched": "Warren, Macomb County, Michigan, United States"
+ },
+ "Warrensville Heights, OH": {
+  "lat": 41.43535,
+  "lon": -81.514824,
+  "matched": "Warrensville Heights, Cuyahoga County, Ohio, 44128, United States"
+ },
+ "Warwick, RI": {
+  "lat": 41.6992717,
+  "lon": -71.4586114,
+  "matched": "Warwick, Kent County, Rhode Island, United States"
+ },
+ "Washington DC, DC": {
+  "lat": 38.8950982,
+  "lon": -77.0363849,
+  "matched": "Washington, District of Columbia, United States"
+ },
+ "Washington, DC": {
+  "lat": 38.8950982,
+  "lon": -77.0363849,
+  "matched": "Washington, District of Columbia, United States"
+ },
+ "Washington, PA": {
+  "lat": 40.1709768,
+  "lon": -80.2454528,
+  "matched": "Washington, Washington County, Pennsylvania, 15301, United States"
+ },
+ "Waterbury, CT": {
+  "lat": 41.5541144,
+  "lon": -73.0435615,
+  "matched": "Waterbury, Naugatuck Valley Planning Region, Connecticut, United States"
+ },
+ "Waterloo, IA": {
+  "lat": 42.498275,
+  "lon": -92.3328743,
+  "matched": "Waterloo, Black Hawk County, Iowa, United States"
+ },
+ "Watertown, NY": {
+  "lat": 43.9747838,
+  "lon": -75.9107565,
+  "matched": "City of Watertown, Jefferson County, New York, 13601, United States"
+ },
+ "Waukesha, WI": {
+  "lat": 43.0115598,
+  "lon": -88.2316352,
+  "matched": "Waukesha, Waukesha County, Wisconsin, United States"
+ },
+ "Wausau, WI": {
+  "lat": 44.9597858,
+  "lon": -89.6272791,
+  "matched": "Wausau, Marathon County, Wisconsin, 54401, United States"
+ },
+ "Waxahachie, TX": {
+  "lat": 32.3944908,
+  "lon": -96.8439365,
+  "matched": "Waxahachie, Ellis County, Texas, United States"
+ },
+ "Wayne, MI": {
+  "lat": 42.2814269,
+  "lon": -83.3863215,
+  "matched": "Wayne, Wayne County, Michigan, 48184, United States"
+ },
+ "Webster, TX": {
+  "lat": 29.5351724,
+  "lon": -95.1161564,
+  "matched": "Webster, Harris County, Texas, 77598, United States"
+ },
+ "Wellington, FL": {
+  "lat": 26.6549551,
+  "lon": -80.2375279,
+  "matched": "Wellington, Palm Beach County, Florida, United States"
+ },
+ "Wellsboro, PA": {
+  "lat": 41.7486838,
+  "lon": -77.3005305,
+  "matched": "Wellsboro, Tioga County, Pennsylvania, United States"
+ },
+ "Weslaco, TX": {
+  "lat": 26.1594305,
+  "lon": -97.9907362,
+  "matched": "Weslaco, Hidalgo County, Texas, United States"
+ },
+ "Wesley Chapel, FL": {
+  "lat": 28.1866014,
+  "lon": -82.366121,
+  "matched": "Wesley Chapel, Pasco County, Florida, United States"
+ },
+ "West Chester, OH": {
+  "lat": 39.3303357,
+  "lon": -84.408275,
+  "matched": "Olde West Chester, West Chester Township, Butler County, Ohio, United States"
+ },
+ "West Columbia, SC": {
+  "lat": 33.991869,
+  "lon": -81.0640341,
+  "matched": "West Columbia, Lexington County, South Carolina, United States"
+ },
+ "West Covina, CA": {
+  "lat": 34.0686208,
+  "lon": -117.9389526,
+  "matched": "West Covina, Los Angeles County, California, United States"
+ },
+ "West Islip, NY": {
+  "lat": 40.7058564,
+  "lon": -73.3077301,
+  "matched": "West Islip, Town of Islip, Suffolk County, New York, 11795, United States"
+ },
+ "West Palm Beach, FL": {
+  "lat": 26.715364,
+  "lon": -80.0532942,
+  "matched": "West Palm Beach, Palm Beach County, Florida, United States"
+ },
+ "West Reading, PA": {
+  "lat": 40.3337038,
+  "lon": -75.9474322,
+  "matched": "West Reading, Berks County, Pennsylvania, 10611, United States"
+ },
+ "West Valley City, UT": {
+  "lat": 40.6967891,
+  "lon": -111.9866954,
+  "matched": "West Valley City, Salt Lake County, Utah, United States"
+ },
+ "West Virginia, WV": {
+  "lat": 38.4307788,
+  "lon": -82.3932126,
+  "matched": "West Virginia American Water, Huntington, Cabell County, West Virginia, United States"
+ },
+ "Westlake, OH": {
+  "lat": 41.4553232,
+  "lon": -81.9179174,
+  "matched": "Westlake, Cuyahoga County, Ohio, 44145, United States"
+ },
+ "Westminster, CO": {
+  "lat": 39.8366528,
+  "lon": -105.0372046,
+  "matched": "Westminster, Adams County, Colorado, United States"
+ },
+ "Weston, FL": {
+  "lat": 26.1003392,
+  "lon": -80.399513,
+  "matched": "Weston, Broward County, Florida, United States"
+ },
+ "Wheaton, IL": {
+  "lat": 41.8646959,
+  "lon": -88.1101709,
+  "matched": "Wheaton, DuPage County, Illinois, 60187, United States"
+ },
+ "Wheeling, WV": {
+  "lat": 40.0639616,
+  "lon": -80.7209149,
+  "matched": "Wheeling, Ohio County, West Virginia, 26003, United States"
+ },
+ "White Plains, NY": {
+  "lat": 41.0339862,
+  "lon": -73.7629097,
+  "matched": "City of White Plains, Westchester County, New York, United States"
+ },
+ "Whitesburg, KY": {
+  "lat": 37.1184318,
+  "lon": -82.8268265,
+  "matched": "Whitesburg, Letcher County, Kentucky, United States"
+ },
+ "Whitfield, MS": {
+  "lat": 31.4451712,
+  "lon": -89.0745012,
+  "matched": "Whitfield, Jones County, Mississippi, United States"
+ },
+ "Whittier, CA": {
+  "lat": 33.9749136,
+  "lon": -118.0338664,
+  "matched": "Whittier, Los Angeles County, California, United States"
+ },
+ "Wichita, KS": {
+  "lat": 37.6922361,
+  "lon": -97.3375448,
+  "matched": "Wichita, Sedgwick County, Kansas, United States"
+ },
+ "Wildomar, CA": {
+  "lat": 33.6109566,
+  "lon": -117.2581441,
+  "matched": "Wildomar, Riverside County, California, 92595, United States"
+ },
+ "Wilkes Barre, PA": {
+  "lat": 41.2464824,
+  "lon": -75.8817316,
+  "matched": "Wilkes-Barre, Luzerne County, Pennsylvania, United States"
+ },
+ "WIlkes Barre, PA": {
+  "lat": 41.2464824,
+  "lon": -75.8817316,
+  "matched": "Wilkes-Barre, Luzerne County, Pennsylvania, United States"
+ },
+ "Wilkes-Barre, PA": {
+  "lat": 41.2464824,
+  "lon": -75.8817316,
+  "matched": "Wilkes-Barre, Luzerne County, Pennsylvania, United States"
+ },
+ "Williamsport, PA": {
+  "lat": 41.2411556,
+  "lon": -77.0011096,
+  "matched": "Williamsport, Lycoming County, Pennsylvania, United States"
+ },
+ "Willmar, MN": {
+  "lat": 45.1219492,
+  "lon": -95.0435373,
+  "matched": "Willmar, Kandiyohi County, Minnesota, 56201, United States"
+ },
+ "Wilmington, DE": {
+  "lat": 39.738331,
+  "lon": -75.5527467,
+  "matched": "Wilmington, New Castle County, Delaware, United States"
+ },
+ "Wilmington, NC": {
+  "lat": 34.2352853,
+  "lon": -77.9487284,
+  "matched": "Wilmington, New Hanover County, North Carolina, United States"
+ },
+ "Winchester, VA": {
+  "lat": 39.1852184,
+  "lon": -78.1652404,
+  "matched": "Winchester, Virginia, United States"
+ },
+ "Winston Salem, NC": {
+  "lat": 36.0998131,
+  "lon": -80.2440518,
+  "matched": "Winston-Salem, Forsyth County, North Carolina, United States"
+ },
+ "Winston-Salem, NC": {
+  "lat": 36.0998131,
+  "lon": -80.2440518,
+  "matched": "Winston-Salem, Forsyth County, North Carolina, United States"
+ },
+ "Winter Haven, FL": {
+  "lat": 28.0222435,
+  "lon": -81.7328568,
+  "matched": "Winter Haven, Polk County, Florida, United States"
+ },
+ "Woodbridge, VA": {
+  "lat": 38.6626561,
+  "lon": -77.2530729,
+  "matched": "Woodbridge, Prince William County, Virginia, 22129, United States"
+ },
+ "Woodland Hills, CA": {
+  "lat": 34.1684364,
+  "lon": -118.6058382,
+  "matched": "Woodland Hills, Woodland Hills-Warner Center Neighborhood Council District, Los Angeles, Los Angeles County, California, 91364, United States"
+ },
+ "Woonsocket, RI": {
+  "lat": 42.0028761,
+  "lon": -71.5147839,
+  "matched": "Woonsocket, Providence County, Rhode Island, 02895, United States"
+ },
+ "Worcester, MA": {
+  "lat": 42.2625621,
+  "lon": -71.8018877,
+  "matched": "Worcester, Worcester County, Massachusetts, United States"
+ },
+ "Wyandotte, MI": {
+  "lat": 42.200409,
+  "lon": -83.1506436,
+  "matched": "Wyandotte, Wayne County, Michigan, 48192, United States"
+ },
+ "Wynnewood, PA": {
+  "lat": 40.0028514,
+  "lon": -75.2707469,
+  "matched": "Wynnewood, Ardmore, Lower Merion Township, Montgomery County, Pennsylvania, 19096, United States"
+ },
+ "Wyoming, MI": {
+  "lat": 42.9132581,
+  "lon": -85.7057035,
+  "matched": "Wyoming, Kent County, Michigan, United States"
+ },
+ "Yakima, WA": {
+  "lat": 46.601557,
+  "lon": -120.510842,
+  "matched": "Yakima, Yakima County, Washington, United States"
+ },
+ "Yonkers, NY": {
+  "lat": 40.9312099,
+  "lon": -73.8987469,
+  "matched": "City of Yonkers, Westchester County, New York, United States"
+ },
+ "York, PA": {
+  "lat": 39.962493,
+  "lon": -76.7276989,
+  "matched": "York, York County, Pennsylvania, 17401, United States"
+ },
+ "Youngstown, OH": {
+  "lat": 41.1035786,
+  "lon": -80.6520161,
+  "matched": "Youngstown, Mahoning County, Ohio, United States"
+ },
+ "Ypsilanti, MI": {
+  "lat": 42.241051,
+  "lon": -83.6117646,
+  "matched": "Ypsilanti, Washtenaw County, Michigan, United States"
+ },
+ "Yuma, AZ": {
+  "lat": 32.7210307,
+  "lon": -114.6203217,
+  "matched": "Yuma, Yuma County, Arizona, United States"
  }
 }

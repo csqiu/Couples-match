@@ -1,5 +1,6 @@
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+/** Supabase publishable key (sb_publishable_…), which replaced the legacy anon key. Safe in the browser: row level security applies. */
+export const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 /** Public URL of the app (invite links, auth redirects). On Vercel it falls back to the production domain. */
 export const APP_URL =
   process.env.APP_URL ??

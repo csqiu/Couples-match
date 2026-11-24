@@ -44,6 +44,57 @@ export interface CityPoint {
 export type DirectorySkip = { code: string; reason: 'not_rankable' | 'unknown_specialty' | 'bad_code' | 'unknown_state'; detail?: string };
 
 /** 9 characters, or 10 from a program's 11th track (e.g. 2978140C10). */
+/**
+ * City names the directory gets wrong: typos, a phone number, a room number. Keyed by
+ * the lower-case directory value (with the state where the value alone is ambiguous).
+ */
+const CITY_FIXES: Record<string, string> = {
+  '.|CT': 'New Haven', // Yale-New Haven Hosp
+  '.|TN': 'Nashville', // Vanderbilt Univ Med Ctr
+  '7346474144': 'Ann Arbor', // Univ of Michigan Hosps (a phone number)
+  'room b713': 'Los Angeles', // UCLA Med Ctr
+  'tripler amc': 'Honolulu',
+  'fort bliss': 'El Paso',
+  'st. ventura': 'Ventura',
+  'carmel hamlet': 'Carmel',
+  baltinore: 'Baltimore',
+  bethelem: 'Bethlehem',
+  brookyln: 'Brooklyn',
+  charletson: 'Charleston',
+  cincinnnati: 'Cincinnati',
+  fisherville: 'Fishersville',
+  galveton: 'Galveston',
+  'grand juction': 'Grand Junction',
+  greenvllle: 'Greenville',
+  kissinnee: 'Kissimmee',
+  lawerenceville: 'Lawrenceville',
+  'los angeles,ca': 'Los Angeles',
+  metaire: 'Metairie',
+  montogmery: 'Montgomery',
+  'new hyde park,new york 11040': 'New Hyde Park',
+  newyork: 'New York',
+  parkridge: 'Park Ridge',
+  'pasadena ca': 'Pasadena',
+  pennnington: 'Pennington',
+  philadelphai: 'Philadelphia',
+  portand: 'Portland',
+  rosevillle: 'Roseville',
+  'san franciso': 'San Francisco',
+  shrevesport: 'Shreveport',
+  'sleepy holllow': 'Sleepy Hollow',
+  'tampa,fl': 'Tampa',
+  "tom's river": 'Toms River',
+  vahalla: 'Valhalla',
+  valhalls: 'Valhalla',
+  westminister: 'Westminster',
+};
+
+/** The directory's city, tidied and corrected. */
+export function directoryCity(raw: string, state: string): string {
+  const key = raw.trim().toLowerCase();
+  return CITY_FIXES[`${key}|${state}`] ?? CITY_FIXES[key] ?? tidyCity(raw);
+}
+
 const NRMP_CODE = /^[0-9]{7}[A-Z][0-9]{1,2}$/;
 
 /** "Temple Univ Hosp-PA" → "Temple Univ Hosp"; "Univ of Alabama Hospital-Birmingham-AL" → "Univ of Alabama Hospital". */
@@ -99,7 +150,7 @@ export function directoryToPrograms(
       skipped.push({ code, reason: 'unknown_state', detail: r.State });
       continue;
     }
-    const city = tidyCity(r.City);
+    const city = directoryCity(r.City, state);
     const institution = institutionName(r['Program Name'], r.City, state);
     const point = cities[`${city}, ${state}`] ?? null;
     programs.push({
