@@ -76,6 +76,24 @@ describe('NRMP directory import', () => {
     expect(skipped.map((s) => s.reason)).toEqual(['not_rankable', 'not_rankable', 'unknown_specialty', 'bad_code']);
   });
 
+  it('gives programs that share a name the city, then the code', () => {
+    const { programs } = directoryToPrograms(
+      [
+        row({ 'Program Name': 'UC San Francisco-CA', City: 'San Francisco', State: 'California', 'NRMP Code': '1062140C0' }),
+        row({ 'Program Name': 'UC San Francisco-CA', City: 'Fresno', State: 'California', 'NRMP Code': '1022140C0' }),
+        row({ 'Program Name': 'Kaiser-CA', City: 'Oakland', State: 'California', 'NRMP Code': '1111140C0' }),
+        row({ 'Program Name': 'Kaiser-CA', City: 'Oakland', State: 'California', 'NRMP Code': '2222140C0' }),
+      ],
+      {},
+    );
+    expect(programs.map((p) => p.name)).toEqual([
+      'UC San Francisco — Internal Medicine',
+      'UC San Francisco — Internal Medicine (Fresno)',
+      'Kaiser — Internal Medicine (Oakland) · 1111140C0',
+      'Kaiser — Internal Medicine (Oakland) · 2222140C0',
+    ]);
+  });
+
   it('cleans names, cities and states', () => {
     expect(institutionName('Univ of Alabama Hospital-Birmingham-AL', 'Birmingham', 'AL')).toBe('Univ of Alabama Hospital');
     expect(institutionName('Temple Univ Hosp-PA', 'PHILADELPHIA', 'PA')).toBe('Temple Univ Hosp');

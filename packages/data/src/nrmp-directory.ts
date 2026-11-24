@@ -180,7 +180,29 @@ export function directoryToPrograms(
       createdByCouple: null,
     });
   }
+  disambiguateNames(programs);
   return { programs, skipped };
+}
+
+/**
+ * Different programs can share a name ("UC San Francisco — Internal Medicine" in San
+ * Francisco and in Fresno). Add the city where it isn't already in the name, then the
+ * NRMP code as a last resort, so every program's name is unique.
+ */
+export function disambiguateNames(programs: ProgramRecord[]): void {
+  const groups = (key: (p: ProgramRecord) => string) => {
+    const by = new Map<string, ProgramRecord[]>();
+    for (const p of programs) by.set(key(p), [...(by.get(key(p)) ?? []), p]);
+    return [...by.values()].filter((g) => g.length > 1);
+  };
+  for (const group of groups((p) => p.name)) {
+    for (const p of group) {
+      if (!p.name.toLowerCase().includes(p.city.toLowerCase())) p.name = `${p.name} (${p.city})`;
+    }
+  }
+  for (const group of groups((p) => p.name)) {
+    for (const p of group) p.name = `${p.name} · ${p.nrmpCode}`;
+  }
 }
 
 /**

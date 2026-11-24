@@ -152,14 +152,22 @@ export async function previewImport(csv: string, source: string): Promise<Import
   }));
 
   const supabase = await createClient();
-  const { data: existingRows } = await supabase
-    .from('programs')
-    .select('id, name, institution, specialty_code, lat, lon')
-    .is('created_by_couple', null)
-    .limit(20000);
-  const existingIds = new Set((existingRows ?? []).map((p) => p.id));
+  // Every global program, a page at a time (Supabase returns at most 1,000 rows per request).
+  const existingRows: Array<{ id: string; name: string; institution: string; specialty_code: string; lat: number | null; lon: number | null }> = [];
+  for (let from = 0; ; from += 1000) {
+    const { data: page, error } = await supabase
+      .from('programs')
+      .select('id, name, institution, specialty_code, lat, lon')
+      .is('created_by_couple', null)
+      .order('id')
+      .range(from, from + 999);
+    if (error) return { ...empty, error: error.message };
+    existingRows.push(...(page ?? []));
+    if (!page || page.length < 1000) break;
+  }
+  const existingIds = new Set(existingRows.map((p) => p.id));
   // Existing programs, shaped just enough for the pipeline's duplicate check.
-  const existing = (existingRows ?? []).map((p) => ({ id: p.id, name: p.name, institution: p.institution, specialtyCode: p.specialty_code, lat: p.lat, lon: p.lon })) as ProgramRecord[];
+  const existing = existingRows.map((p) => ({ id: p.id, name: p.name, institution: p.institution, specialtyCode: p.specialty_code, lat: p.lat, lon: p.lon })) as ProgramRecord[];
 
   // Metro areas are assigned by the database (from its boundary table), not here.
   const result = await importPrograms(rows, { geocoder: { geocode }, existing });
