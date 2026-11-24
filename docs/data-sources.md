@@ -12,6 +12,7 @@
 | ACGME public program search + downloadable data | | | | | | |
 | AMA FREIDA | | | | | | |
 | NRMP public reports (Program Results, Main Match data) | | | | | | |
+| NRMP Main Residency Match Program Directory (programdirectory.nrmp.org) | Specialty, program name, city/state, status, MRM/SOAP application service, NRMP code, ACGME code | No | Yes | No (saved page parsed; see `nrmp-directory/`) | Public data; owner approved use, no terms review needed (2026-11-24) | **Approved** |
 | SMS fellowship match pages (NRMP) | | | | | | |
 
 For each source, also record:

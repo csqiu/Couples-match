@@ -9,5 +9,5 @@ Extracted from a saved copy of the NRMP Main Residency Match Program Directory
 - `parse.py` / `build.py`: the scripts that produced them
   (`python3 parse.py <saved.html> raw.json && python3 build.py raw.json <outdir>`).
 
-Reference data only: not yet wired into the import pipeline. NRMP's terms of use still need
-checking per `docs/data-sources.md` before this is used in the app.
+Not yet wired into the import pipeline. The project owner has approved using this public
+NRMP directory data (see `docs/data-sources.md`).
