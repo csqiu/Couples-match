@@ -8,6 +8,7 @@ import {
   IMPACT_TAIL_WEIGHT,
   CALIBRATION_SEARCH_DEPTHS,
   MAX_QUESTIONS,
+  MOOT_CONFIDENCE,
   QUESTION_WINDOW,
   STOP_ADJACENT_FRACTION,
   STOP_ORDER_CONFIDENCE,
@@ -15,6 +16,7 @@ import {
   TRADEOFF_BOOST,
 } from './defaults';
 import { THETA_DIM, pairFeatures, type PairFeatures } from './features';
+import { pairId } from './candidates';
 import { isHub, type Graph } from './graph';
 import { linearMoments, orderConfidence, posteriorMoments, predictiveApprox, type PosteriorMoments } from './posterior';
 import type { RankedList } from './rank';
@@ -171,7 +173,40 @@ function evaluate(ctx: Ctx, u: number, v: number, kind: Question['kind']): Quest
   };
 }
 
-/** Every open question: pairs not ordered by the hard graph, within `window` positions, not yet asked. */
+/** True when pair u is above pair v by a hard rule, or in the current list with confidence ≥ MOOT_CONFIDENCE. */
+function surelyAbove(ctx: Ctx, u: number, v: number): boolean {
+  if (mustRankAbove(ctx.closure, u, v)) return true;
+  if (ctx.position[u] > ctx.position[v]) return false;
+  const fu = ctx.features[u];
+  const fv = ctx.features[v];
+  for (let i = 0; i < THETA_DIM; i++) diff[i] = fu.phi[i] - fv.phi[i];
+  const { mean, variance } = linearMoments(ctx.moments, diff, fu.bonus - fv.bonus);
+  return orderConfidence(mean, variance) >= MOOT_CONFIDENCE;
+}
+
+/**
+ * True when the order of u and v can never decide where the couple matches.
+ * For (a1, b1) vs (a2, b2) with a1 ≠ a2 and b1 ≠ b2: if both pairs are reachable,
+ * partner 1 can get a1 and partner 2 can get b2 (and likewise a2, b1), so the swapped
+ * pairs are reachable too. If a swapped pair is above both, the Match stops there first.
+ * Pairs that share a program have no swapped pair and are never moot.
+ */
+export function isMootComparison(g: Graph, u: number, v: number, above: (c: number, x: number) => boolean): boolean {
+  const [a1, b1] = g.pairs[u].programs;
+  const [a2, b2] = g.pairs[v].programs;
+  if (a1 === a2 || b1 === b2) return false;
+  for (const id of [pairId(a1, b2), pairId(a2, b1)]) {
+    const c = g.index.get(id);
+    if (c !== undefined && above(c, u) && above(c, v)) return true;
+  }
+  return false;
+}
+
+function moot(ctx: Ctx, u: number, v: number): boolean {
+  return isMootComparison(ctx.g, u, v, (c, x) => surelyAbove(ctx, c, x));
+}
+
+/** Every open question: pairs not ordered by the hard graph, within `window` positions, not yet asked, not moot. */
 function openQuestions(list: RankedList, ctx: Ctx, window: number): Array<[number, number]> {
   const out: Array<[number, number]> = [];
   const order = list.order.map((id) => ctx.g.index.get(id)!);
@@ -181,6 +216,7 @@ function openQuestions(list: RankedList, ctx: Ctx, window: number): Array<[numbe
       const v = order[j];
       if (hardOrdered(ctx.closure, u, v)) continue;
       if (ctx.asked.has(questionKey(ctx.g.pairs[u].id, ctx.g.pairs[v].id))) continue;
+      if (moot(ctx, u, v)) continue;
       out.push([u, v]);
     }
   }
@@ -308,21 +344,27 @@ export function learningStatus(list: RankedList, posterior: Posterior, compariso
   const closure = hardClosure(g);
   const m = posteriorMoments(posterior);
   const top = Math.min(STOP_TOP, list.order.length);
+  const orderSure = (u: number, v: number) => {
+    const fu = pairFeatures(g.pairs[u], g.settings);
+    const fv = pairFeatures(g.pairs[v], g.settings);
+    for (let d = 0; d < THETA_DIM; d++) diff[d] = fu.phi[d] - fv.phi[d];
+    const { mean, variance } = linearMoments(m, diff, fu.bonus - fv.bonus);
+    return orderConfidence(mean, variance);
+  };
+  // A swapped pair counts as above x when it is earlier in the list and the model is sure of it.
+  const adjacentSure = (c: number, x: number) =>
+    (list.position.get(g.pairs[c].id) ?? Infinity) < (list.position.get(g.pairs[x].id) ?? Infinity) && orderSure(c, x) >= MOOT_CONFIDENCE;
   let sure = 0;
   let total = 0;
   for (let i = 0; i + 1 < top; i++) {
     const u = g.index.get(list.order[i])!;
     const v = g.index.get(list.order[i + 1])!;
     total++;
-    if (mustRankAbove(closure, u, v)) {
+    if (mustRankAbove(closure, u, v) || isMootComparison(g, u, v, (c, x) => mustRankAbove(closure, c, x) || adjacentSure(c, x))) {
       sure++;
       continue;
     }
-    const fu = pairFeatures(g.pairs[u], g.settings);
-    const fv = pairFeatures(g.pairs[v], g.settings);
-    for (let d = 0; d < THETA_DIM; d++) diff[d] = fu.phi[d] - fv.phi[d];
-    const { mean, variance } = linearMoments(m, diff, fu.bonus - fv.bonus);
-    if (orderConfidence(mean, variance) >= STOP_ORDER_CONFIDENCE) sure++;
+    if (orderSure(u, v) >= STOP_ORDER_CONFIDENCE) sure++;
   }
   const confidence = total ? sure / total : 1;
   const answered = effectiveComparisons(comparisons).counted.length;

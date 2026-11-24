@@ -352,6 +352,7 @@ export type Database = {
           higher_pair: string
           id: string
           lower_pair: string
+          moved_pair: string | null
           source: Database["public"]["Enums"]["pin_source"]
         }
         Insert: {
@@ -362,6 +363,7 @@ export type Database = {
           higher_pair: string
           id?: string
           lower_pair: string
+          moved_pair?: string | null
           source: Database["public"]["Enums"]["pin_source"]
         }
         Update: {
@@ -372,6 +374,7 @@ export type Database = {
           higher_pair?: string
           id?: string
           lower_pair?: string
+          moved_pair?: string | null
           source?: Database["public"]["Enums"]["pin_source"]
         }
         Relationships: [
@@ -447,6 +450,7 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           name: string
           nrmp_code: string | null
+          short_name: string | null
           source: string
           specialty_code: string
           specialty_name: string
@@ -473,6 +477,7 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           name: string
           nrmp_code?: string | null
+          short_name?: string | null
           source: string
           specialty_code: string
           specialty_name: string
@@ -499,6 +504,7 @@ export type Database = {
           match_type?: Database["public"]["Enums"]["match_type"]
           name?: string
           nrmp_code?: string | null
+          short_name?: string | null
           source?: string
           specialty_code?: string
           specialty_name?: string

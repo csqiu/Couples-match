@@ -360,7 +360,7 @@ describe('Explanations and manual moves', () => {
     const blocked = proposeMove(ranked, 'a2|b2', 'a1|b1');
     expect(blocked.ok).toBe(false);
     const allowed = proposeMove(ranked, 'a2|b1', 'a1|b2');
-    expect(allowed).toEqual({ ok: true, pin: { higher: 'a2|b1', lower: 'a1|b2', source: 'manual_drag' } });
+    expect(allowed).toEqual({ ok: true, pin: { higher: 'a2|b1', lower: 'a1|b2', source: 'manual_drag', moved: 'higher' } });
   });
 
   it('disagreements in separate mode are reported and not counted', () => {

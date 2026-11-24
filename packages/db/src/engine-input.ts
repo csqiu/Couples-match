@@ -28,14 +28,21 @@ import type {
 export interface StoredSettings extends Partial<Omit<CoupleSettings, 'matchType'>> {
   /** "private_tiers": each partner's tiers feed the engine but are hidden from the other in the UI. */
   privacy?: 'shared' | 'private_tiers';
+  /** Pairs the couple added to the final list by hand (from "Not on your list"). */
+  includedPairs?: string[];
+  /** True when the No Match rows at the end of the final list may be moved. */
+  noMatchUnlocked?: boolean;
 }
+
+/** Settings keys the app keeps but the engine never sees. */
+export const APP_ONLY_SETTINGS = ['privacy', 'includedPairs', 'noMatchUnlocked'] as const;
 
 export interface CoupleData {
   couple: Pick<CoupleRow, 'id' | 'partner_a' | 'partner_b' | 'match_type' | 'settings'>;
-  programs: Array<Pick<ProgramRow, 'id' | 'name' | 'institution' | 'city' | 'state' | 'lat' | 'lon' | 'cbsa_code' | 'nrmp_code' | 'is_advanced'>>;
+  programs: Array<Pick<ProgramRow, 'id' | 'name' | 'institution' | 'city' | 'state' | 'lat' | 'lon' | 'cbsa_code' | 'nrmp_code' | 'is_advanced'> & { short_name?: string | null }>;
   ranks: Array<Pick<IndividualRankRow, 'user_id' | 'program_id' | 'rank' | 'tier' | 'acceptable' | 'note' | 'nrmp_code'>>;
   comparisons: Array<Pick<ComparisonRow, 'id' | 'pair_left' | 'pair_right' | 'winner' | 'answered_by' | 'both_agreed' | 'locked' | 'seq'>>;
-  pins: Array<Pick<PinRow, 'id' | 'higher_pair' | 'lower_pair' | 'source' | 'comparison_id'>>;
+  pins: Array<Pick<PinRow, 'id' | 'higher_pair' | 'lower_pair' | 'source' | 'comparison_id'> & { moved_pair?: string | null }>;
   exclusions: Array<Pick<PairExclusionRow, 'program_a' | 'program_b' | 'reason'>>;
   exceptions: Array<Pick<RuleExceptionRow, 'higher_pair' | 'lower_pair'>>;
 }
@@ -57,7 +64,7 @@ export function coupleSeed(coupleId: string): number {
 
 export function settingsFrom(couple: Pick<CoupleRow, 'match_type' | 'settings'>): CoupleSettings {
   const stored = (couple.settings ?? {}) as StoredSettings;
-  const { privacy: _privacy, ...engine } = stored;
+  const { privacy: _privacy, includedPairs: _included, noMatchUnlocked: _unlocked, ...engine } = stored;
   return withDefaults({ ...engine, matchType: couple.match_type as MatchType });
 }
 
@@ -77,6 +84,7 @@ export function buildEngineInput(data: CoupleData): EngineInput {
       cbsaCode: p.cbsa_code,
       nrmpCode: p.nrmp_code,
       isAdvanced: p.is_advanced,
+      ...(p.short_name ? { shortName: p.short_name } : {}),
     };
   }
 
@@ -117,6 +125,7 @@ export function buildEngineInput(data: CoupleData): EngineInput {
       lower: p.lower_pair,
       source: p.source,
       ...(p.comparison_id ? { comparisonId: p.comparison_id } : {}),
+      ...(p.moved_pair === 'higher' || p.moved_pair === 'lower' ? { moved: p.moved_pair } : {}),
     })),
     exclusions: data.exclusions.map((x) => ({
       programA: toEngineProgramId(x.program_a),

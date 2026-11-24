@@ -1,6 +1,7 @@
 /**
  * Producing the list (Section 5.7) and explaining it.
  */
+import { isNoMatchPair } from './candidates';
 import { NRMP_RULES } from './rules';
 import { stronglyConnected } from './conflicts';
 import { edgeReasons, isHub, pathToLinks, shortestPath, type Graph } from './graph';
@@ -81,11 +82,52 @@ class PairHeap {
   }
 }
 
+/** Below every real score: No Match pairs only order among themselves. */
+const NO_MATCH_KEY_BASE = -1e6;
+
 /**
- * Kahn's algorithm on the constraint graph: among pairs with no remaining
- * predecessors, emit the one with the highest posterior mean score. Edges inside
- * an unresolved cycle are ignored so a list can still be shown while the couple
- * resolves it.
+ * With "No Match at the bottom", No Match pairs follow a fixed pattern instead of
+ * their scores: partner 1 matching with partner 2 unmatched, in partner 1's order
+ * (1–NM, 2–NM, …), then the reverse (NM–1, NM–2, …). See DECISIONS.md.
+ */
+function noMatchPatternKeys(g: Graph, key: Float64Array): void {
+  const nm = g.pairs.filter(isNoMatchPair);
+  const first = nm.filter((p) => p.programs[1] === NO_MATCH).sort((a, b) => a.rank[0] - b.rank[0] || a.index - b.index);
+  const second = nm.filter((p) => p.programs[0] === NO_MATCH).sort((a, b) => a.rank[1] - b.rank[1] || a.index - b.index);
+  [...first, ...second].forEach((p, i) => (key[g.index.get(p.id)!] = NO_MATCH_KEY_BASE - i));
+}
+
+/**
+ * Kahn's algorithm: among pairs with no remaining predecessors, emit the one with the
+ * highest key. Edges inside an unresolved cycle, and drag edges of a later stage, are skipped.
+ */
+function kahn(g: Graph, key: Float64Array, skip: (u: number, v: number) => boolean): number[] {
+  const indeg = new Int32Array(g.size);
+  for (let u = 0; u < g.size; u++) for (const v of g.out[u]) if (!skip(u, v)) indeg[v]++;
+  const heap = new PairHeap(key);
+  for (let i = 0; i < g.size; i++) if (indeg[i] === 0) heap.push(i);
+  const order: number[] = [];
+  while (heap.size) {
+    const u = heap.pop();
+    if (!isHub(g, u)) order.push(u);
+    for (const v of g.out[u]) {
+      if (skip(u, v)) continue;
+      if (--indeg[v] === 0) heap.push(v);
+    }
+  }
+  return order;
+}
+
+/**
+ * Produces the list: first by score (Kahn's algorithm on the constraint graph, highest
+ * posterior mean first), then each manual drag replayed on the list as it stood before
+ * it, so the moved pair lands where it was dropped:
+ *  - dragged up above a target: it takes the target's place, and the rows in between
+ *    move down one (anything that must stay above it comes along);
+ *  - dragged down below a target: it lands just under it, and the rows in between move up.
+ * A pin alone would only say "above" and leave the pair behind everything that scores
+ * higher. Edges inside an unresolved cycle are ignored so a list can still be shown
+ * while the couple resolves it.
  */
 export function rankPairs(g: Graph, scores: Map<PairId, ScoreSummary>, opts: RankOptions = {}): RankedList {
   const { compOf, comps } = stronglyConnected(g);
@@ -95,21 +137,37 @@ export function rankPairs(g: Graph, scores: Map<PairId, ScoreSummary>, opts: Ran
   // Hubs get +Infinity so they are released as soon as all their tops are placed.
   const key = new Float64Array(g.size).fill(Infinity);
   g.pairs.forEach((p, i) => (key[i] = scores.get(p.id)?.mean ?? 0));
+  if (g.settings.noMatchAtBottom) noMatchPatternKeys(g, key);
 
-  const indeg = new Int32Array(g.size);
-  for (let u = 0; u < g.size; u++) for (const v of g.out[u]) if (!ignore(u, v)) indeg[v]++;
+  let stage = -1;
+  const skip = (u: number, v: number) => ignore(u, v) || (g.dragStage.get(u * g.size + v) ?? -1) > stage;
+  let order = kahn(g, key, skip);
 
-  const heap = new PairHeap(key);
-  for (let i = 0; i < g.size; i++) if (indeg[i] === 0) heap.push(i);
-
-  const order: number[] = [];
-  while (heap.size) {
-    const u = heap.pop();
-    if (!isHub(g, u)) order.push(u);
-    for (const v of g.out[u]) {
-      if (ignore(u, v)) continue;
-      if (--indeg[v] === 0) heap.push(v);
+  for (let k = 0; k < g.drags.length; k++) {
+    stage = k;
+    // Keys that reproduce the current order exactly; the drag then changes only what it must.
+    order.forEach((u, pos) => (key[u] = -pos));
+    const d = g.drags[k];
+    if (d.moved === 'higher') {
+      const top = key[d.lower] + 0.5;
+      if (key[d.higher] < top) {
+        key[d.higher] = top;
+        // Pairs that must stay above the moved one come along, keeping their own order.
+        const seen = new Uint8Array(g.size);
+        const queue = [d.higher];
+        seen[d.higher] = 1;
+        for (let i = 0; i < queue.length; i++) {
+          const v = queue[i];
+          for (const u of g.in[v]) {
+            if (seen[u] || skip(u, v)) continue;
+            seen[u] = 1;
+            queue.push(u);
+            if (!isHub(g, u) && key[u] < top) key[u] = top + 0.25 + key[u] * 1e-6;
+          }
+        }
+      }
     }
+    order = kahn(g, key, skip);
   }
 
   const cap = NRMP_RULES.maxRanksPerPartner;
@@ -204,18 +262,20 @@ export type MoveCheck =
   | { ok: false; blocking: Link[] };
 
 /**
- * The couple dragged `moving` above `target`. Allowed → a manual_drag pin to save.
+ * The couple wants `moving` above `target`. Allowed → a manual_drag pin to save.
+ * `moved` says which of the two they dragged: 'higher' (`moving` dragged up above
+ * `target`) or 'lower' (`target` dragged down below `moving`).
  * Blocked by a hard edge → the chain of reasons, so the UI can offer
  * "override with exception" (breakLink on one of the links) or cancel.
  */
-export function proposeMove(list: RankedList, moving: PairId, target: PairId): MoveCheck {
+export function proposeMove(list: RankedList, moving: PairId, target: PairId, moved: 'higher' | 'lower' = 'higher'): MoveCheck {
   const g = list.graph;
   const im = g.index.get(moving);
   const it = g.index.get(target);
   if (im === undefined || it === undefined) throw new Error('Unknown pair');
   const path = shortestPath(g, it, im);
   if (path) return { ok: false, blocking: pathToLinks(g, path) };
-  return { ok: true, pin: { higher: moving, lower: target, source: 'manual_drag' } };
+  return { ok: true, pin: { higher: moving, lower: target, source: 'manual_drag', moved } };
 }
 
 export interface Inversion {
