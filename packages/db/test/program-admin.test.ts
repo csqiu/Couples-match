@@ -113,7 +113,7 @@ describe('Program admin', () => {
         id, name: 'Test IM', institution: 'Test Hospital', specialtyCode: 'internal-medicine', specialtyName: 'Internal Medicine',
         matchType: 'main', matchName: 'Main Residency Match', acgmeId: id.replace('acgme-', ''), city: 'Boston', state: 'MA',
         address: '1 Main St, Boston, MA', lat: 42.36, lon: -71.06, geocodeConfidence: 0.95, geocodeSource: 'census',
-        isAdvanced: false, source: 'test-import', verified: true, ...extra,
+        isAdvanced: false, source: 'test-import', verified: true, nrmpCode: '1234140C0', ...extra,
       });
       await db.as(a);
       expect(await db.error('select * from import_programs($1)', [JSON.stringify([program('acgme-1')])])).toMatch(/not_admin/);
@@ -139,7 +139,9 @@ describe('Program admin', () => {
       expect(
         await db.one('select * from import_programs($1)', [JSON.stringify([program('acgme-1', { name: 'Renamed IM' }), program('acgme-3')])]),
       ).toEqual({ inserted: 1, updated: 1 });
-      expect(await db.one("select name, lat, geocode_source from programs where id = 'acgme-1'")).toEqual({ name: 'Renamed IM', lat: 42.5, geocode_source: 'manual' });
+      expect(await db.one("select name, lat, geocode_source, nrmp_code from programs where id = 'acgme-1'")).toEqual({
+        name: 'Renamed IM', lat: 42.5, geocode_source: 'manual', nrmp_code: '1234140C0',
+      });
       // Never overwrites a couple's private program or creates "user-" ids.
       await db.as(a);
       const dup = await addDuplicate(db, coupleId);

@@ -1,4 +1,7 @@
-export const PROGRAM_COLUMNS = 'id, name, institution, city, state, lat, lon, specialty_code, specialty_name, cbsa_name, created_by_couple';
+export const PROGRAM_COLUMNS = 'id, name, institution, city, state, lat, lon, specialty_code, specialty_name, cbsa_name, created_by_couple, nrmp_code';
+
+/** Search shows this many at most; narrow by specialty, state or name for the rest. */
+export const SEARCH_LIMIT = 60;
 
 export interface ProgramLite {
   id: string;
@@ -13,6 +16,7 @@ export interface ProgramLite {
   cbsa_name: string | null;
   /** Set for a program this couple added themselves (not yet checked by an admin). */
   created_by_couple: string | null;
+  nrmp_code: string | null;
 }
 
 export interface MapPoint {

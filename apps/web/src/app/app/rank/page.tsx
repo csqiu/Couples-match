@@ -12,13 +12,13 @@ export default async function RankPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from('individual_ranks')
-    .select('program_id, rank, tier, acceptable, nrmp_code, program:programs(name, city, state)')
+    .select('program_id, rank, tier, acceptable, nrmp_code, program:programs(name, city, state, nrmp_code)')
     .eq('couple_id', ctx.couple.id)
     .eq('user_id', ctx.user.id)
     .order('rank');
   const entries: BoardEntry[] = (data ?? []).map((r) => {
-    const p = r.program as unknown as { name: string; city: string; state: string };
-    return { programId: r.program_id, tier: r.tier, acceptable: r.acceptable, nrmpCode: r.nrmp_code ?? '', name: p.name, place: `${p.city}, ${p.state}` };
+    const p = r.program as unknown as { name: string; city: string; state: string; nrmp_code: string | null };
+    return { programId: r.program_id, tier: r.tier, acceptable: r.acceptable, nrmpCode: r.nrmp_code ?? '', officialCode: p.nrmp_code ?? undefined, name: p.name, place: `${p.city}, ${p.state}` };
   });
 
   return (

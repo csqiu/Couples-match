@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { displayName, requireCouple } from '@/lib/context';
 import { createClient } from '@/lib/supabase/server';
 import { ProgramsView } from './programs-view';
-import { PROGRAM_COLUMNS, type ProgramLite } from './types';
+import { PROGRAM_COLUMNS, SEARCH_LIMIT, type ProgramLite } from './types';
 
 export const metadata: Metadata = { title: 'My programs' };
 
@@ -21,18 +21,19 @@ export default async function ProgramsPage() {
   const partners = rows.filter((r) => r.user_id === partnerId).map((r) => r.program);
 
   // Show my specialty's programs first.
-  const { data: initial } = await supabase
+  const { data: initial, count } = await supabase
     .from('programs')
-    .select(PROGRAM_COLUMNS)
+    .select(PROGRAM_COLUMNS, { count: 'exact' })
     .eq('specialty_code', ctx.profile.specialty!)
     .order('name')
-    .limit(60);
+    .limit(SEARCH_LIMIT);
 
   return (
     <ProgramsView
       mySpecialty={ctx.profile.specialty!}
       specialties={specialties ?? []}
       initialResults={(initial ?? []) as ProgramLite[]}
+      initialTotal={count ?? 0}
       mine={mine}
       partners={partners}
       partnerName={partnerId ? displayName(ctx.partner) : null}

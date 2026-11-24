@@ -31,6 +31,8 @@ export interface BoardEntry {
   tier: Tier;
   acceptable: boolean;
   nrmpCode: string;
+  /** From the NRMP directory: shown, not typed. */
+  officialCode?: string;
   name: string;
   place: string;
 }
@@ -74,7 +76,7 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
   const dndId = useId();
 
   // Live updates (e.g. from another tab) replace local state unless a drag is in progress.
-  const initialKey = initial.map((e) => `${e.programId}:${e.tier}:${e.acceptable}:${e.nrmpCode}`).join('|');
+  const initialKey = initial.map((e) => `${e.programId}:${e.tier}:${e.acceptable}:${e.nrmpCode}:${e.officialCode ?? ''}`).join('|');
   useEffect(() => {
     if (!activeId) setBoard(group(initial));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -307,30 +309,42 @@ function RowCard({
       </div>
       {overlay ? null : (
         <div className="flex w-full items-center justify-end gap-1 sm:w-auto">
-          <label className="sr-only" htmlFor={`code-${entry.programId}`}>NRMP code for {entry.name}</label>
-          <input
-            id={`code-${entry.programId}`}
-            value={code}
-            onChange={(e) => {
-              setCode(e.target.value.toUpperCase());
-              setCodeError(null);
-            }}
-            onBlur={async () => {
-              if (code === entry.nrmpCode) return;
-              if (code && !isValidProgramCode(code)) return setCodeError('9 characters, e.g. 1234140C0');
-              const res = await saveCode(entry.programId, code);
-              if (res.error) setCodeError(res.error);
-              else toast({ message: code ? `Saved code ${code} for ${entry.name}` : `Cleared code for ${entry.name}` });
-            }}
-            placeholder="NRMP code"
-            maxLength={9}
-            aria-invalid={!!codeError}
-            title={codeError ?? 'Type the program code from R3'}
-            className={cn(
-              'min-h-11 w-28 rounded-lg border bg-surface px-2 font-mono text-xs uppercase placeholder:font-sans placeholder:normal-case',
-              codeError ? 'border-danger' : 'border-border',
-            )}
-          />
+          {entry.officialCode ? (
+            <span
+              className="inline-flex min-h-11 w-28 items-center rounded-lg px-2 font-mono text-xs text-muted"
+              title="NRMP code from the official program directory"
+            >
+              <span className="sr-only">NRMP code </span>
+              {entry.officialCode}
+            </span>
+          ) : (
+            <>
+            <label className="sr-only" htmlFor={`code-${entry.programId}`}>NRMP code for {entry.name}</label>
+            <input
+              id={`code-${entry.programId}`}
+              value={code}
+              onChange={(e) => {
+                setCode(e.target.value.toUpperCase());
+                setCodeError(null);
+              }}
+              onBlur={async () => {
+                if (code === entry.nrmpCode) return;
+                if (code && !isValidProgramCode(code)) return setCodeError('9 or 10 characters, e.g. 1234140C0');
+                const res = await saveCode(entry.programId, code);
+                if (res.error) setCodeError(res.error);
+                else toast({ message: code ? `Saved code ${code} for ${entry.name}` : `Cleared code for ${entry.name}` });
+              }}
+              placeholder="NRMP code"
+              maxLength={10}
+              aria-invalid={!!codeError}
+              title={codeError ?? 'Type the program code from R3'}
+              className={cn(
+                'min-h-11 w-28 rounded-lg border bg-surface px-2 font-mono text-xs uppercase placeholder:font-sans placeholder:normal-case',
+                codeError ? 'border-danger' : 'border-border',
+              )}
+            />
+            </>
+          )}
           <Select
             aria-label={`Tier for ${entry.name}`}
             value={entry.tier}

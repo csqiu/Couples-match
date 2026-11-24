@@ -15,7 +15,9 @@
     "import": "tsx src/cli/import.ts",
     "geocode:seed": "tsx src/cli/geocode-seed.ts",
     "seed:sql": "tsx src/cli/seed-sql.ts",
-    "demo": "tsx src/cli/demo.ts"
+    "demo": "tsx src/cli/demo.ts",
+    "nrmp:cities": "tsx src/cli/nrmp-cities.ts",
+    "nrmp:load": "tsx src/cli/nrmp-load.ts"
   },
   "dependencies": {
     "@pairwise/engine": "workspace:*"

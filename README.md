@@ -103,7 +103,7 @@ above the other.
 | 5 | Web app: setup and invites, program search with map, rank and tier | ✅ Done |
 | 6 | “This or that” comparison cards, conflict resolution | ✅ Done |
 | 7 | Final list, versions, export | ✅ Done |
-| 8 | Admin review, user-added programs, program import | ✅ Done (the full program list waits on the source research) |
+| 8 | Admin review, user-added programs, program import, full NRMP Main Match program list | ✅ Done |
 | 9 | Map of the list, activity feed, account page, accessibility pass, deploy prep | ✅ Done (the deploy itself needs your Vercel account: see [docs/deploy.md](docs/deploy.md)) |
 
 ## Running it
@@ -116,6 +116,7 @@ pnpm test                                   # run the engine's test suite
 pnpm engine:cli fixtures/sample.json        # print a ranked list for an example couple
 pnpm engine:cli fixtures/sample.json --top 60 --why 2,4   # …and explain why row 2 is above row 4
 pnpm --filter @pairwise/data demo internal-medicine pediatrics   # a list built from real seed programs
+pnpm --filter @pairwise/data nrmp:load --dry-run                 # what the NRMP directory import would load
 ```
 
 **Database tests** (`packages/db`) need PostgreSQL 16 with PostGIS on the machine. On
@@ -202,14 +203,21 @@ Inside `packages/data/src`:
 
 ## Program data
 
-There is no public NRMP file of program codes with locations, so Pairwise builds its own
-program list:
-
-- **Seed.** 57 real programs in Internal Medicine, Pediatrics, General Surgery, Emergency
-  Medicine and Psychiatry, across Boston, New York, Baltimore/DC, Chicago, the Bay Area
-  and Houston (`packages/data/seed/programs.json`). Their map positions have been
-  checked with the geocoders: every one was within a quarter mile. They have no NRMP
-  codes: each couple types their own codes from R3.
+- **The NRMP Main Residency Match directory.** Every rankable program track in the 2027
+  Main Match: 7,096 tracks in 49 specialties, from the public NRMP Program Directory
+  (`nrmp-directory/`, approved in [docs/data-sources.md](docs/data-sources.md)).
+  - Each track is one program, with its **official NRMP code**, so couples don't type
+    codes from R3. Withdrawn and not-participating tracks are left out.
+  - Preliminary, advanced, physician-only and extra tracks are labelled in the name
+    ("(Advanced)", "(track 2)").
+  - **Locations are city centres**, because the directory has no street addresses.
+    Distances between cities are accurate; two programs in the same city count as 0
+    miles apart. Hospitals that were in the seed list have their exact address, and so
+    do all their other specialties.
+  - To reload after a new directory export, see `nrmp-directory/README.md`.
+- **Seed.** The original 57 hand-entered programs. They've been merged into their NRMP
+  tracks, keeping their exact addresses. One (Boston Medical Center Pediatrics) has no
+  directory track and stays as it was.
 - **Programs couples add.** If a program isn't listed, a couple can add it ("Add a
   program not listed"). It's found on the map, offered as a match if something similar
   is already listed, and kept private to that couple until an admin approves it.
@@ -223,8 +231,7 @@ program list:
   4. Sends anything doubtful to an admin review list: a vague map location, a possible
      duplicate, or a program outside every metro.
 
-  Which websites we may take the full program list from is still being researched; see
-  [docs/data-sources.md](docs/data-sources.md).
+  The admin import screen uses this for smaller lists from other sources.
 
 ### Admin
 

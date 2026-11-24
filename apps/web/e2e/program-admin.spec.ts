@@ -56,7 +56,7 @@ test('add a program not listed, admin merges it, admin imports a CSV', async ({ 
   await form.getByLabel('ZIP').fill('02114');
   await form.getByRole('button', { name: 'Add program' }).click();
   await expect(form.getByText('Is it one of these?')).toBeVisible({ timeout: 30_000 });
-  await expect(form.getByText('Massachusetts General Hospital — Internal Medicine')).toBeVisible();
+  await expect(form.getByText('MGB-Massachusetts Gen Hosp — Internal Medicine', { exact: true })).toBeVisible();
   await shot(alex, '40-add-program-similar');
   await form.getByRole('button', { name: 'Cancel' }).click();
 
@@ -91,14 +91,14 @@ test('add a program not listed, admin merges it, admin imports a CSV', async ({ 
   await shot(admin, '42-admin-review');
 
   await card.getByRole('button', { name: 'Merge into…' }).click();
-  await card.getByLabel(/Merge “.*” into another/).fill('Boston Medical');
-  await card.getByRole('listitem').filter({ hasText: 'Boston Medical Center — Internal Medicine' }).getByRole('button', { name: 'Merge into this' }).click();
-  await expect(admin.getByText('Merged into Boston Medical Center — Internal Medicine')).toBeVisible();
+  await card.getByLabel(/Merge “.*” into another/).fill('Boston Univ');
+  await card.getByRole('listitem').filter({ hasText: 'Boston Univ Med Ctr — Internal Medicine' }).first().getByRole('button', { name: 'Merge into this' }).click();
+  await expect(admin.getByText('Merged into Boston Univ Med Ctr — Internal Medicine')).toBeVisible();
   await expect(admin.getByTestId('review-program').filter({ hasText: NEW_NAME })).toHaveCount(0);
 
   // Alex's list now has the listed program in its place.
   await alex.goto('/app/programs');
-  await expect(alex.getByRole('button', { name: 'Remove Boston Medical Center — Internal Medicine' }).first()).toBeVisible();
+  await expect(alex.getByRole('button', { name: 'Remove Boston Univ Med Ctr — Internal Medicine' }).first()).toBeVisible();
   await expect(alex.getByRole('button', { name: `Remove ${NEW_NAME}` })).toHaveCount(0);
 
   // Couples can't open the admin area.
@@ -112,7 +112,7 @@ test('add a program not listed, admin merges it, admin imports a CSV', async ({ 
     [
       'name,institution,specialty,street,city,state,zip,acgme_id',
       'E2E Import Tufts Pediatrics,Tufts Medical Center,Pediatrics,800 Washington St,Boston,MA,02111,e2e-0001',
-      'Massachusetts General Hospital Internal Medicine,Massachusetts General Hospital,Internal Medicine,55 Fruit St,Boston,MA,02114,',
+      'MGB-Massachusetts Gen Hosp Internal Medicine,MGB-Massachusetts Gen Hosp,Internal Medicine,55 Fruit St,Boston,MA,02114,',
       'Basket Weaving,Somewhere,Underwater Basket Weaving,1 Main St,Boston,MA,02111,',
     ].join('\n'),
   );

@@ -11,7 +11,12 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { addProgram, removeProgram, searchPrograms } from './actions';
 import { AddProgramForm } from './add-program-form';
+import { US_STATES } from '@pairwise/data';
 import type { MapPoint, ProgramLite } from './types';
+
+const STATE_OPTIONS = Object.entries(US_STATES)
+  .map(([name, code]) => ({ code, name: name.replace(/\b[a-z]/g, (c) => c.toUpperCase()).replace(' Of ', ' of ') }))
+  .sort((a, b) => a.name.localeCompare(b.name));
 
 const ProgramMap = dynamic(() => import('./program-map').then((m) => m.ProgramMap), {
   ssr: false,
@@ -22,6 +27,7 @@ export function ProgramsView({
   mySpecialty,
   specialties,
   initialResults,
+  initialTotal,
   mine,
   partners,
   partnerName,
@@ -29,6 +35,7 @@ export function ProgramsView({
   mySpecialty: string;
   specialties: Array<{ code: string; name: string }>;
   initialResults: ProgramLite[];
+  initialTotal: number;
   mine: ProgramLite[];
   partners: ProgramLite[];
   partnerName: string | null;
@@ -37,6 +44,8 @@ export function ProgramsView({
   const [query, setQuery] = useState('');
   const [specialty, setSpecialty] = useState(mySpecialty);
   const [results, setResults] = useState(initialResults);
+  const [total, setTotal] = useState(initialTotal);
+  const [state, setState] = useState('');
   const [searching, startSearch] = useTransition();
   const [showPartner, setShowPartner] = useState(true);
   const [pending, setPending] = useState<string | null>(null);
@@ -44,9 +53,17 @@ export function ProgramsView({
   const mineIds = useMemo(() => new Set(mine.map((p) => p.id)), [mine]);
 
   useEffect(() => {
-    const t = setTimeout(() => startSearch(async () => setResults(await searchPrograms(query, specialty))), 250);
+    const t = setTimeout(
+      () =>
+        startSearch(async () => {
+          const res = await searchPrograms(query, specialty, state);
+          setResults(res.results);
+          setTotal(res.total);
+        }),
+      250,
+    );
     return () => clearTimeout(t);
-  }, [query, specialty]);
+  }, [query, specialty, state]);
 
   const points: MapPoint[] = useMemo(() => {
     const pt = (p: ProgramLite, owner: MapPoint['owner']) =>
@@ -82,7 +99,7 @@ export function ProgramsView({
               <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
               <Input
                 className="pl-9"
-                placeholder="Name, institution or city"
+                placeholder="Name, city or NRMP code"
                 aria-label="Search programs"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -94,9 +111,19 @@ export function ProgramsView({
                 <option key={s.code} value={s.code}>{s.name}</option>
               ))}
             </Select>
+            <Select aria-label="State" value={state} onChange={(e) => setState(e.target.value)} className="sm:max-w-36">
+              <option value="">All states</option>
+              {STATE_OPTIONS.map((s) => (
+                <option key={s.code} value={s.code}>{s.name}</option>
+              ))}
+            </Select>
           </div>
           <p className="text-xs text-muted" aria-live="polite">
-            {searching ? 'Searching…' : `${results.length} program${results.length === 1 ? '' : 's'}`}
+            {searching
+              ? 'Searching…'
+              : total > results.length
+                ? `Showing ${results.length} of ${total} programs. Type a name or city, or pick a state, to narrow it down.`
+                : `${total} program${total === 1 ? '' : 's'}`}
           </p>
           <ul className="flex max-h-[60vh] flex-col divide-y divide-border overflow-y-auto" data-testid="search-results">
             {results.map((p) => {
@@ -109,6 +136,7 @@ export function ProgramsView({
                     <p className="flex items-center gap-1 truncate text-xs text-muted">
                       <MapPin className="h-3 w-3 shrink-0" aria-hidden /> {p.city}, {p.state}
                       {specialty === '' ? <> · {p.specialty_name}</> : null}
+                      {p.nrmp_code ? <span className="font-mono"> · {p.nrmp_code}</span> : null}
                     </p>
                   </div>
                   <Button

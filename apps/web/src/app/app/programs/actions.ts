@@ -4,29 +4,26 @@ import { DUPLICATE_RADIUS_MI } from '@pairwise/data';
 import { haversineMi } from '@pairwise/engine';
 import { requireCouple } from '@/lib/context';
 import { geocode } from '@/lib/geocoder';
+import { searchFilters } from '@/lib/program-search';
 import { createClient } from '@/lib/supabase/server';
-import { PROGRAM_COLUMNS, type ProgramLite } from './types';
+import { PROGRAM_COLUMNS, SEARCH_LIMIT, type ProgramLite } from './types';
 
-/** Search programs in the couple's match by name, institution or city, optionally within one specialty. */
-export async function searchPrograms(query: string, specialty: string): Promise<ProgramLite[]> {
+/** Search programs in the couple's match by name, institution, city or NRMP code, optionally within one specialty and state. */
+export async function searchPrograms(query: string, specialty: string, state = ''): Promise<{ results: ProgramLite[]; total: number }> {
   const ctx = await requireCouple();
   const supabase = await createClient();
   let q = supabase
     .from('programs')
-    .select(PROGRAM_COLUMNS)
+    .select(PROGRAM_COLUMNS, { count: 'exact' })
     .eq('match_type', ctx.couple.match_type)
     .neq('specialty_code', 'no-match')
     .order('name')
-    .limit(60);
+    .limit(SEARCH_LIMIT);
   if (specialty) q = q.eq('specialty_code', specialty);
-  // Keep only characters that are safe inside a PostgREST filter.
-  const term = query.replace(/[^\p{L}\p{N}\s'.-]/gu, ' ').trim();
-  if (term) {
-    const like = `%${term.replace(/\s+/g, '%')}%`;
-    q = q.or(`name.ilike.${like},institution.ilike.${like},city.ilike.${like},state.ilike.${like}`);
-  }
-  const { data } = await q;
-  return (data ?? []) as ProgramLite[];
+  if (/^[A-Z]{2}$/.test(state)) q = q.eq('state', state);
+  for (const f of searchFilters(query)) q = q.or(f);
+  const { data, count } = await q;
+  return { results: (data ?? []) as ProgramLite[], total: count ?? 0 };
 }
 
 export async function addProgram(programId: string): Promise<{ error?: string }> {

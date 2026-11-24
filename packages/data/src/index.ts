@@ -5,3 +5,5 @@ export * from './cbsa';
 export * from './pipeline';
 export * from './seed';
 export * from './csv';
+export * from './us-states';
+export * from './nrmp-directory';

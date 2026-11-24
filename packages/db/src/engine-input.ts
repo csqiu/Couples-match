@@ -91,7 +91,8 @@ export function buildEngineInput(data: CoupleData): EngineInput {
             rank: r.rank,
             tier: r.tier,
             acceptable: r.acceptable,
-            nrmpCode: r.nrmp_code,
+            // The official code from the NRMP directory wins over one typed in by hand.
+            nrmpCode: programs[r.program_id].nrmpCode ?? r.nrmp_code,
             ...(r.note ? { note: r.note } : {}),
           }));
 

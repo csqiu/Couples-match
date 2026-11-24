@@ -43,9 +43,10 @@ export const NRMP_RULES = {
 
   /**
    * Format check only for codes typed by users from R3. NRMP program codes are
-   * 9 characters (e.g. 1234140C0); No Match codes are 9 digits.
+   * 9 characters (e.g. 1234140C0), or 10 for a program's 11th track onwards
+   * (e.g. 2978140C10, seen in the 2027 directory); No Match codes are 9 digits.
    */
-  programCodePattern: /^[0-9]{7}[A-Z0-9][0-9]$/,
+  programCodePattern: /^[0-9]{7}[A-Z0-9][0-9]{1,2}$/,
 
   sources: [
     { label: 'NRMP — Couples in the Match', url: 'https://www.nrmp.org/intro-to-the-match/the-match-algorithm/couples-in-the-match/' },

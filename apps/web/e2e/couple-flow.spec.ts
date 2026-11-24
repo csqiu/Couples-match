@@ -88,13 +88,13 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   const results = alex.getByTestId('search-results');
   await expect(results.getByRole('listitem').first()).toBeVisible();
   for (const name of [
-    'Massachusetts General Hospital — Internal Medicine',
-    'Johns Hopkins University — Internal Medicine',
-    'University of California San Francisco — Internal Medicine',
-    'Beth Israel Deaconess Medical Center — Internal Medicine',
+    'MGB-Massachusetts Gen Hosp — Internal Medicine',
+    'Johns Hopkins Hosp — Internal Medicine',
+    'UC San Francisco — Internal Medicine',
+    'B I Deaconess Med Ctr — Internal Medicine',
   ]) {
     await alex.getByLabel('Search programs').fill(name.split(' — ')[0]);
-    await alex.getByRole('button', { name: `Add ${name}` }).click();
+    await alex.getByRole('button', { name: `Add ${name}`, exact: true }).click();
     await expect(alex.getByRole('button', { name: `Remove ${name}` }).first()).toBeVisible();
   }
   await alex.getByLabel('Search programs').fill('');
@@ -113,28 +113,22 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   const board = alex.getByTestId('rank-board');
   await expect(board.getByTestId('tier-B').getByRole('listitem')).toHaveCount(4);
 
-  await alex.getByLabel('Tier for Massachusetts General Hospital — Internal Medicine').selectOption('A');
-  await expect(board.getByTestId('tier-A').getByText('Massachusetts General Hospital — Internal Medicine', { exact: true })).toBeVisible();
-  await expect(alex.getByText('Moved Massachusetts General Hospital — Internal Medicine to Tier A')).toBeVisible();
+  await alex.getByLabel('Tier for MGB-Massachusetts Gen Hosp — Internal Medicine').selectOption('A');
+  await expect(board.getByTestId('tier-A').getByText('MGB-Massachusetts Gen Hosp — Internal Medicine', { exact: true })).toBeVisible();
+  await expect(alex.getByText('Moved MGB-Massachusetts Gen Hosp — Internal Medicine to Tier A')).toBeVisible();
 
-  await alex.getByLabel('Tier for University of California San Francisco — Internal Medicine').selectOption('A');
-  await alex.getByRole('button', { name: 'Move University of California San Francisco — Internal Medicine up' }).click();
-  await expect(board.getByTestId('tier-A').getByRole('listitem').first()).toContainText('University of California San Francisco');
+  await alex.getByLabel('Tier for UC San Francisco — Internal Medicine').selectOption('A');
+  await alex.getByRole('button', { name: 'Move UC San Francisco — Internal Medicine up' }).click();
+  await expect(board.getByTestId('tier-A').getByRole('listitem').first()).toContainText('UC San Francisco');
 
-  await alex.getByLabel('Tier for Beth Israel Deaconess Medical Center — Internal Medicine').selectOption('C');
-  await alex.getByRole('switch', { name: 'Beth Israel Deaconess Medical Center — Internal Medicine is acceptable' }).click();
+  await alex.getByLabel('Tier for B I Deaconess Med Ctr — Internal Medicine').selectOption('C');
+  await alex.getByRole('switch', { name: 'B I Deaconess Med Ctr — Internal Medicine is acceptable' }).click();
 
-  const code = alex.getByLabel('NRMP code for Johns Hopkins University — Internal Medicine');
-  await code.fill('12345');
-  await code.blur();
-  await expect(code).toHaveAttribute('aria-invalid', 'true');
-  await code.fill('1234140C0');
-  await code.blur();
-  await expect(code).toHaveAttribute('aria-invalid', 'false');
-  await expect(alex.getByText('Saved code 1234140C0 for Johns Hopkins University — Internal Medicine')).toBeVisible();
+  // Directory programs come with their official NRMP code: shown, nothing to type.
+  await expect(board.getByRole('listitem').filter({ hasText: 'Johns Hopkins Hosp — Internal Medicine' }).getByText('1242140C0')).toBeVisible();
 
   // Keyboard drag: pick up Hopkins, move it up into Tier A, drop.
-  const handle = alex.getByRole('button', { name: 'Drag Johns Hopkins University — Internal Medicine' });
+  const handle = alex.getByRole('button', { name: 'Drag Johns Hopkins Hosp — Internal Medicine' });
   await handle.focus();
   // Human pacing: dnd-kit needs a moment to pick the item up and to settle after each move.
   await alex.keyboard.press('Space');
@@ -142,19 +136,18 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await alex.keyboard.press('ArrowUp');
   await alex.waitForTimeout(300);
   await alex.keyboard.press('Space');
-  await expect(board.getByTestId('tier-A').getByText('Johns Hopkins University — Internal Medicine', { exact: true })).toBeVisible();
-  await expect(alex.getByText('Moved Johns Hopkins University — Internal Medicine to Tier A')).toBeVisible();
+  await expect(board.getByTestId('tier-A').getByText('Johns Hopkins Hosp — Internal Medicine', { exact: true })).toBeVisible();
+  await expect(alex.getByText('Moved Johns Hopkins Hosp — Internal Medicine to Tier A')).toBeVisible();
 
   // Everything persisted: reload and check the order.
   await alex.reload();
   const order = await board.locator('li p.truncate.text-sm').allInnerTexts();
   expect(order).toEqual([
-    'University of California San Francisco — Internal Medicine',
-    'Massachusetts General Hospital — Internal Medicine',
-    'Johns Hopkins University — Internal Medicine',
-    'Beth Israel Deaconess Medical Center — Internal Medicine',
+    'UC San Francisco — Internal Medicine',
+    'MGB-Massachusetts Gen Hosp — Internal Medicine',
+    'Johns Hopkins Hosp — Internal Medicine',
+    'B I Deaconess Med Ctr — Internal Medicine',
   ]);
-  await expect(alex.getByLabel('NRMP code for Johns Hopkins University — Internal Medicine')).toHaveValue('1234140C0');
   await shot(alex, '05-rank-board');
 
   // --- Sam sees Alex's programs on the map, and Alex's presence --------------------------------
@@ -164,23 +157,23 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await expect(sam.getByText('Alex is ranking')).toBeVisible({ timeout: 30_000 });
 
   // Live sync: Alex removes a program; Sam's page updates without a reload.
-  await alex.getByRole('button', { name: 'Remove Beth Israel Deaconess Medical Center — Internal Medicine' }).click();
-  await expect(alex.getByText('Removed Beth Israel Deaconess Medical Center — Internal Medicine')).toBeVisible();
+  await alex.getByRole('button', { name: 'Remove B I Deaconess Med Ctr — Internal Medicine' }).click();
+  await expect(alex.getByText('Removed B I Deaconess Med Ctr — Internal Medicine')).toBeVisible();
   await expect(sam.getByText('Alex (3)')).toBeVisible({ timeout: 20_000 });
   await shot(sam, '08-partner-view-live');
 
   // --- Phase 6: Sam builds a list so there are pairs to compare ------------------------------
-  for (const name of ['Boston Children\'s Hospital — Pediatrics', 'Children\'s National Hospital — Pediatrics', 'University of California San Francisco — Pediatrics']) {
+  for (const name of ['Boston Childrens Hospital — Pediatrics', 'Childrens National Med Ctr — Pediatrics', 'UC San Francisco — Pediatrics']) {
     await sam.getByLabel('Search programs').fill(name.split(' — ')[0]);
-    await sam.getByRole('button', { name: `Add ${name}` }).click();
+    await sam.getByRole('button', { name: `Add ${name}`, exact: true }).click();
     await expect(sam.getByRole('button', { name: `Remove ${name}` }).first()).toBeVisible();
   }
   await sam.goto('/app/rank');
-  await sam.getByLabel('Tier for Boston Children\'s Hospital — Pediatrics').selectOption('A');
-  await expect(sam.getByText('Moved Boston Children\'s Hospital — Pediatrics to Tier A')).toBeVisible();
+  await sam.getByLabel('Tier for Boston Childrens Hospital — Pediatrics').selectOption('A');
+  await expect(sam.getByText('Moved Boston Childrens Hospital — Pediatrics to Tier A')).toBeVisible();
   // Alex keeps one non-Tier-A program, so the Tier A priority question arises.
-  await alex.getByLabel('Tier for Massachusetts General Hospital — Internal Medicine').selectOption('B');
-  await expect(alex.getByText('Moved Massachusetts General Hospital — Internal Medicine to Tier B')).toBeVisible();
+  await alex.getByLabel('Tier for MGB-Massachusetts Gen Hosp — Internal Medicine').selectOption('B');
+  await expect(alex.getByText('Moved MGB-Massachusetts Gen Hosp — Internal Medicine to Tier B')).toBeVisible();
 
   // --- Step 4: this or that ---------------------------------------------------------------------
   await alex.goto('/app/compare');
