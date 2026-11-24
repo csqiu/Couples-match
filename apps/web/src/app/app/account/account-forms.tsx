@@ -22,8 +22,8 @@ export function LeaveCouple({ partnerName, purgeDays }: { partnerName: string | 
       <p className="font-medium">Leave the couple?</p>
       <ul className="list-disc pl-5 text-muted">
         <li>{partnerName ? `You and ${partnerName}` : 'You'} will no longer be able to edit the shared list.</li>
-        <li>The couple’s lists, answers and versions are deleted after {purgeDays} days.</li>
-        <li>Download a PDF or CSV from the final list first if you want a copy.</li>
+        <li>Your own program list (ranks, tiers, notes, codes) stays with you and comes along to your next couple. Programs the couple added by hand don’t.</li>
+        <li>The couple’s answers, final list and versions are deleted after {purgeDays} days. Download a PDF or CSV of the final list first if you want a copy.</li>
         <li>You can then start a new couple.</li>
       </ul>
       {error ? <p className="text-danger">{error}</p> : null}

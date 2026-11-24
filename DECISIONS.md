@@ -709,3 +709,15 @@ option was taken. Newest phases are at the bottom.
      Plastics…). `programs.short_name` overrides it where an admin sets one. Used where
      space is tight (cards, the map, the final list's side panel); the full name stays in
      exports and print.
+116. **A program list belongs to its person, not the couple** (bug log #1). Rank rows still
+     live with a couple (the engine, row level security and versions all work per couple),
+     but the list now outlives it:
+     - When a couple ends (leaving, or a partner deleting their account), each partner's
+       list is saved to them in `saved_rank_lists`: ranks, tiers, notes, NRMP codes.
+     - Starting or joining the next couple in the same match brings it back automatically.
+     - "Bring back my list" on the Programs step does it by hand, into an empty list only
+       (for lists saved before this change). Lists from couples that had already ended were
+       backfilled by the migration.
+     - Programs a couple added by hand belong to that couple and are deleted with it, so
+       they're left out.
+     - One saved list per person: the latest couple to end wins. It's deleted with the account.

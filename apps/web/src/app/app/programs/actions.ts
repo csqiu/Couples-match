@@ -151,3 +151,13 @@ export async function addNewProgram(input: NewProgram): Promise<NewProgramResult
   if (added.error) return { status: 'error', error: added.error };
   return { status: 'added', program: program as ProgramLite };
 }
+
+/** Brings back the list saved when your last couple ended (only into an empty list). */
+export async function restoreSavedList(): Promise<{ count?: number; error?: string }> {
+  const ctx = await requireCouple();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('restore_saved_rank_list', { p_couple: ctx.couple.id });
+  if (error) return { error: error.message };
+  revalidatePath('/app', 'layout');
+  return { count: data ?? 0 };
+}

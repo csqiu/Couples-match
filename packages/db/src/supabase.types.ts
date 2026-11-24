@@ -528,6 +528,30 @@ export type Database = {
           },
         ]
       }
+      saved_rank_lists: {
+        Row: {
+          entries: Json
+          from_couple: string | null
+          match_type: Database["public"]["Enums"]["match_type"]
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          entries: Json
+          from_couple?: string | null
+          match_type: Database["public"]["Enums"]["match_type"]
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          entries?: Json
+          from_couple?: string | null
+          match_type?: Database["public"]["Enums"]["match_type"]
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       rule_exceptions: {
         Row: {
           couple_id: string
@@ -652,6 +676,7 @@ export type Database = {
         Returns: number
       }
       restore_version: { Args: { p_version: string }; Returns: undefined }
+      restore_saved_rank_list: { Args: { p_couple: string }; Returns: number }
       import_programs: { Args: { p_programs: Json }; Returns: { inserted: number; updated: number }[] }
       merge_programs: { Args: { p_from: string; p_to: string }; Returns: undefined }
       program_duplicates: { Args: never; Returns: { program_a: string; program_b: string; distance_mi: number }[] }

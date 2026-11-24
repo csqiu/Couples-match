@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Input, Select } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
-import { addProgram, removeProgram, searchPrograms } from './actions';
+import { addProgram, removeProgram, restoreSavedList, searchPrograms } from './actions';
 import { AddProgramForm } from './add-program-form';
 import { US_STATES } from '@pairwise/data';
 import type { MapPoint, ProgramLite } from './types';
@@ -31,7 +31,9 @@ export function ProgramsView({
   mine,
   partners,
   partnerName,
+  savedCount = 0,
 }: {
+  savedCount?: number;
   mySpecialty: string;
   specialties: Array<{ code: string; name: string }>;
   initialResults: ProgramLite[];
@@ -49,6 +51,7 @@ export function ProgramsView({
   const [searching, startSearch] = useTransition();
   const [showPartner, setShowPartner] = useState(true);
   const [pending, setPending] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState(false);
   const toast = useToast();
   const mineIds = useMemo(() => new Set(mine.map((p) => p.id)), [mine]);
   // Adding or removing refreshes the page's data; put both scroll positions back
@@ -110,6 +113,26 @@ export function ProgramsView({
           Next: rank {mine.length ? `(${mine.length})` : ''}
         </Link>
       </div>
+
+      {savedCount > 0 && mine.length === 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-accent-soft px-4 py-3 text-sm" role="status">
+          <span>
+            You have a saved list of <strong>{savedCount} program{savedCount === 1 ? '' : 's'}</strong> from your last couple.
+          </span>
+          <Button
+            size="sm"
+            disabled={restoring}
+            onClick={async () => {
+              setRestoring(true);
+              const res = await restoreSavedList();
+              setRestoring(false);
+              toast({ message: res.error ? `Couldn’t bring it back: ${res.error}` : `Brought back ${res.count} program${res.count === 1 ? '' : 's'}.` });
+            }}
+          >
+            {restoring ? 'Bringing it back…' : 'Bring back my list'}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card className="flex min-w-0 flex-col gap-3 p-4 sm:p-4">
