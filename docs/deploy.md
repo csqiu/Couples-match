@@ -4,6 +4,21 @@ The app is a standard Next.js app in `apps/web`, backed by the Supabase project 
 is already live. Deploying it means putting the web app on Vercel and telling
 Supabase where it lives. About 20 minutes, mostly clicking.
 
+## Current deployment
+
+- **Live at https://couples-match-ranker.vercel.app** (Vercel project
+  `couples-match-ranker`).
+- It deploys automatically on every push to `claude/serene-turing-wb23i7`, which is set
+  as the production branch. Once that work is merged, point the production branch at
+  `main` in Vercel → Settings → Git.
+- Environment variables set: `NEXT_PUBLIC_SUPABASE_URL`,
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `APP_URL`. The legacy
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` was removed.
+- Checked after deploying: pages load with the security headers, there are no console
+  errors, signed-out visitors are sent to sign-in, and the test sign-in is off.
+- **Still to do by hand:** step 2 below (Supabase URL configuration), then step 3
+  (email sender) before real users.
+
 ## What it costs
 
 | Service | Free tier | When you'd pay |

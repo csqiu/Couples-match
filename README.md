@@ -104,7 +104,7 @@ above the other.
 | 6 | “This or that” comparison cards, conflict resolution | ✅ Done |
 | 7 | Final list, versions, export | ✅ Done |
 | 8 | Admin review, user-added programs, program import, full NRMP Main Match program list | ✅ Done |
-| 9 | Map of the list, activity feed, account page, accessibility pass, deploy prep | ✅ Done (the deploy itself needs your Vercel account: see [docs/deploy.md](docs/deploy.md)) |
+| 9 | Map of the list, activity feed, account page, accessibility pass, deploy | ✅ Live at https://couples-match-ranker.vercel.app (see [docs/deploy.md](docs/deploy.md)) |
 
 ## Running it
 
