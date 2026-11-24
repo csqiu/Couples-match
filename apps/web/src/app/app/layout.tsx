@@ -37,6 +37,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           {ctx.couple ? (
             <Live coupleId={ctx.couple.id} me={{ userId: ctx.user.id, displayName: displayName(ctx.profile, 'Your partner') }} />
           ) : null}
+          {ctx.profile.is_admin ? (
+            <Link href="/admin" className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm text-muted hover:bg-surface-2 hover:text-text">
+              Admin
+            </Link>
+          ) : null}
           <ThemeToggle />
           <form action="/auth/signout" method="post">
             <button
