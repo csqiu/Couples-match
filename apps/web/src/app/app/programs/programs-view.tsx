@@ -94,8 +94,8 @@ export function ProgramsView({
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card className="flex min-w-0 flex-col gap-3 p-4 sm:p-4">
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-2">
+            <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
               <Input
                 className="pl-9"
@@ -105,18 +105,20 @@ export function ProgramsView({
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            <Select aria-label="Specialty" value={specialty} onChange={(e) => setSpecialty(e.target.value)} className="sm:max-w-56">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,10rem)] gap-2">
+            <Select aria-label="Specialty" value={specialty} onChange={(e) => setSpecialty(e.target.value)}>
               <option value="">All specialties</option>
               {specialties.map((s) => (
                 <option key={s.code} value={s.code}>{s.name}</option>
               ))}
             </Select>
-            <Select aria-label="State" value={state} onChange={(e) => setState(e.target.value)} className="sm:max-w-36">
+            <Select aria-label="State" value={state} onChange={(e) => setState(e.target.value)}>
               <option value="">All states</option>
               {STATE_OPTIONS.map((s) => (
                 <option key={s.code} value={s.code}>{s.name}</option>
               ))}
             </Select>
+            </div>
           </div>
           <p className="text-xs text-muted" aria-live="polite">
             {searching
@@ -131,7 +133,7 @@ export function ProgramsView({
               return (
                 <li key={p.id} className="flex items-center gap-3 py-2.5">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{p.name}</p>
+                    <p className="line-clamp-2 text-sm font-medium" title={p.name}>{p.name}</p>
                     {p.created_by_couple ? <p className="text-xs text-warn">Added by you · not checked yet</p> : null}
                     <p className="flex items-center gap-1 truncate text-xs text-muted">
                       <MapPin className="h-3 w-3 shrink-0" aria-hidden /> {p.city}, {p.state}
