@@ -368,7 +368,7 @@ export function ListView({
         <div
           role="status"
           data-testid="over-limit"
-          className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border border-warn bg-warn-soft px-4 py-2 text-sm font-medium text-warn shadow-lg"
+          className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-warn bg-warn-soft px-3 py-2 text-xs font-medium text-warn shadow-lg sm:px-4 sm:text-sm"
         >
           <TriangleAlert className="h-4 w-4" aria-hidden />
           {rows.length} / {RANK_LIMIT} — {over} over the limit
