@@ -104,7 +104,7 @@ export function ImportView() {
                 })
               }
             >
-              Save {preview.programs.length} programs
+              Save {preview.programs.length} program{preview.programs.length === 1 ? '' : 's'}
             </Button>
           </div>
 

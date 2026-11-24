@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { requireAdmin } from '@/lib/admin';
 import { buildQueue, REVIEW_COLUMNS, type ReviewProgram } from '@/lib/admin-review';
 import { createClient } from '@/lib/supabase/server';
 import { ReviewQueueView } from './review-queue';
@@ -6,6 +7,8 @@ import { ReviewQueueView } from './review-queue';
 export const metadata: Metadata = { title: 'Review programs' };
 
 export default async function AdminReviewPage() {
+  // Layouts and pages render in parallel, so each admin page checks for itself.
+  await requireAdmin();
   const supabase = await createClient();
   const [{ data: unverified }, { data: dups, error }] = await Promise.all([
     supabase.from('programs').select(REVIEW_COLUMNS).eq('verified', false).order('created_at').limit(1000),

@@ -101,8 +101,8 @@ above the other.
 | 5 | Web app: setup and invites, program search with map, rank and tier | ✅ Done |
 | 6 | “This or that” comparison cards, conflict resolution | ✅ Done |
 | 7 | Final list, versions, export | ✅ Done |
-| 8 | Full program import, admin review, user-added programs | Next |
-| 9 | Polish, accessibility pass, deploy | |
+| 8 | Admin review, user-added programs, program import | ✅ Done (the full program list waits on the source research) |
+| 9 | Polish, accessibility pass, deploy | Next |
 
 ## Running it
 
@@ -130,13 +130,13 @@ pnpm --filter @pairwise/web test       # unit tests
 pnpm --filter @pairwise/web e2e        # two-partner browser test against the Supabase project
 ```
 
-The end-to-end test signs in as two test accounts (`alex.e2e@example.test` and
-`sam.e2e@example.test`). They use a password sign-in that exists only in development
+The end-to-end tests sign in as three test accounts: `alex.e2e@example.test`,
+`sam.e2e@example.test`, and an admin, `admin.e2e@example.test`. They use a password sign-in that exists only in development
 (`PAIRWISE_DEV_LOGIN=1`) and is switched off in production builds. Their password lives in
 `apps/web/.env.local`. Reset their data first with `supabase/tests/e2e-reset.sql`.
 
 **Supabase project:** `pairwise` in the Infinite Games organization (free tier, US East),
-at `https://julbfusuwcjptyobguxm.supabase.co`. All five migrations, the specialties and
+at `https://julbfusuwcjptyobguxm.supabase.co`. All seven migrations, the specialties and
 the 57 seed programs are loaded, and the invite email function is deployed. The
 project's public key is under Settings → API in the Supabase dashboard; it goes in
 `.env.local`.
@@ -148,7 +148,7 @@ tests.
 ## Repository layout
 
 ```
-apps/web            Next.js app: sign-in, invites, setup, programs + map, rank and tier
+apps/web            Next.js app: the six steps, versions and export, and the admin area
 packages/engine     scoring, rules, conflict detection, ranking  ← the product's brain
 packages/data       specialties, seed programs, import + geocoding pipeline
 packages/db         database types, rows → engine input, live-sync helpers, database tests
@@ -189,9 +189,12 @@ program list:
 
 - **Seed.** 57 real programs in Internal Medicine, Pediatrics, General Surgery, Emergency
   Medicine and Psychiatry, across Boston, New York, Baltimore/DC, Chicago, the Bay Area
-  and Houston (`packages/data/seed/programs.json`). Their map positions were entered by
-  hand and haven't been checked by a geocoder yet. They have no NRMP codes: each couple
-  types their own codes from R3.
+  and Houston (`packages/data/seed/programs.json`). Their map positions have been
+  checked with the geocoders: every one was within a quarter mile. They have no NRMP
+  codes: each couple types their own codes from R3.
+- **Programs couples add.** If a program isn't listed, a couple can add it ("Add a
+  program not listed"). It's found on the map, offered as a match if something similar
+  is already listed, and kept private to that couple until an admin approves it.
 - **Import pipeline.** Takes a spreadsheet (CSV) of programs and does four things:
   1. Maps every specialty spelling ("Med-Peds", "OB/GYN") to one list of specialties,
      each tied to the NRMP match it belongs to.
@@ -204,6 +207,23 @@ program list:
 
   Which websites we may take the full program list from is still being researched; see
   [docs/data-sources.md](docs/data-sources.md).
+
+### Admin
+
+Admins see an **Admin** link in the app's header (go to `/admin`). To make someone an
+admin, set `is_admin` to true on their row in the `profiles` table in the Supabase
+dashboard.
+
+- **Review** lists what needs a human look:
+  - **Possible duplicates.** Click "Keep this one" and the other is merged into it.
+    Every couple who listed the duplicate keeps their place, answers and codes.
+  - **Needs a look.** Programs couples added, and programs with no map location or a
+    doubtful one. You can approve, edit, look the address up again, set the location by
+    hand (paste coordinates from a map app), or merge into another program.
+  - **Imported, nothing flagged.** Spot-check, then "Approve all".
+- **Import** takes a CSV of up to 300 rows and shows a preview before anything is saved.
+  The columns are: name, institution, specialty, street, city, state, zip, acgme_id,
+  is_advanced, source_id. Only name, specialty, city and state are required.
 
 ## Accounts, partners and privacy
 

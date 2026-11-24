@@ -23,6 +23,26 @@ export const REASON_LABEL: Record<ReviewReason, string> = {
   possible_duplicate: 'Possible duplicate',
 };
 
+/**
+ * The database lists every same-specialty pair within a mile. On a medical campus
+ * that's many different hospitals, so a pair counts as a possible duplicate only
+ * if the names are alike or it's practically the same address.
+ */
+export const DUPLICATE_NAME_SIMILARITY = 0.3;
+export const DUPLICATE_SAME_ADDRESS_MI = 0.15;
+
+type Named = Pick<ReviewProgram, 'name' | 'institution' | 'specialty_name'>;
+
+export function looksLikeDuplicate(a: Named, b: Named, distanceMi: number) {
+  // Both are in the same specialty, so its words say nothing about the hospital.
+  const ignore = a.specialty_name;
+  return (
+    distanceMi <= DUPLICATE_SAME_ADDRESS_MI ||
+    nameSimilarity(a.name, b.name, ignore) >= DUPLICATE_NAME_SIMILARITY ||
+    nameSimilarity(a.institution, b.institution) >= 0.6
+  );
+}
+
 export interface DuplicatePair {
   a: ReviewProgram;
   b: ReviewProgram;
@@ -54,10 +74,10 @@ export function buildQueue(
   const pairs: DuplicatePair[] = duplicates.flatMap((d) => {
     const a = byId.get(d.program_a);
     const b = byId.get(d.program_b);
-    return a && b ? [{ a, b, distanceMi: d.distance_mi }] : [];
+    return a && b && looksLikeDuplicate(a, b, d.distance_mi) ? [{ a, b, distanceMi: d.distance_mi }] : [];
   });
   // Name similarity isn't checked in the database; show the likeliest pairs first.
-  pairs.sort((x, y) => nameSimilarity(y.a.name, y.b.name) - nameSimilarity(x.a.name, x.b.name) || x.distanceMi - y.distanceMi);
+  pairs.sort((x, y) => nameSimilarity(y.a.name, y.b.name, y.a.specialty_name) - nameSimilarity(x.a.name, x.b.name, x.a.specialty_name) || x.distanceMi - y.distanceMi);
   const dupIds = new Set(pairs.flatMap((p) => [p.a.id, p.b.id]));
   const attention: ReviewQueue['attention'] = [];
   const routine: ReviewProgram[] = [];
@@ -75,19 +95,21 @@ export function buildQueue(
   return { duplicates: pairs, attention, routine };
 }
 
-const words = (s: string) =>
-  new Set(
+const words = (s: string, ignore = '') => {
+  const skip = new Set(ignore.toLowerCase().split(/[^a-z0-9]+/));
+  return new Set(
     s
       .toLowerCase()
       .replace(/[^a-z0-9 ]/g, ' ')
       .split(/\s+/)
-      .filter((w) => w.length > 2 && !['the', 'and', 'program', 'residency', 'hospital', 'medical', 'center'].includes(w)),
+      .filter((w) => w.length > 2 && !skip.has(w) && !['the', 'and', 'program', 'residency', 'hospital', 'medical', 'center'].includes(w)),
   );
+};
 
 /** Share of words in common (Jaccard), 0..1. */
-export function nameSimilarity(a: string, b: string): number {
-  const x = words(a);
-  const y = words(b);
+export function nameSimilarity(a: string, b: string, ignore = ''): number {
+  const x = words(a, ignore);
+  const y = words(b, ignore);
   if (!x.size || !y.size) return 0;
   let both = 0;
   for (const w of x) if (y.has(w)) both++;

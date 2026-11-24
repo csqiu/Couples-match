@@ -81,7 +81,7 @@ describe('Seed', () => {
       expect(p.cbsaCode).toMatch(/^\d{5}$/);
       expect(p.nrmpCode).toBeNull();
       expect(p.acgmeId).toBeNull();
-      expect(p.geocodeSource).toBe('manual');
+      expect(['manual', 'census', 'nominatim']).toContain(p.geocodeSource);
       expect(p.verified).toBe(false);
     }
   });

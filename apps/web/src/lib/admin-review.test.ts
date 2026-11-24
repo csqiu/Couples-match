@@ -45,6 +45,19 @@ describe('admin review queue', () => {
     expect(q.routine.map((p) => p.id)).toEqual(['fine']);
   });
 
+  it('ignores different hospitals on the same campus', () => {
+    const a = prog('a', { name: 'Houston Methodist Hospital — Internal Medicine', institution: 'Houston Methodist Hospital' });
+    const b = prog('b', { name: 'Baylor College of Medicine — Internal Medicine', institution: 'Baylor College of Medicine' });
+    const c = prog('c', { name: 'Methodist Hospital Houston IM', institution: 'Houston Methodist' });
+    const byId = new Map([a, b, c].map((p) => [p.id, p]));
+    const q = buildQueue([a, b, c], [
+      { program_a: 'a', program_b: 'b', distance_mi: 0.4 },
+      { program_a: 'a', program_b: 'c', distance_mi: 0.4 },
+      { program_a: 'b', program_b: 'c', distance_mi: 0.05 },
+    ], byId);
+    expect(q.duplicates.map((d) => `${d.a.id}${d.b.id}`)).toEqual(['ac', 'bc']);
+  });
+
   it('compares names and splits stored addresses', () => {
     expect(nameSimilarity('Massachusetts General Hospital Internal Medicine', 'Mass General Internal Medicine Program')).toBeGreaterThan(0.4);
     expect(nameSimilarity('Johns Hopkins Pediatrics', 'Stanford Surgery')).toBe(0);

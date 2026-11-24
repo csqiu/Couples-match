@@ -446,3 +446,84 @@ option was taken. Newest phases are at the bottom.
 82. **Not in Phase 7:** the whole-list map view, activity feed and account page that the
     spec lists under "other screens". They aren't in the Phase 7 plan; they belong to
     Phase 9 polish.
+
+## Phase 8: Admin review, user-added programs, import
+
+83. **Seed locations checked.** With the Census and OpenStreetMap geocoders allowed,
+    `geocode:seed` placed all 57 hand-entered seed programs within 0.26 miles of where I
+    had put them. 53 now use the geocoder's point; the 4 Stanford programs keep the
+    hand-entered point, because OpenStreetMap was only 60% sure. They still need an
+    admin to approve them.
+84. **"Add a program not listed"** sits under the program search.
+    - The address is looked up on save (Census, then OpenStreetMap, cached for each
+      server process).
+    - If an already-listed program in the same specialty is within a mile, the couple
+      is asked "Is it one of these?" before a new program is created. This catches most
+      duplicates at the source.
+    - If the address can't be found, the couple can still save the program without a
+      location, with a warning that distances won't work for it.
+    - A couple's program is private to that couple (RLS, unchanged from Phase 4) and
+      goes to the admin queue.
+85. **Admins are marked by `profiles.is_admin`**, set by hand in the database. There is
+    no screen for making someone an admin. The admin area is `/admin`, and anyone else
+    gets a plain 404. Both the layout and each page check, because Next renders them in
+    parallel.
+86. **The review queue** has three groups.
+    - **Possible duplicates.** "Keep this one" merges the other into it; "they're
+      different" approves both.
+    - **Needs a look.** Couple-added programs, programs with no location, and programs
+      whose location confidence is under 0.8 (the pipeline's threshold).
+    - **Imported, nothing flagged.** Approve them one at a time, or all at once.
+87. **Duplicate rule.** The database lists every unverified same-specialty pair within
+    a mile (`program_duplicates`). On medical campuses (Texas Medical Center, Longwood)
+    that flags many different hospitals. So a pair is shown only if:
+    - it's practically the same address (under 0.15 mi), or
+    - the names are similar (at least 0.3 word overlap, ignoring the specialty's own
+      words and generic words like "hospital"), or
+    - the institutions are similar (at least 0.6 overlap).
+
+    On the live data this took the list from 6 false alarms to 0.
+88. **Merging** (`merge_programs`, migration 7, admin-only) moves everything that used
+    the duplicate onto the kept program, for every couple:
+    - **Rank rows.** If a partner listed both, the better rank is kept along with its
+      tier, and a typed NRMP code or note carries over. Ranks are then renumbered with
+      no gaps.
+    - **Pair ids.** These are rewritten in comparisons, pins, rule exceptions and
+      exclusions. Rows the rewrite makes meaningless are dropped, such as a pair
+      compared with itself or a duplicate exception.
+    - **Saved versions** are left alone, because they're frozen snapshots. Restoring an
+      old version that mentions a merged program drops that program, the same as any
+      program that no longer exists.
+    - Merging into another couple's private program is refused.
+89. **Approving** a couple's program sets `verified` and clears `created_by_couple`, so it
+    becomes global for its match. The admin can edit its name and address first. A
+    location set by hand gets `geocode_source = 'manual'` and confidence 1.
+90. **Admin CSV import** (`/admin/import`) runs the Phase 3 pipeline. Nothing is saved
+    until the admin confirms the preview.
+    - The preview shows new, updated, flagged, skipped-as-duplicate and rejected rows.
+      A row whose id is already in the database counts as an update, not a duplicate.
+    - Saving goes through `import_programs`, an admin-only function, rather than letting
+      admins insert rows directly. That keeps the `id` column closed to couples, who
+      could otherwise claim an id a later import needs.
+    - A re-import never overwrites a location an admin set by hand, never un-approves a
+      program, and never touches a couple's program.
+    - Each upload is limited to 300 rows, because geocoding takes about a second a row
+      and the page waits for it. Larger files should be split; the command-line import
+      (`pnpm --filter @pairwise/data import`) has no limit.
+91. **Metro areas (CBSA)** are still not assigned. The database trigger assigns them from
+    `cbsa_boundaries`, which is empty until the Census boundary file is loaded (it's
+    large, so this waits for the full import). Until then "same metro" falls back to
+    distance alone.
+92. **End-to-end test** (`e2e/program-admin.spec.ts`) uses a third test account,
+    `admin.e2e@example.test`, which is an admin. The test runs after the couple test
+    and covers:
+    - the "is it one of these?" offer;
+    - adding a new program;
+    - the couple's program appearing in the queue;
+    - merging it into a listed program, after which the couple's list holds the listed
+      program instead;
+    - a couple getting a 404 on `/admin`;
+    - a 3-row CSV with one new row, one duplicate and one rejected.
+
+    Programs the test imports have source `e2e-import` and are removed by
+    `e2e-reset.sql`.

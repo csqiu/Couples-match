@@ -7,3 +7,5 @@ where u.email in ('alex.e2e@example.test', 'sam.e2e@example.test')
   and u.id in (c.partner_a, c.partner_b);
 update public.profiles set display_name = null, specialty = null
 where email in ('alex.e2e@example.test', 'sam.e2e@example.test');
+-- Programs the admin end-to-end test imported.
+delete from public.programs where source = 'e2e-import';
