@@ -252,7 +252,7 @@ export function ListView({
               <input
                 id="length"
                 type="range"
-                min={1}
+                min={result.minTarget}
                 max={result.maxTarget}
                 value={result.target}
                 onChange={(e) => {

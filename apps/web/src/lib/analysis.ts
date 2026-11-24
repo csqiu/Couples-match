@@ -2,6 +2,7 @@
  * Runs the engine for the comparison and conflict screens. Pure (no I/O), so it
  * can run in a Web Worker and in unit tests.
  */
+import { shortProgramName } from '@pairwise/data';
 import { buildEngineInput, type CoupleData } from '@pairwise/db';
 import {
   BAND_LABEL,
@@ -23,6 +24,8 @@ import {
 export interface ProgramSide {
   id: string;
   name: string;
+  /** Abbreviation for tight spaces ("Hopkins Plastics"). */
+  short: string;
   place: string;
   lat: number | null;
   lon: number | null;
@@ -86,7 +89,7 @@ export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
       const ref = pair.programs[k as 0 | 1];
       if (ref === NO_MATCH) return null;
       const p = input.programs[ref];
-      return { id: ref, name: p.name, place: [p.city, p.state].filter(Boolean).join(', '), lat: p.lat, lon: p.lon, tier: tierOf(k as 0 | 1, ref) };
+      return { id: ref, name: p.name, short: shortProgramName(p.name, p.shortName), place: [p.city, p.state].filter(Boolean).join(', '), lat: p.lat, lon: p.lon, tier: tierOf(k as 0 | 1, ref) };
     }) as [ProgramSide | null, ProgramSide | null],
     distanceMi: pair.distanceMi,
     band: pair.band,

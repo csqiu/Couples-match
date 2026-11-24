@@ -31,10 +31,18 @@ export default async function RankPage() {
             tier menu. Changes save automatically.
           </p>
         </div>
-        <Link href="/app/programs" className={buttonVariants({ variant: 'secondary' })}>Add programs</Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/app/programs" className={buttonVariants({ variant: 'secondary' })}>Add programs</Link>
+          {entries.length ? <Link href="/app/compare" className={buttonVariants()}>Next: compare</Link> : null}
+        </div>
       </div>
       {entries.length ? (
-        <RankBoard initial={entries} />
+        <>
+          <RankBoard initial={entries} />
+          <div className="flex justify-end">
+            <Link href="/app/compare" className={buttonVariants()}>Next: compare</Link>
+          </div>
+        </>
       ) : (
         <div className="rounded-2xl border border-dashed border-border p-10 text-center">
           <p className="font-medium">Your list is empty</p>

@@ -85,6 +85,9 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
   const byId = useMemo(() => new Map(flatten(board).map((e) => [e.programId, e])), [board]);
   const rankOf = useMemo(() => new Map(flatten(board).map((e, i) => [e.programId, i + 1])), [board]);
 
+  // What a move did, for screen readers only: on screen the list itself shows it (bug log #4).
+  const [said, setSaid] = useState('');
+
   function persist(next: Board<BoardEntry>, prev: Board<BoardEntry>, message?: string) {
     setBoard(next);
     startSave(async () => {
@@ -93,7 +96,7 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
         setBoard(prev);
         toast({ message: `Couldn’t save: ${res.error}` });
       } else if (message) {
-        toast({ message, action: { label: 'Undo', onClick: () => persist(prev, next) } });
+        setSaid(message);
       }
     });
   }
@@ -166,6 +169,7 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
         },
       }}
     >
+      <p className="sr-only" aria-live="polite">{said}</p>
       <div className="flex flex-col gap-4" data-testid="rank-board">
         {TIERS.map((tier) => (
           <TierZone key={tier} tier={tier} count={board[tier].length}>

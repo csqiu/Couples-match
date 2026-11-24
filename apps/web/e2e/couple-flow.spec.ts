@@ -115,7 +115,6 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
 
   await alex.getByLabel('Tier for MGB-Massachusetts Gen Hosp — Internal Medicine').selectOption('A');
   await expect(board.getByTestId('tier-A').getByText('MGB-Massachusetts Gen Hosp — Internal Medicine', { exact: true })).toBeVisible();
-  await expect(alex.getByText('Moved MGB-Massachusetts Gen Hosp — Internal Medicine to Tier A')).toBeVisible();
 
   await alex.getByLabel('Tier for UC San Francisco — Internal Medicine').selectOption('A');
   await alex.getByRole('button', { name: 'Move UC San Francisco — Internal Medicine up' }).click();
@@ -137,7 +136,7 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await alex.waitForTimeout(300);
   await alex.keyboard.press('Space');
   await expect(board.getByTestId('tier-A').getByText('Johns Hopkins Hosp — Internal Medicine', { exact: true })).toBeVisible();
-  await expect(alex.getByText('Moved Johns Hopkins Hosp — Internal Medicine to Tier A')).toBeVisible();
+  await expect(board.getByTestId('tier-A').getByText('Johns Hopkins Hosp — Internal Medicine', { exact: true })).toBeVisible();
 
   // Everything persisted: reload and check the order.
   await alex.reload();
@@ -170,10 +169,10 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   }
   await sam.goto('/app/rank');
   await sam.getByLabel('Tier for Boston Childrens Hospital — Pediatrics').selectOption('A');
-  await expect(sam.getByText('Moved Boston Childrens Hospital — Pediatrics to Tier A')).toBeVisible();
+  await expect(sam.getByTestId('tier-A').getByText('Boston Childrens Hospital — Pediatrics', { exact: true })).toBeVisible();
   // Alex keeps one non-Tier-A program, so the Tier A priority question arises.
   await alex.getByLabel('Tier for MGB-Massachusetts Gen Hosp — Internal Medicine').selectOption('B');
-  await expect(alex.getByText('Moved MGB-Massachusetts Gen Hosp — Internal Medicine to Tier B')).toBeVisible();
+  await expect(alex.getByTestId('tier-B').getByText('MGB-Massachusetts Gen Hosp — Internal Medicine', { exact: true })).toBeVisible();
 
   // --- Step 4: this or that ---------------------------------------------------------------------
   await alex.goto('/app/compare');
@@ -184,8 +183,7 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await expect(answered).toHaveText(/^0 answers/);
   await choose.first().click();
   await expect(answered).toHaveText(/^1 answer /);
-  await alex.getByRole('switch', { name: 'I’m certain' }).click();
-  await choose.nth(1).click();
+  await alex.getByRole('button', { name: 'Strong preference for this pair' }).nth(1).click();
   await expect(answered).toHaveText(/^2 answers/);
   await alex.getByRole('button', { name: 'Undo last' }).click();
   await expect(answered).toHaveText(/^1 answer /);
@@ -231,18 +229,22 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await expect(alex.getByTestId('fees')).toContainText('Alex: $');
   await expect(alex.getByTestId('checklist')).toContainText('No Match pairs are at the bottom');
 
-  // Length slider, by keyboard: Home then four steps right = 5 ranks.
+  // Length slider, by keyboard: Home (just the No Match rows) then four steps right = four pairs where both match.
   const slider = alex.getByLabel(/List length/);
+  const min = Number(await slider.getAttribute('min'));
+  const n = min + 4;
   await slider.focus();
   await alex.keyboard.press('Home');
   for (let i = 0; i < 4; i++) await alex.keyboard.press('ArrowRight');
-  await expect(alex.getByText('List length: 5 ranks')).toBeVisible();
-  await expect(finalList.getByRole('listitem')).toHaveCount(5);
+  await expect(alex.getByText(`List length: ${n} ranks`)).toBeVisible();
+  await expect(finalList.getByRole('listitem')).toHaveCount(n);
+  await expect(finalList.getByRole('listitem').filter({ has: alex.getByLabel('Locked') })).toHaveCount(min);
+  await expect(alex.getByTestId('available')).toContainText('other pair');
 
   const [csvDownload] = await Promise.all([alex.waitForEvent('download'), alex.getByRole('button', { name: 'CSV' }).click()]);
   const csv = readFileSync(await csvDownload.path(), 'utf8');
   expect(csv.split('\n')[0]).toBe('Rank,Alex program,Alex NRMP code,Sam program,Sam NRMP code,Distance (mi),Band');
-  expect(csv.trim().split('\n')).toHaveLength(6);
+  expect(csv.trim().split('\n')).toHaveLength(n + 1);
 
   await alex.getByLabel('Version name').fill('v1');
   await alex.getByRole('button', { name: 'Save version' }).click();
@@ -272,8 +274,8 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
 
   await alex.goto('/app/versions');
   await expect(alex.getByTestId('versions').getByRole('listitem')).toHaveCount(2);
-  // Versions freeze exactly the 5 ranks shown, even though the slider saves after a pause.
-  await expect(alex.getByTestId('versions').getByRole('listitem').filter({ hasText: 'v1' })).toContainText('5 ranks');
+  // Versions freeze exactly the ranks shown, even though the slider saves after a pause.
+  await expect(alex.getByTestId('versions').getByRole('listitem').filter({ hasText: 'v1' })).toContainText(`${n} ranks`);
   await alex.getByLabel('Older').selectOption({ label: 'v1' });
   await alex.getByLabel('Newer').selectOption({ label: 'v2' });
   await alex.getByRole('button', { name: 'Compare' }).click();

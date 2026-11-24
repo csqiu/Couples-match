@@ -80,6 +80,8 @@ export interface FinalList {
   length: number;
   /** The length setting (both-match pairs + No Match rows), before hand-added pairs. */
   target: number;
+  /** Smallest length setting: just the No Match rows. */
+  minTarget: number;
   /** Largest useful length setting (every candidate pair, capped at RANK_LIMIT). */
   maxTarget: number;
   /** Pairs where both match that aren't on the list, best first. */
@@ -201,7 +203,8 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
 
   // Length setting = both-match pairs + the No Match rows, as in R3.
   const maxTarget = Math.min(RANK_LIMIT, all.length);
-  const target = Math.max(1, Math.min(maxTarget, Math.round(stored.listLength ?? RANK_LIMIT)));
+  const minTarget = Math.min(maxTarget, Math.max(1, noMatch.length));
+  const target = Math.max(minTarget, Math.min(maxTarget, Math.round(stored.listLength ?? RANK_LIMIT)));
   const room = Math.max(0, target - noMatch.length);
   const top = new Set(matched.slice(0, room).map((p) => p.id));
   const added = new Set((stored.includedPairs ?? []).filter((id) => byId.has(id) && !top.has(id) && byId.get(id)!.band !== 'no_match'));
@@ -256,6 +259,7 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
     rows,
     length: Math.min(rows.length, RANK_LIMIT),
     target,
+    minTarget,
     maxTarget,
     available,
     noMatchLocked,
