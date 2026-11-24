@@ -33,14 +33,15 @@ const SETTING_LABEL: Record<string, string> = {
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-function describe(type: string, count: number, payload: Record<string, unknown>): string {
+function describe(type: string, count: number, payload: Record<string, unknown>, you: boolean): string {
+  const their = you ? 'your' : 'their';
   switch (type) {
     case 'individual_ranks.insert':
-      return `added ${plural(count, 'program')} to their list`;
+      return `added ${plural(count, 'program')} to ${their} list`;
     case 'individual_ranks.update':
-      return `reordered or edited their list (${plural(count, 'change')})`;
+      return `reordered or edited ${their} list (${plural(count, 'change')})`;
     case 'individual_ranks.delete':
-      return `removed ${plural(count, 'program')} from their list`;
+      return `removed ${plural(count, 'program')} from ${their} list`;
     case 'comparisons.insert':
       return `answered ${plural(count, '“this or that” question')}`;
     case 'comparisons.delete':
@@ -124,5 +125,5 @@ export function describeActivity(events: ActivityEvent[], names: Record<string, 
       payload: (e.payload ?? {}) as Record<string, unknown>,
     });
   }
-  return items.map(({ key, who, at, events, type, count, payload }) => ({ key, who, at, events, text: describe(type, count, payload) }));
+  return items.map(({ key, who, at, events, type, count, payload }) => ({ key, who, at, events, text: describe(type, count, payload, who === 'You') }));
 }

@@ -66,7 +66,7 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
         <Link href="/app/list" className={buttonVariants({ variant: 'secondary' })}>Back to the list</Link>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex min-w-0 flex-wrap items-center gap-3">
         <label className="flex items-center gap-2 text-sm">
           Show the top
           <Select value={shown} onChange={(e) => setTop(Number(e.target.value))} className="w-28" aria-label="How many pairs to show">
@@ -77,7 +77,7 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
           </Select>
           pairs
         </label>
-        <fieldset className="flex flex-wrap gap-2" aria-label="Show distance bands">
+        <fieldset className="flex min-w-0 flex-wrap gap-2" aria-label="Show distance bands">
           {MAP_BANDS.map((b) => {
             const Icon = BAND_ICON[b];
             const on = !hidden.has(b);
@@ -102,7 +102,7 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <Card className="overflow-hidden p-0 sm:p-0">
+        <Card className="min-w-0 overflow-hidden p-0 sm:p-0">
           <PairMap
             lines={visible}
             selected={selected}
@@ -127,7 +127,7 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
           ) : null}
         </Card>
 
-        <Card className="p-0 sm:p-0">
+        <Card className="min-w-0 p-0 sm:p-0">
           <h2 className="border-b border-border px-4 py-3 text-sm font-semibold">Pairs on the map ({visible.length})</h2>
           <ol className="max-h-[560px] divide-y divide-border overflow-y-auto" aria-label="Pairs on the map">
             {visible.map((l) => {
@@ -140,7 +140,7 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
                     aria-pressed={l.rank === selected}
                     className={cn('flex w-full flex-col gap-1 px-4 py-2.5 text-left text-sm hover:bg-surface-2', l.rank === selected && 'bg-accent-soft')}
                   >
-                    <span className="flex items-baseline gap-2">
+                    <span className="flex min-w-0 items-baseline gap-2">
                       <span className="w-8 shrink-0 tabular-nums text-muted">#{l.rank}</span>
                       <span className="min-w-0">
                         <span className="block truncate">{row.sides[0].name}</span>

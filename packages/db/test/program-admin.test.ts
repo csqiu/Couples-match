@@ -100,9 +100,9 @@ describe('Program admin', () => {
       expect(await db.error('select merge_programs($1, $2)', [dupOne, dupTwo])).toMatch(/program_not_available/);
       expect(await db.error('select merge_programs($1, $2)', [MGH, MGH])).toMatch(/same_program/);
       expect(await db.error('select merge_programs($1, $2)', ['nope', MGH])).toMatch(/program_not_found/);
-      const fellowship = await db.one<{ id: string } | undefined>(
+      const [fellowship] = await db.query<{ id: string }>(
         "select id from programs where match_type <> 'main' and id not like 'NO_MATCH%' limit 1",
-      ).catch(() => undefined);
+      );
       if (fellowship) expect(await db.error('select merge_programs($1, $2)', [fellowship.id, MGH])).toMatch(/program_wrong_match/);
     }));
 

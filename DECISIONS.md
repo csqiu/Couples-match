@@ -527,3 +527,58 @@ option was taken. Newest phases are at the bottom.
 
     Programs the test imports have source `e2e-import` and are removed by
     `e2e-reset.sql`.
+
+## Phase 9: Polish, accessibility, deploy prep
+
+93. **Map of the whole list** (`/app/map`, linked from the final list).
+    - Each pair is a line between the two programs, styled by band: colour *and* line
+      style (solid, dashed, dotted), so colour is never the only signal.
+    - Partner A's programs are filled dots, partner B's are rings.
+    - It shows the top 25 pairs by default (10, 25, 50, 100 or all). Bands can be
+      hidden. Picking a pair, on the map or in the list beside it, highlights it.
+    - The list beside the map is also the text alternative for screen readers.
+    - No Match pairs, and pairs with a program that has no location, are counted under
+      the map instead of drawn.
+94. **Activity feed** (`/app/activity`, header icon). It shows the audit events from
+    Phase 4 in plain words.
+    - Events by the same person, of the same kind, within 30 minutes are merged into one
+      line ("You reordered your list (25 changes)"), because autosave records many
+      events.
+    - Changes made by someone outside the couple can only be an admin merging duplicate
+      programs, and they're described that way.
+    - It shows the latest 500 events.
+95. **Account page** (`/app/account`, header icon; sign-out moved here from the header).
+    It shows your details and lets you leave the couple or delete your account (type
+    DELETE to confirm).
+    - Leaving uses the existing `leave_couple` and warns that the couple's data is
+      deleted after 30 days.
+    - The partner who stays sees a note on the setup page.
+    - **Simpler than the spec:** an ended couple is *kept* for 30 days but there's no
+      screen to view it read-only. The wording says "kept", not "read-only", and tells
+      people to download a PDF or CSV before leaving.
+96. **Accessibility pass.** axe checks every page (18 of them) in light and dark mode.
+    It found no contrast problems. It did find two issues, both fixed:
+    - **Maps were marked as images but contained the zoom buttons.** They're now
+      labelled regions.
+    - **The "Added" buttons were announced as "Remove …".** Speech-control users say
+      the words they see, so the name must include them. They're now "Added: remove …".
+
+    Also added a skip link, a `main` landmark on every page, and support for
+    reduced-motion settings. The keyboard drag sensor dates from Phase 5.
+97. **Landing page.** Added a six-step "How it works", matching the app's steps. I
+    dropped a time estimate ("about an hour"), because nothing backs it up.
+98. **Security headers** on every response:
+    - a content security policy allowing only the app itself, its Supabase project
+      (HTTPS and websockets) and the map tiles;
+    - `frame-ancestors 'none'`, nosniff, a strict referrer policy, and camera,
+      microphone and location switched off.
+
+    Next needs inline scripts for hydration, so `'unsafe-inline'` stays. A
+    nonce-based policy would force every page to render dynamically; revisit if needed.
+99. **Deploy prepared, not done.** Deploying needs the co-founders' Vercel account, and
+    for a commercial product Vercel's paid plan (Hobby is non-commercial only). Per the
+    rule "ask before anything that costs money", `docs/deploy.md` lists the steps and
+    costs instead.
+    - `APP_URL` falls back to Vercel's production address.
+    - A production build (`next build && next start`) was checked: it serves the
+      security headers, has no console errors, and has no test sign-in.

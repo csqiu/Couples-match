@@ -30,7 +30,9 @@ between being close together and getting the programs each of you likes most.
    programs can't come first, it shows you why in plain language and asks you to decide.
 5. **You get an editable final list.** It is colour-coded by how close together each
    pair is, can be saved as versions, and exports to a checklist, PDF and CSV for typing
-   into R3.
+   into R3. A **map** shows every pair in the list as a line between the two programs.
+6. **Activity and account.** An activity feed shows what each of you changed. The account
+   page lets you leave a couple or delete your account.
 
 ## How the engine decides an order
 
@@ -102,7 +104,7 @@ above the other.
 | 6 | “This or that” comparison cards, conflict resolution | ✅ Done |
 | 7 | Final list, versions, export | ✅ Done |
 | 8 | Admin review, user-added programs, program import | ✅ Done (the full program list waits on the source research) |
-| 9 | Polish, accessibility pass, deploy | Next |
+| 9 | Map of the list, activity feed, account page, accessibility pass, deploy prep | ✅ Done (the deploy itself needs your Vercel account: see [docs/deploy.md](docs/deploy.md)) |
 
 ## Running it
 
@@ -144,6 +146,22 @@ project's public key is under Settings → API in the Supabase dashboard; it goe
 **Environment variables** are listed in [`.env.example`](.env.example). Copy it to
 `.env.local` and fill it in; never commit real values. Nothing is needed to run the
 tests.
+
+## Accessibility
+
+- Every page is checked automatically (axe, WCAG 2.1 AA, colour contrast included) in
+  light and dark mode, signed out, as a couple and as an admin
+  (`e2e/layout-a11y.spec.ts`).
+- Lists can be reordered with the keyboard as well as the mouse.
+- Distance is never shown by colour alone: every band has a word and an icon, and on the
+  map a different line style too.
+- There's a "Skip to content" link, and animations switch off if your device asks for
+  reduced motion.
+
+## Deploying
+
+See [docs/deploy.md](docs/deploy.md): Vercel for the web app, plus a few settings in
+Supabase. It also lists what each service costs.
 
 ## Repository layout
 
