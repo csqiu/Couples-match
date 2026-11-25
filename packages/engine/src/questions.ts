@@ -92,7 +92,7 @@ export interface Question {
   impact: number;
   /** True when one pair is closer together and the other is better for at least one partner. */
   tradeoff: boolean;
-  /** One pair gives one partner a better tier, the other pair the other partner: left to the couple. */
+  /** One pair gives one partner Tier A, the other pair the other partner: left to the couple. */
   clash: boolean;
   value: number;
   kind: 'calibration' | 'active';
@@ -113,14 +113,10 @@ export function questionKey(a: PairId, b: PairId): string {
   return a < b ? `${a}#${b}` : `${b}#${a}`;
 }
 
-const TIER_LEVEL = { A: 0, B: 1, C: 2 } as const;
-const tierLevel = (p: Pair, k: 0 | 1) => (p.tier[k] ? TIER_LEVEL[p.tier[k]!] : 3);
-
-/** x gives one partner a better tier and y gives the other partner a better tier. */
+/** x gives one partner Tier A (and not the other) and y the reverse: the Tier A rules leave these to the couple. */
 export function isTierClash(x: Pair, y: Pair): boolean {
-  const d0 = tierLevel(x, 0) - tierLevel(y, 0);
-  const d1 = tierLevel(x, 1) - tierLevel(y, 1);
-  return (d0 < 0 && d1 > 0) || (d0 > 0 && d1 < 0);
+  const onlyA = (p: Pair, k: 0 | 1) => p.tier[k] === 'A' && p.tier[1 - k] !== 'A';
+  return (onlyA(x, 0) && onlyA(y, 1)) || (onlyA(x, 1) && onlyA(y, 0));
 }
 
 /** One pair is closer together while the other gives at least one partner a better program. */

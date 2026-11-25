@@ -32,7 +32,6 @@ function randomCase(seed: number) {
   const r = rng(seed * 7919);
   const input = randomInput(seed, r.int(3, 14), r.int(3, 14), {
     tierARule: [r.pick(MODES), r.pick(MODES)],
-    tierCRule: [r.next() > 0.3, r.next() > 0.3],
     noMatchAtBottom: r.next() > 0.3,
     balance: r.range(0.2, 1.8),
   });
@@ -98,48 +97,29 @@ describe('2. No Match at bottom', () => {
   });
 });
 
-describe('3. Tier rules (A and C)', () => {
-  type Lvl = (p: Pair, k: 0 | 1) => number;
-  // Rule levels: Tier A rule splits A | rest; Tier C rule splits A,B | C. No Match is "rest" for A only.
-  const aTop: Lvl = (p, k) => (p.tier[k] === 'A' && p.programs[1 - k] !== NO_MATCH ? 1 : 0);
-  const aBottom: Lvl = (p, k) => (p.tier[k] !== 'A' ? 1 : 0);
-  const cTop: Lvl = (p, k) => ((p.tier[k] === 'A' || p.tier[k] === 'B') && p.programs[1 - k] !== NO_MATCH ? 1 : 0);
-  const cBottom: Lvl = (p, k) => (p.tier[k] === 'C' ? 1 : 0);
-  const rules = [
-    ...([0, 1] as const).map((k) => ({ k, top: aTop, bottom: aBottom })),
-    ...([0, 1] as const).map((k) => ({ k, top: cTop, bottom: cBottom })),
-  ];
+describe('3. Tier A rule', () => {
+  const top = (p: Pair, k: 0 | 1) => p.tier[k] === 'A' && p.programs[1 - k] !== NO_MATCH;
+  const bottom = (p: Pair, k: 0 | 1) => p.tier[k] !== 'A';
 
-  it("every tier rule holds, except against the other partner's clashing rule", () => {
+  it("holds, except against the other partner's clashing Tier A rule", () => {
     let checked = 0;
     for (let seed = 1; seed <= 40; seed++) {
-      const input = randomInput(seed, 8, 8, { tierARule: ['hard', 'hard'], tierCRule: [true, true] });
+      const input = randomInput(seed, 8, 8, { tierARule: ['hard', 'hard'] });
       const { pairs, list } = rank(input, defaultPosterior(randomParams(seed)));
       if (list.hasCycles) continue;
-      for (const r of rules) {
-        const opposing = rules.filter((o) => o.k !== r.k);
+      for (const k of [0, 1] as const) {
+        const o = (1 - k) as 0 | 1;
         for (const x of pairs) {
-          if (!r.top(x, r.k)) continue;
+          if (!top(x, k)) continue;
           for (const y of pairs) {
-            if (!r.bottom(y, r.k)) continue;
-            if (opposing.some((o) => o.bottom(x, o.k) && o.top(y, o.k))) continue; // a clash: left to the score
+            if (!bottom(y, k) || (bottom(x, o) && top(y, o))) continue; // a clash: left to the score
             expect(list.position.get(x.id)!, `seed ${seed}: ${x.id} above ${y.id}`).toBeLessThan(list.position.get(y.id)!);
             checked++;
           }
         }
       }
     }
-    expect(checked).toBeGreaterThan(1000);
-  });
-
-  it('Tier C: rather apart in Tier B than together in Tier C', () => {
-    const input = emptyInput({ tierARule: ['off', 'off'] });
-    input.programs = { b1: program('b1', METROS[0]), c1: program('c1', METROS[5]), x2: program('x2', METROS[5]) };
-    input.lists = [list([['b1', 'B'], ['c1', 'C']]), list([['x2', 'B']])];
-    const on = runEngine(input).list;
-    expect(on.position.get('b1|x2')!).toBeLessThan(on.position.get('c1|x2')!);
-    // Still above No Match: the rule is "rather apart", not "rather unmatched".
-    expect(on.position.get('c1|x2')!).toBeLessThan(on.position.get(`b1|${NO_MATCH}`)!);
+    expect(checked).toBeGreaterThan(500);
   });
 });
 

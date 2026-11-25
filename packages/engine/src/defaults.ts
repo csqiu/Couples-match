@@ -17,7 +17,7 @@ export const DEFAULT_DISTANCE_BANDS: DistanceBands = {
 export const DEFAULT_PARAMS: ModelParams = {
   // Tier B sits well above Tier C: the bottom of B is worth about as much as the top of C plus
   // being apart (pen.apart), so dropping to C to be together happens only at the edges
-  // ("in a few instances"), and only if the Tier C rule is off (DECISIONS.md #125).
+  // ("in a few instances") (DECISIONS.md #125–126).
   base: [
     { A: 1.4, B: 1.0, C: 0.3 },
     { A: 1.4, B: 1.0, C: 0.3 },
@@ -64,7 +64,7 @@ export const CALIBRATION_QUESTIONS = 5;
 /** Calibration questions are looked for among the top N list positions, widening in these steps. */
 export const CALIBRATION_SEARCH_DEPTHS = [30, 60, 100];
 export const TRADEOFF_BOOST = 1.5;
-/** Boost for a question where one pair gives one partner a better tier and the other pair the other partner: tier rules leave these to the couple. */
+/** Boost for a question where one pair gives one partner Tier A and the other pair the other partner: the Tier A rules leave these to the couple. */
 export const TIER_CLASH_BOOST = 1.5;
 /** Positions beyond this count less toward a question's impact. */
 export const IMPACT_FOCUS_TOP = 100;
@@ -88,7 +88,6 @@ export const DEFAULT_SETTINGS: CoupleSettings = {
   matchType: 'main',
   distanceBands: DEFAULT_DISTANCE_BANDS,
   tierARule: ['hard', 'hard'],
-  tierCRule: [true, true],
   noMatchAtBottom: true,
   balance: 1.0,
   listLength: NRMP_RULES.maxRanksPerPartner,

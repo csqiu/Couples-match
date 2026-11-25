@@ -27,7 +27,6 @@ const SETTING_LABEL: Record<string, string> = {
   balance: 'the balance between you',
   listLength: 'the list length',
   tierARule: 'the Tier A rule',
-  tierCRule: 'the Tier C rule',
   tierAPriority: 'Tier A priority',
   noMatchAtBottom: 'the No Match rule',
 };

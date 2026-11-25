@@ -51,8 +51,8 @@ export interface Graph {
   _scc?: { compOf: Int32Array; comps: number[][] };
 }
 
-/** Upper bound on hubs: two tier rules per partner, up to 4 groups each, + No Match. */
-const MAX_HUBS = 17;
+/** Upper bound on hubs: one tier rule per partner, up to 2 groups each, + No Match. */
+const MAX_HUBS = 5;
 
 function reasonKey(r: EdgeReason): string {
   return JSON.stringify(r);
@@ -242,13 +242,11 @@ export function buildConstraintGraph(pairs: Pair[], input: EngineInput): Graph {
     for (const y of bottoms) addEdge(g, hub, y, reason);
   };
 
-  // 2. Tier rules, per partner. Tier A (hard mode; "strong" lives in the score): a pair that
-  // gives you Tier A, while your partner matches, above every pair that doesn't. Tier C: a
-  // pair that gives you Tier A or B, while your partner matches, above every pair that gives
-  // you Tier C ("rather apart than in Tier C").
-  // When the two partners' rules point opposite ways for two pairs (X better for one
-  // partner's tier, Y for the other's), neither rule orders them: the score and the couple's
-  // answers ("this or that") decide. DECISIONS.md #125.
+  // 2. Tier A rule, per partner (hard mode; "strong" lives in the score): a pair that gives
+  // you Tier A, while your partner matches, above every pair that doesn't. When the two
+  // partners' rules point opposite ways for two pairs (X gives one of you Tier A, Y the
+  // other), neither rule orders them: the score and the couple's answers ("this or that")
+  // decide. A Tier C rule was tried and removed (DECISIONS.md #125–126).
   interface TierRule {
     partner: PartnerIndex;
     reason: EdgeReason;
@@ -264,14 +262,6 @@ export function buildConstraintGraph(pairs: Pair[], input: EngineInput): Graph {
         reason: { kind: 'tier_a', partner: k },
         top: pairs.map((p) => p.tier[k] === 'A' && matched(p, k)),
         bottom: pairs.map((p) => p.tier[k] !== 'A'),
-      });
-    }
-    if (settings.tierCRule[k]) {
-      rules.push({
-        partner: k,
-        reason: { kind: 'tier_c', partner: k },
-        top: pairs.map((p) => (p.tier[k] === 'A' || p.tier[k] === 'B') && matched(p, k)),
-        bottom: pairs.map((p) => p.tier[k] === 'C'),
       });
     }
   }

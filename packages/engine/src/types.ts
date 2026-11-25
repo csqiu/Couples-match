@@ -68,8 +68,6 @@ export interface CoupleSettings {
   matchType: MatchType;
   distanceBands: DistanceBands;
   tierARule: [TierARuleMode, TierARuleMode];
-  /** "Rather apart than in Tier C": per partner, A/B pairs (partner matched) above C pairs. */
-  tierCRule: [boolean, boolean];
   /** No longer used: when tier rules clash, the score and answers decide (DECISIONS.md #125). */
   tierAPriority?: TierAPriority;
   noMatchAtBottom: boolean;
@@ -202,7 +200,6 @@ export interface ScoreSummary {
 export type EdgeReason =
   | { kind: 'dominance' }
   | { kind: 'tier_a'; partner: PartnerIndex }
-  | { kind: 'tier_c'; partner: PartnerIndex }
   | { kind: 'no_match_bottom' }
   | { kind: 'pin'; source: PinSource; pinId?: string; comparisonId?: string }
   /** The couple answered this comparison. Every answer that counts holds in the list. */

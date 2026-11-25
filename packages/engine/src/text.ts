@@ -34,8 +34,6 @@ export function describeReason(ctx: TextContext, r: EdgeReason): string {
       return 'both of you like it at least as much and it is no farther apart (automatic)';
     case 'tier_a':
       return `of ${r.partner === 0 ? n1 : n2}'s Tier A rule (rule)`;
-    case 'tier_c':
-      return `${r.partner === 0 ? n1 : n2} would rather be apart than in Tier C (rule)`;
     case 'no_match_bottom':
       return 'pairs where you both match go above No Match pairs (rule)';
     case 'answer':

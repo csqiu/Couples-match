@@ -836,4 +836,24 @@ option was taken. Newest phases are at the bottom.
        engine with the C rule scores 0.873 / 0.993 and without it 0.789 / 0.941. The
        learning test now checks relevant τ ≥ 0.9 per couple.
      - There is no screen to turn the tier rules off; the README no longer says there is.
+126. **The Tier C rule is removed** (the wider B–C gap and "clashes go to this or that"
+     from #125 stay). Tested against simulated couples who do and don't follow it, as τ on
+     the orderings that can change the match (12 couples, 40 answers):
+
+     | Couple's real preferences | Rule on | Rule off |
+     |---|---|---|
+     | Never drop to C to be together | 0.993 | 0.941 |
+     | Sometimes drop to C to be together | 0.873 (worst 0.500) | 0.981 |
+     | Same, only 2 Tier C programs each: follow / don't | 0.983 / 0.952 | 0.979 / 0.979 |
+
+     The rule helps a little when true and hurts a lot when not, and "this or that" never
+     asks about pairs a rule already orders, so a wrong rule is never questioned. With few
+     Tier C programs (the advice: use A and C sparingly) its gain is near zero. The wider
+     B–C gap in the prior keeps C below B unless an answer says otherwise.
+     - Tier clashes are now only Tier A against Tier A (`isTierClash`), left to the score
+       and answers, with the 1.5× question boost.
+     - Bench now: τ 0.955 (lowest 0.892), relevant τ 0.982 (lowest 0.945); was 0.940 /
+       0.969 before #125.
+     - The "list confidence rises" test now averages four couples and builds the list with
+       the answers as rules, as the app does: one couple can start confident and stay flat.
 

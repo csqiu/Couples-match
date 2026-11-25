@@ -19,8 +19,10 @@ between being close together and getting the programs each of you likes most.
 
 1. **Each of you ranks your own programs** and sorts them into tiers:
    - **A**: "Almost no amount of distance would make me drop to Tier B."
-   - **B**: "Most programs. Only in a few cases would I drop to Tier C to be together."
+   - **B**: "Most of my programs. I'd take a lower Tier B program to be closer to my partner."
    - **C**: "My least favourite programs. I'd rather be long distance than match here."
+
+   Use Tier A and Tier C sparingly.
 2. **Pairwise builds every possible pair** (your program + your partner's program, plus
    "No Match" for either of you) and works out how far apart each pair is.
 3. **You answer a few "this or that" questions** ("Both at your #1 programs but on
@@ -51,12 +53,9 @@ The engine has two layers.
   the same city, versus you both get your #2 programs in that same city.
 - **Tier A rule.** Any pair that gives you a Tier A program, while your partner matches
   somewhere, goes above every pair that doesn't give you Tier A.
-- **Tier C rule.** Any pair that gives you a Tier A or B program, while your partner
-  matches somewhere (at any distance), goes above every pair that gives you Tier C. You'd
-  rather be apart than in Tier C, though still matched rather than not.
-- **When your tiers clash, you decide.** If one pair gives one of you a better tier and
-  another pair gives the other one a better tier, neither partner's rule wins. The score
-  and your "this or that" answers order them, and those questions are asked first.
+- **When your Tier A programs clash, you decide.** If one pair gives one of you Tier A and
+  another gives the other one Tier A, neither partner's rule wins. The score and your
+  "this or that" answers order them, and those questions are asked early.
 - **No Match goes last.** Every pair where you both match goes above every pair where one
   of you doesn't. This follows NRMP's guidance. You can turn it off, but you'll get a
   warning.
@@ -95,13 +94,12 @@ identical:
 
 | | Before any questions | After 40 questions |
 |---|---|---|
-| Pairwise's question choice | 0.817 | **0.873** (lowest couple: 0.830) |
-| Random questions | 0.817 | 0.822 (lowest couple: 0.722) |
+| Pairwise's question choice | 0.845 | **0.955** (lowest couple: 0.892) |
+| Random questions | 0.845 | 0.921 (lowest couple: 0.845) |
 
-The tier rules settle most of the order, so much of what is left in the top 100 can't
-change where a couple matches. Counting only the orderings that can (for the rest, the
-order never decides the match), the score is 0.985 before any questions and **0.993**
-after 40 of Pairwise's questions (lowest couple 0.983), against 0.975 with random ones.
+Counting only the orderings that can change where a couple matches (for the rest, the
+order never decides the match), the score is 0.892 before any questions and **0.982**
+after 40 of Pairwise's questions (lowest couple 0.945), against 0.957 with random ones.
 Every answer holds in the list, including the 1 in 10 that are wrong on purpose.
 
 Run it yourself with `pnpm --filter @pairwise/engine bench`.
