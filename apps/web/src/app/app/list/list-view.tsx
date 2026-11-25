@@ -35,11 +35,14 @@ export function ListView({
   names,
   matchType,
   storedLength,
+  nextVersion,
 }: {
   data: CoupleData;
   names: [string, string];
   matchType: MatchType;
   storedLength: number;
+  /** The number saving now would give, e.g. "3.2". */
+  nextVersion: string | null;
 }) {
   const [localPins, setLocalPins] = useState<CoupleData['pins']>([]);
   // List settings changed here, shown at once (the server copy catches up on revalidate).
@@ -397,16 +400,16 @@ export function ListView({
                 setSaving(false);
                 if (res.error) toast({ message: res.error });
                 else {
-                  toast({ message: `Saved “${versionName.trim()}”.` });
+                  toast({ message: `Saved as ${res.label ?? 'a new version'}.` });
                   setVersionName('');
                   setVersionNote('');
                 }
               }}
             >
-              <Input aria-label="Version name" placeholder="e.g. After our Sunday talk" value={versionName} onChange={(e) => setVersionName(e.target.value)} required maxLength={120} />
+              <Input aria-label="Version name" placeholder="Name (optional), e.g. After our Sunday talk" value={versionName} onChange={(e) => setVersionName(e.target.value)} maxLength={120} />
               <Input aria-label="Version note" placeholder="Note (optional)" value={versionNote} onChange={(e) => setVersionNote(e.target.value)} />
               <Button type="submit" disabled={saving}>
-                <Save className="h-4 w-4" aria-hidden /> {saving ? 'Saving…' : 'Save version'}
+                <Save className="h-4 w-4" aria-hidden /> {saving ? 'Saving…' : nextVersion ? `Save as ${nextVersion}` : 'Save version'}
               </Button>
             </form>
           </Card>

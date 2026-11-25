@@ -9,7 +9,9 @@ import { cn } from '@/lib/cn';
 import { displayName, requireCouple } from '@/lib/context';
 import { serverFinalList } from '@/lib/server-list';
 import { createClient } from '@/lib/supabase/server';
+import { versionLabel } from '@/lib/lists';
 import { diffSummary, diffVersions, type VersionRow } from '@/lib/versions';
+import { StarButton } from '../dashboard-controls';
 import { VersionControls } from './version-controls';
 
 export const metadata: Metadata = { title: 'Versions' };
@@ -18,12 +20,19 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
   const { a, b } = await searchParams;
   const ctx = await requireCouple();
   const supabase = await createClient();
-  const { data: versions } = await supabase
-    .from('list_versions')
-    .select('id, name, note, created_at, created_by, engine_version, pairs')
-    .eq('couple_id', ctx.couple.id)
-    .order('created_at', { ascending: false });
-  const list = versions ?? [];
+  const [{ data: versions }, { data: lists }] = await Promise.all([
+    supabase
+      .from('list_versions')
+      .select('id, list_id, minor, starred, name, note, created_at, created_by, engine_version, pairs')
+      .eq('couple_id', ctx.couple.id)
+      .order('created_at', { ascending: false }),
+    supabase.from('rank_lists').select('id, number').eq('couple_id', ctx.couple.id),
+  ]);
+  const numberOf = new Map((lists ?? []).map((l) => [l.id, l.number]));
+  const labelOf = (v: { list_id: string; minor: number }) => versionLabel(numberOf.get(v.list_id) ?? 0, v.minor);
+  const all = (versions ?? []).map((v) => ({ ...v, label: labelOf(v) }));
+  // This page is about the open list; Compare can reach any list's versions.
+  const list = all.filter((v) => v.list_id === ctx.list?.id);
   const who = (id: string | null) => (id === ctx.user.id ? 'you' : id && id === ctx.partner?.user_id ? displayName(ctx.partner) : 'someone');
 
   // Compare two versions (or a version against the current list).
@@ -31,18 +40,19 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
   let labels: [string, string] = ['', ''];
   if (a && b && a !== b) {
     const current = a === 'current' || b === 'current' ? (await serverFinalList(ctx)).snapshot.pairs : null;
-    const rowsOf = (id: string) => (id === 'current' ? current! : ((list.find((v) => v.id === id)?.pairs ?? []) as unknown as VersionRow[]));
-    const nameOf = (id: string) => (id === 'current' ? 'Current list' : (list.find((v) => v.id === id)?.name ?? '?'));
+    const found = (id: string) => all.find((v) => v.id === id);
+    const rowsOf = (id: string) => (id === 'current' ? current! : ((found(id)?.pairs ?? []) as unknown as VersionRow[]));
+    const nameOf = (id: string) => (id === 'current' ? 'Current list' : found(id) ? `${found(id)!.label} · ${found(id)!.name}` : '?');
     diff = diffVersions(rowsOf(a), rowsOf(b));
     labels = [nameOf(a), nameOf(b)];
   }
 
-  const options = [{ id: 'current', name: 'Current list' }, ...list.map((v) => ({ id: v.id, name: v.name }))];
+  const options = [{ id: 'current', name: 'Current list' }, ...all.map((v) => ({ id: v.id, name: `${v.label} · ${v.name}` }))];
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="page-title">Versions</h1>
+          <h1 className="page-title">Versions of List {ctx.list?.number ?? ''}</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Frozen snapshots of your list. Rename them, compare any two, print one, or restore one as your working list.
           </p>
@@ -52,20 +62,24 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
 
       {list.length === 0 ? (
         <p className="glass border-dashed p-8 text-center text-sm text-muted">
-          No versions yet. Save one from the final list.
+          No versions of this list yet. Save one from the final list.
         </p>
       ) : (
         <ul className="flex flex-col gap-2" data-testid="versions">
           {list.map((v) => (
             <li key={v.id}>
               <Card className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-                <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  <StarButton id={v.id} label={v.label} starred={v.starred} />
+                  <span className="font-mono font-semibold text-plum-deep">{v.label}</span>
+                  <div className="min-w-0">
                   <p className="small-title">{v.name}</p>
                   <p className="text-xs text-muted">
                     {(v.pairs as unknown as VersionRow[]).length} ranks · saved by {who(v.created_by)} ·{' '}
                     <span className="font-mono">{new Date(v.created_at).toLocaleString()}</span>
                     {v.note ? ` · ${v.note}` : ''}
                   </p>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-1">
                   <Link href={`/print/list?version=${v.id}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Print</Link>

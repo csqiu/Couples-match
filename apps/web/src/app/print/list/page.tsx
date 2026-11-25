@@ -5,6 +5,7 @@ import { requireCouple } from '@/lib/context';
 import { checklistFor, feesFor } from '@/lib/final-list';
 import { serverFinalList } from '@/lib/server-list';
 import { createClient } from '@/lib/supabase/server';
+import { versionLabel } from '@/lib/lists';
 import type { VersionRow } from '@/lib/versions';
 import { PrintButton } from './print-button';
 
@@ -24,9 +25,17 @@ export default async function PrintList({ searchParams }: { searchParams: Promis
   let title = 'Current list';
   if (version) {
     const supabase = await createClient();
-    const { data } = await supabase.from('list_versions').select('name, pairs, created_at').eq('id', version).eq('couple_id', ctx.couple.id).single();
+    const { data } = await supabase
+      .from('list_versions')
+      .select('name, pairs, created_at, minor, list:rank_lists!list_versions_list_id_fkey(number)')
+      .eq('id', version)
+      .eq('couple_id', ctx.couple.id)
+      .single();
     rows = (data?.pairs ?? []) as unknown as VersionRow[];
-    title = data ? `${data.name} (saved ${new Date(data.created_at).toLocaleDateString()})` : 'Version not found';
+    const listNumber = (data?.list as unknown as { number: number } | null)?.number;
+    title = data
+      ? `${listNumber ? `Version ${versionLabel(listNumber, data.minor)} · ` : ''}${data.name} (saved ${new Date(data.created_at).toLocaleDateString()})`
+      : 'Version not found';
   } else {
     rows = current.snapshot.pairs;
   }
@@ -39,7 +48,7 @@ export default async function PrintList({ searchParams }: { searchParams: Promis
   return (
     <main id="main" tabIndex={-1} className="outline-none mx-auto max-w-4xl px-6 py-8 print:max-w-none print:px-0 print:py-0">
       <div className="mb-6 flex items-center justify-between gap-3 print:hidden">
-        <Link href="/app/list" className={buttonVariants({ variant: 'secondary' })}>Back</Link>
+        <Link href={version ? '/app' : '/app/list'} className={buttonVariants({ variant: 'secondary' })}>Back</Link>
         <PrintButton />
       </div>
 
