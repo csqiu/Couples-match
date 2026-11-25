@@ -11,6 +11,7 @@ const env = Object.fromEntries(
 const SHOTS = process.env.SHOTS_DIR;
 
 const PAGES: Array<[string, string]> = [
+  ['/app', 'Your lists'],
   ['/app/setup', 'Welcome'],
   ['/app/programs', 'My programs'],
   ['/app/rank', 'Rank and tier'],

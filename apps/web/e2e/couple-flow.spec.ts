@@ -254,8 +254,8 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   expect(csv.trim().split('\n')).toHaveLength(n + 1);
 
   await alex.getByLabel('Version name').fill('v1');
-  await alex.getByRole('button', { name: 'Save version' }).click();
-  await expect(alex.getByText('Saved “v1”.')).toBeVisible();
+  await alex.getByRole('button', { name: 'Save as 1.1' }).click();
+  await expect(alex.getByText('Saved as 1.1.')).toBeVisible();
   await alex.waitForTimeout(1500);
   await shot(alex, '11-final-list');
 
@@ -276,17 +276,17 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
     await expect(moved).toBeVisible();
   }
   await alex.getByLabel('Version name').fill('v2');
-  await alex.getByRole('button', { name: 'Save version' }).click();
-  await expect(alex.getByText('Saved “v2”.')).toBeVisible();
+  await alex.getByRole('button', { name: 'Save as 1.2' }).click();
+  await expect(alex.getByText('Saved as 1.2.')).toBeVisible();
 
   await alex.goto('/app/versions');
   await expect(alex.getByTestId('versions').getByRole('listitem')).toHaveCount(2);
   // Versions freeze exactly the ranks shown, even though the slider saves after a pause.
   await expect(alex.getByTestId('versions').getByRole('listitem').filter({ hasText: 'v1' })).toContainText(`${n} ranks`);
-  await alex.getByLabel('Older').selectOption({ label: 'v1' });
-  await alex.getByLabel('Newer').selectOption({ label: 'v2' });
+  await alex.getByLabel('Older').selectOption({ label: '1.1 · v1' });
+  await alex.getByLabel('Newer').selectOption({ label: '1.2 · v2' });
   await alex.getByRole('button', { name: 'Compare' }).click();
-  await expect(alex.getByTestId('diff')).toContainText('v1 → v2: 2 moved, 0 added, 0 removed');
+  await expect(alex.getByTestId('diff')).toContainText('1.1 · v1 → 1.2 · v2: 2 moved, 0 added, 0 removed');
   await shot(alex, '12-versions-diff');
 
   await alex.getByRole('button', { name: 'Restore v1' }).click();
@@ -295,6 +295,21 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await alex.reload();
   await expect(alex.getByTestId('versions').getByRole('listitem')).toHaveCount(3); // the current list was saved first
   await expect(alex.getByTestId('versions').getByText('Before restoring “v1”')).toBeVisible();
+
+  // The dashboard: star a version, start List 2 from blank tiers, then go back to List 1.
+  await alex.goto('/app');
+  const list1 = alex.getByTestId('list-1');
+  await list1.getByRole('button', { name: 'Star version 1.1' }).click();
+  await expect(list1.getByRole('button', { name: 'Unstar version 1.1' })).toBeVisible();
+  await alex.getByTestId('start-list').click();
+  await alex.getByRole('dialog').getByLabel('Name (optional)').fill('Fresh start');
+  await alex.getByRole('button', { name: 'Start List 2' }).click();
+  await expect(alex).toHaveURL(/\/app\/rank/);
+  await expect(alex.getByTestId('open-list')).toContainText('List 2');
+  await alex.goto('/app');
+  await alex.getByTestId('list-1').getByRole('button', { name: 'Open List 1' }).click();
+  await alex.getByRole('group', { name: 'Open List 1' }).getByRole('button', { name: 'Open List 1' }).click();
+  await expect(alex.getByTestId('open-list')).toContainText('List 1');
 
   expect(browserErrors).toEqual([]);
 

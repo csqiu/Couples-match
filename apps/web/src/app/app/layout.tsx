@@ -2,12 +2,15 @@ import { CircleUser, History } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { AppShell } from '@/components/app-shell';
+import { GuidesMenu } from '@/components/guides-menu';
 import { HeaderLink } from '@/components/header-link';
 import { Live } from '@/components/live';
 import { Logo } from '@/components/logo';
 import { ProgressRail } from '@/components/progress-rail';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { GUIDES } from '@/content/guides';
 import { displayName, requireContext } from '@/lib/context';
+import { versionLabel } from '@/lib/lists';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -23,10 +26,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const { count: answers } = ctx.couple
     ? await supabase.from('comparisons').select('id', { count: 'exact', head: true }).eq('couple_id', ctx.couple.id)
     : { count: 0 };
+  const { data: lastVersion } = ctx.list
+    ? await supabase.from('list_versions').select('minor').eq('list_id', ctx.list.id).order('minor', { ascending: false }).limit(1).maybeSingle()
+    : { data: null };
   const setupDone = !!ctx.couple && !!ctx.profile.specialty;
   const done = [
     ...(setupDone ? ['setup'] : []),
     ...((count ?? 0) > 0 ? ['programs', 'rank'] : []),
+    ...(lastVersion ? ['list'] : []),
     // The calibration questions are done: a reasonable point to call this step started in earnest.
     ...((answers ?? 0) >= 5 ? ['compare'] : []),
   ];
@@ -49,13 +56,18 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
               <History className="h-5 w-5" aria-hidden />
             </HeaderLink>
           ) : null}
+          <GuidesMenu guides={GUIDES.map((g) => ({ slug: g.slug, title: g.title, description: g.description }))} />
           <ThemeToggle />
           <HeaderLink href="/app/account" label="Account">
             <CircleUser className="h-5 w-5" aria-hidden />
           </HeaderLink>
         </div>
       </header>
-      <ProgressRail done={done} locked={!setupDone} />
+      <ProgressRail
+        done={done}
+        locked={!setupDone}
+        list={ctx.list ? { number: ctx.list.number, name: ctx.list.name, lastSaved: lastVersion ? versionLabel(ctx.list.number, lastVersion.minor) : null } : null}
+      />
       <main id="main" tabIndex={-1} className="min-w-0 pb-12 outline-none">{children}</main>
     </AppShell>
   );

@@ -124,6 +124,7 @@ export type Database = {
       couples: {
         Row: {
           activated_at: string | null
+          active_list: string | null
           created_at: string
           dissolved_at: string | null
           id: string
@@ -137,6 +138,7 @@ export type Database = {
         }
         Insert: {
           activated_at?: string | null
+          active_list?: string | null
           created_at?: string
           dissolved_at?: string | null
           id?: string
@@ -150,6 +152,7 @@ export type Database = {
         }
         Update: {
           activated_at?: string | null
+          active_list?: string | null
           created_at?: string
           dissolved_at?: string | null
           id?: string
@@ -267,9 +270,12 @@ export type Database = {
           id: string
           inputs_snapshot: Json
           is_frozen: boolean
+          list_id: string
+          minor: number
           name: string
           note: string | null
           pairs: Json
+          starred: boolean
         }
         Insert: {
           couple_id: string
@@ -279,9 +285,12 @@ export type Database = {
           id?: string
           inputs_snapshot: Json
           is_frozen?: boolean
+          list_id?: string
+          minor?: number
           name: string
           note?: string | null
           pairs: Json
+          starred?: boolean
         }
         Update: {
           couple_id?: string
@@ -291,9 +300,12 @@ export type Database = {
           id?: string
           inputs_snapshot?: Json
           is_frozen?: boolean
+          list_id?: string
+          minor?: number
           name?: string
           note?: string | null
           pairs?: Json
+          starred?: boolean
         }
         Relationships: [
           {
@@ -301,6 +313,13 @@ export type Database = {
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "list_versions_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "rank_lists"
             referencedColumns: ["id"]
           },
         ]
@@ -552,6 +571,54 @@ export type Database = {
         }
         Relationships: []
       }
+      rank_lists: {
+        Row: {
+          couple_id: string
+          created_at: string
+          created_by: string | null
+          draft: Json | null
+          id: string
+          name: string | null
+          number: number
+          started_from: string | null
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          created_by?: string | null
+          draft?: Json | null
+          id?: string
+          name?: string | null
+          number: number
+          started_from?: string | null
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          created_by?: string | null
+          draft?: Json | null
+          id?: string
+          name?: string | null
+          number?: number
+          started_from?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_lists_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rank_lists_started_from_fkey"
+            columns: ["started_from"]
+            isOneToOne: false
+            referencedRelation: "list_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rule_exceptions: {
         Row: {
           couple_id: string
@@ -676,6 +743,8 @@ export type Database = {
         Returns: number
       }
       restore_version: { Args: { p_version: string }; Returns: undefined }
+      open_list: { Args: { p_list: string }; Returns: undefined }
+      start_list: { Args: { p_name?: string | null; p_from_version?: string | null }; Returns: string }
       restore_saved_rank_list: { Args: { p_couple: string }; Returns: number }
       import_programs: { Args: { p_programs: Json }; Returns: { inserted: number; updated: number }[] }
       merge_programs: { Args: { p_from: string; p_to: string }; Returns: undefined }

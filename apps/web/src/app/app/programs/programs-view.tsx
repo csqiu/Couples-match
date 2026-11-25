@@ -112,8 +112,8 @@ export function ProgramsView({
           <h1 className="page-title">My programs</h1>
           <p className="mt-1 text-sm text-muted">Add every program you’d be willing to go to. You’ll order and tier them next.</p>
         </div>
-        <Link href="/app/rank" className={buttonVariants({ variant: mine.length ? 'primary' : 'secondary' })}>
-          Next: rank {mine.length ? `(${mine.length})` : ''}
+        <Link href="/app" className={buttonVariants({ variant: mine.length ? 'primary' : 'secondary' })}>
+          Next: dashboard {mine.length ? `(${mine.length})` : ''}
         </Link>
       </div>
 

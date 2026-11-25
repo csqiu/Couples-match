@@ -3,11 +3,12 @@ import type { StoredSettings } from '@pairwise/db';
 import { NRMP_RULES } from '@pairwise/engine';
 import { revalidatePath } from 'next/cache';
 import { requireCouple } from '@/lib/context';
+import { versionLabel } from '@/lib/lists';
 import { updateCoupleSettings } from '@/lib/couple-settings';
 import { serverFinalList } from '@/lib/server-list';
 import { createClient } from '@/lib/supabase/server';
 
-type Result = { error?: string; id?: string };
+type Result = { error?: string; id?: string; label?: string };
 
 /**
  * A manual drag the hard rules allow: saved as an ordering the couple asserted, with
@@ -77,8 +78,7 @@ export async function setNoMatchUnlocked(unlocked: boolean): Promise<Result> {
  */
 export async function saveVersion(name: string, note: string, length?: number): Promise<Result> {
   const ctx = await requireCouple();
-  const clean = name.trim().slice(0, 120);
-  if (!clean) return { error: 'Give the version a name.' };
+  const clean = name.trim().slice(0, 120) || 'Untitled';
   // Freeze exactly the length the couple is looking at (the slider may not have saved yet).
   const { snapshot } = await serverFinalList(ctx, length);
   const supabase = await createClient();
@@ -93,9 +93,10 @@ export async function saveVersion(name: string, note: string, length?: number): 
       inputs_snapshot: snapshot.inputs_snapshot as never,
       pairs: snapshot.pairs as never,
     })
-    .select('id')
+    .select('id, minor, list:rank_lists!list_versions_list_id_fkey(number)')
     .single();
   if (error) return { error: error.message };
   revalidatePath('/app', 'layout');
-  return { id: data.id };
+  const listNumber = (data.list as unknown as { number: number } | null)?.number;
+  return { id: data.id, label: listNumber ? versionLabel(listNumber, data.minor) : undefined };
 }
