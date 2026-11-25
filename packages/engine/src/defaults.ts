@@ -5,7 +5,7 @@ import type { CoupleSettings, DistanceBands, ModelParams } from './types';
 import { NRMP_RULES } from './rules';
 
 /** Bumped whenever a change could reorder a saved list. Stored with each version. */
-export const ENGINE_VERSION = '0.3.0';
+export const ENGINE_VERSION = '0.4.0';
 
 export const DEFAULT_DISTANCE_BANDS: DistanceBands = {
   togetherMi: 30,
