@@ -867,8 +867,8 @@ option was taken. Newest phases are at the bottom.
        `backdrop-filter`, with reduced transparency, and on print routes (`app/print/layout.tsx`).
      - The app shell is `max-w-6xl` on the final list and map, `max-w-5xl` elsewhere
        (`components/app-shell.tsx`).
-     - Rank tiers sit in three columns on desktop; in a column the NRMP code moves to its
-       own line so the controls fit.
+     - Rank tiers stay stacked as full-width rows (three columns were tried and dropped:
+       too cramped for the row controls).
      - Not done from the spec: tier squares on final-list rows (rows don't carry tiers, and
        private tiers would need care); the Strong-preference button and Tier-A priority card
        (those features were removed, #124, #126).
