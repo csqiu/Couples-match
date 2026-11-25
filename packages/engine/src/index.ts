@@ -16,6 +16,7 @@ export * from './learning';
 export * from './questions';
 export * from './equivalence';
 export * from './answers';
+export * from './tidy';
 
 import { buildCandidates } from './candidates';
 import { findConflicts, type Conflict } from './conflicts';

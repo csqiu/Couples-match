@@ -28,10 +28,16 @@ between being close together and getting the programs each of you likes most.
    much distance matters to you.
 4. **It catches contradictions.** If your answers go in a circle, or both of your Tier A
    programs can't come first, it shows you why in plain language and asks you to decide.
-5. **You get an editable final list.** It is colour-coded by how close together each
+5. **Explore any comparison.** Drag two pairs into "this" and "that" to see how the list
+   orders them and why, and preview what answering either way would change before you do.
+   On "this or that", you can also save a question for later or flag it to discuss.
+6. **You get an editable final list.** It is colour-coded by how close together each
    pair is, can be saved as versions, and exports to a checklist, PDF and CSV for typing
    into R3. A **map** shows every pair in the list as a line between the two programs.
-6. **Activity and account.** An activity feed shows what each of you changed. The account
+   The list is shown in the easiest-to-read order that matches exactly the same way, and
+   **"Try an outcome"** lets you tick the programs each of you could get into and see where
+   you would match.
+7. **Activity and account.** An activity feed shows what each of you changed. The account
    page lets you leave a couple or delete your account.
 
 ## How the engine decides an order

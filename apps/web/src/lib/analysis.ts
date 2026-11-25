@@ -3,7 +3,7 @@
  * can run in a Web Worker and in unit tests.
  */
 import { shortProgramName } from '@pairwise/data';
-import { buildEngineInput, type CoupleData } from '@pairwise/db';
+import { buildEngineInput, type CoupleData, type StoredSettings } from '@pairwise/db';
 import {
   BAND_LABEL,
   effectiveComparisons,
@@ -12,10 +12,12 @@ import {
   learningStatus,
   nextQuestions,
   NO_MATCH,
+  questionKey,
   runEngine,
   type Band,
   type Comparison,
   type Conflict,
+  type EngineInput,
   type Link,
   type Pair,
   type Tier,
@@ -44,7 +46,10 @@ export interface PairView {
 export interface QuestionView {
   left: PairView;
   right: PairView;
-  kind: 'calibration' | 'active' | 'partner';
+  /** 'later': one the couple chose to come back to, asked once the others run out. */
+  kind: 'calibration' | 'active' | 'partner' | 'later';
+  /** Flagged to discuss together. */
+  flagged: boolean;
   /** Set when the partner already answered this one (separate answering). */
   partnerAnswer?: 'left' | 'right' | 'tie';
 }
@@ -61,9 +66,22 @@ export interface ConflictView {
   right?: PairView;
 }
 
+/** A question flagged to discuss, with the couple's answer so far (if any). */
+export interface FlaggedView {
+  key: string;
+  left: PairView;
+  right: PairView;
+  /** Which side the latest counted answer chose, or null if not answered yet. */
+  answer: 'left' | 'right' | 'tie' | null;
+  deferred: boolean;
+}
+
 export interface Analysis {
   hasBothLists: boolean;
   question: QuestionView | null;
+  flagged: FlaggedView[];
+  /** Questions waiting to come back to. */
+  deferred: number;
   confidence: number;
   answered: number;
   done: boolean;
@@ -76,14 +94,10 @@ export interface AnalyzeOptions {
   answerMode: 'together' | 'separately';
 }
 
-export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
-  const input = buildEngineInput(data);
-  const hasBothLists = input.lists[0].some((e) => e.acceptable) && input.lists[1].some((e) => e.acceptable);
-  const { pairs, conflicts, list, posterior } = runEngine(input);
-  const byId = new Map(pairs.map((p) => [p.id, p]));
+/** Builds the display view of a pair (names, places, tiers, distance). */
+export function pairViewer(input: EngineInput): (pair: Pair) => PairView {
   const tierOf = (k: 0 | 1, programId: string) => input.lists[k].find((e) => e.programId === programId)?.tier ?? null;
-
-  const view = (pair: Pair): PairView => ({
+  return (pair) => ({
     id: pair.id,
     sides: [0, 1].map((k) => {
       const ref = pair.programs[k as 0 | 1];
@@ -95,12 +109,26 @@ export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
     band: pair.band,
     bandLabel: BAND_LABEL[pair.band],
   });
+}
+
+export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
+  const input = buildEngineInput(data);
+  const hasBothLists = input.lists[0].some((e) => e.acceptable) && input.lists[1].some((e) => e.acceptable);
+  const { pairs, conflicts, list, posterior } = runEngine(input);
+  const byId = new Map(pairs.map((p) => [p.id, p]));
+  const view = pairViewer(input);
   const viewById = (id: string) => {
     const p = byId.get(id);
     return p ? view(p) : undefined;
   };
 
   const status = learningStatus(list, posterior, input.comparisons);
+  const stored = (data.couple.settings ?? {}) as StoredSettings;
+  const counted = effectiveComparisons(input.comparisons).counted;
+  const answeredKeys = new Set(counted.map((c) => questionKey(c.left, c.right)));
+  const deferred = (stored.deferredQuestions ?? []).filter((k) => !answeredKeys.has(k));
+  const flaggedKeys = new Set(stored.flaggedQuestions ?? []);
+  const splitKey = (k: string) => k.split('#') as [string, string];
   const ctx = { programs: input.programs, partnerNames: opts.names };
   const key = (a: string, b: string) => (a < b ? `${a}#${b}` : `${b}#${a}`);
 
@@ -117,25 +145,46 @@ export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
       const l = pending && viewById(pending.left);
       const r = pending && viewById(pending.right);
       if (pending && l && r) {
-        question = { left: l, right: r, kind: 'partner', partnerAnswer: pending.winner };
+        question = { left: l, right: r, kind: 'partner', partnerAnswer: pending.winner, flagged: flaggedKeys.has(questionKey(l.id, r.id)) };
       } else {
-        question = toQuestion(nextQuestions(list, posterior, 1, { comparisons: input.comparisons })[0]);
+        question = toQuestion(nextQuestions(list, posterior, 1, { comparisons: input.comparisons, skip: deferred })[0]);
       }
     } else {
-      question = toQuestion(nextQuestions(list, posterior, 1, { comparisons: input.comparisons })[0]);
+      question = toQuestion(nextQuestions(list, posterior, 1, { comparisons: input.comparisons, skip: deferred })[0]);
     }
+    // Nothing else to ask: bring back the ones saved for later, oldest first.
+    for (const k of deferred) {
+      if (question) break;
+      const [a, b] = splitKey(k);
+      const l = viewById(a);
+      const r = viewById(b);
+      if (l && r) question = { left: l, right: r, kind: 'later', flagged: flaggedKeys.has(k) };
+    }
+  }
+
+  const flagged: FlaggedView[] = [];
+  for (const k of flaggedKeys) {
+    const [a, b] = splitKey(k);
+    const l = viewById(a);
+    const r = viewById(b);
+    if (!l || !r) continue;
+    const c = counted.find((x) => questionKey(x.left, x.right) === k);
+    const won = c ? (c.winner === 'tie' ? 'tie' : c.winner === 'left' ? c.left : c.right) : null;
+    flagged.push({ key: k, left: l, right: r, answer: won === null ? null : won === 'tie' ? 'tie' : won === a ? 'left' : 'right', deferred: deferred.includes(k) });
   }
 
   function toQuestion(q: ReturnType<typeof nextQuestions>[number] | undefined): QuestionView | null {
     if (!q) return null;
     const l = viewById(q.left);
     const r = viewById(q.right);
-    return l && r ? { left: l, right: r, kind: q.kind } : null;
+    return l && r ? { left: l, right: r, kind: q.kind, flagged: flaggedKeys.has(questionKey(l.id, r.id)) } : null;
   }
 
   return {
     hasBothLists,
     question,
+    flagged,
+    deferred: deferred.length,
     confidence: status.confidence,
     answered: effectiveComparisons(input.comparisons).counted.length,
     done: status.done,

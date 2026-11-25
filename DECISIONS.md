@@ -779,3 +779,33 @@ option was taken. Newest phases are at the bottom.
        themselves.
      - The bench rebuilds the graph after each answer, as the app does (#118). Its default
        is even true spacing and the shared model, which is what the README table reports.
+120. **The final list is shown in a readable, outcome-equivalent order** (`tidyOrder`,
+     `packages/engine/src/tidy.ts`). Two neighbouring rows may trade places when a row of
+     their box is above both (#117): whenever both are reachable, that row is too. The pass
+     bubble-sorts by a reading key using only such swaps, so the shown list matches exactly
+     like the engine's order (brute-force tested over every scenario).
+     - Keys: a partner's order first (the default is partner 1's), or both ranks together.
+       "Engine order" turns it off. Stored as `settings.listOrder` (app-only).
+     - Never swapped: rows a rule, an answer or a drag orders (so every "why" still reads
+       right), and locked No Match rows.
+     - A swapped row's "why" says the two can go in either order, and names the row above
+       both. Exports, print and versions use the shown order.
+121. **"Try an outcome" on the final list.** The couple ticks the programs each of them
+     could get into (F₁, F₂), and for programs on both lists whether there is room for both.
+     The list dims rows out of reach, rings the row they would match on (`matchOutcome`), and
+     says where each would have matched applying separately. Only rows up to the NRMP limit
+     count. Nothing is saved.
+122. **Explore** (`/app/explore`, `apps/web/src/lib/explore.ts`). Drag (or send) any two pairs
+     into "This" and "That". It shows their ranks, which is higher and why, whether a rule or
+     answer fixes it, whether their order is moot, the answer so far and the model's guess.
+     For each way round it previews what answering would do, by re-running the list with
+     that answer added: rows that move (biggest first) and conflicts it would create. The
+     answer is saved like a This or that answer (strong preference optional).
+123. **Come back to this later, and flags** (This or that). Both are kept in the couple's
+     settings as question keys (`deferredQuestions`, `flaggedQuestions`, app-only), so both
+     partners see them. A deferred question is skipped (`QuestionOptions.skip`) until no
+     other question is left, then asked again, labelled as saved for later; answering it
+     clears it. The flag box applies to whatever is done next (answer or later); flagged
+     questions are listed under the question with where they stand, a link to Explore, and
+     Unflag.
+

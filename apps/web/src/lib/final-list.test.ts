@@ -1,4 +1,4 @@
-import { NO_MATCH } from '@pairwise/engine';
+import { matchOutcome, NO_MATCH, type ProgramRef } from '@pairwise/engine';
 import { describe, expect, it } from 'vitest';
 import { toCsv } from './csv-export';
 import { checkMove, checklistFor, computeFinalList, feesFor, RANK_LIMIT, type ListRow } from './final-list';
@@ -107,4 +107,33 @@ describe('final list', () => {
     expect(items.find((i) => i.label.includes(`${RANK_LIMIT}-rank limit`))).toMatchObject({ ok: false });
     expect(feesFor(rows, RANK_LIMIT).ranks).toBe(RANK_LIMIT);
   });
+
+  it('shows a tidier order that matches exactly the same way as the engine order', () => {
+    const pairs = (l: typeof list) => l.rows.map((r) => [r.sides[0].id, r.sides[1].id] as [ProgramRef, ProgramRef]);
+    const engine = computeFinalList(couple({ settings: { tierAPriority: 'partner1', listOrder: 'engine' } }), opts);
+    expect(engine.order).toBe('engine');
+    expect(engine.tidied).toBe(0);
+    for (const order of ['partner1', 'partner2', 'balanced'] as const) {
+      const tidy = computeFinalList(couple({ settings: { tierAPriority: 'partner1', listOrder: order } }), opts);
+      expect(tidy.order).toBe(order);
+      // Every combination of reachable programs gives the same match.
+      const p1 = tidy.programs[0].map((p) => p.id);
+      const p2 = tidy.programs[1].map((p) => p.id);
+      for (let m1 = 0; m1 < 1 << p1.length; m1++) {
+        for (let m2 = 0; m2 < 1 << p2.length; m2++) {
+          const reach = { partners: [new Set(p1.filter((_, i) => m1 & (1 << i))), new Set(p2.filter((_, i) => m2 & (1 << i)))] as [Set<string>, Set<string>] };
+          const a = matchOutcome(pairs(engine), reach);
+          const b = matchOutcome(pairs(tidy), reach);
+          expect(a === -1 ? null : engine.rows[a].pairId).toBe(b === -1 ? null : tidy.rows[b].pairId);
+        }
+      }
+      for (const r of tidy.rows.slice(1)) expect(r.why.length).toBeGreaterThan(10);
+    }
+  });
+
+  it('lists each partner’s programs in their own order for the simulator', () => {
+    expect(list.programs[0].map((p) => p.rank)).toEqual(list.programs[0].map((_, i) => i + 1));
+    expect(list.programs[1]).toHaveLength(4);
+  });
 });
+

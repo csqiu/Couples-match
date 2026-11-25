@@ -5,7 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { CoupleData, StoredSettings } from '@pairwise/db';
 import { useDroppable } from '@dnd-kit/core';
 import { NRMP_RULES, type MatchType } from '@pairwise/engine';
-import { CircleAlert, CircleCheck, Download, GripVertical, History, Info, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, X } from 'lucide-react';
+import { CircleAlert, CircleCheck, Compass, Download, FlaskConical, GripVertical, History, Info, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, X } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useId, useMemo, useRef, useState } from 'react';
 import { BAND_NAME, BAND_ROW, BandBadge } from '@/components/proximity';
@@ -16,10 +16,11 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/cn';
 import { toCsv } from '@/lib/csv-export';
-import { checklistFor, feesFor, RANK_LIMIT, type AvailablePair, type ListRow, type MoveResult } from '@/lib/final-list';
+import { checklistFor, DEFAULT_LIST_ORDER, feesFor, RANK_LIMIT, type AvailablePair, type ListOrder, type ListRow, type MoveResult } from '@/lib/final-list';
 import { useEngine, useFinalList } from '@/lib/use-analysis';
 import { breakLink } from '../conflicts/actions';
-import { addDragPin, removePin, saveVersion, setIncluded, setListLength, setNoMatchUnlocked } from './actions';
+import { addDragPin, removePin, saveVersion, setIncluded, setListLength, setListOrder, setNoMatchUnlocked } from './actions';
+import { allReachable, simulate, SimulatorPanel, type RowReach, type Scenario } from './simulator';
 
 function download(name: string, text: string) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
@@ -41,7 +42,7 @@ export function ListView({
 }) {
   const [localPins, setLocalPins] = useState<CoupleData['pins']>([]);
   // List settings changed here, shown at once (the server copy catches up on revalidate).
-  const [local, setLocal] = useState<{ included?: string[]; unlocked?: boolean; length?: number }>({});
+  const [local, setLocal] = useState<{ included?: string[]; unlocked?: boolean; length?: number; order?: ListOrder }>({});
   const stored = (data.couple.settings ?? {}) as StoredSettings;
   const settings = useMemo<StoredSettings>(
     () => ({
@@ -49,6 +50,7 @@ export function ListView({
       listLength: local.length ?? stored.listLength ?? storedLength,
       includedPairs: local.included ?? stored.includedPairs ?? [],
       noMatchUnlocked: local.unlocked ?? !!stored.noMatchUnlocked,
+      listOrder: local.order ?? stored.listOrder ?? DEFAULT_LIST_ORDER,
     }),
     [stored, local, storedLength],
   );
@@ -77,6 +79,10 @@ export function ListView({
   const n = result?.length ?? 0; // rows that count (first RANK_LIMIT)
   const over = Math.max(0, rows.length - RANK_LIMIT);
   const fees = useMemo(() => (result ? feesFor(result.rows, n) : null), [result, n]);
+  // "Try an outcome": the programs each partner could get into, and where the couple would match.
+  const [scenario, setScenario] = useState<Scenario | null>(null);
+  const simRows = useMemo(() => rows.slice(0, n), [rows, n]);
+  const sim = useMemo(() => (scenario ? simulate(simRows, scenario) : null), [simRows, scenario]);
   const checklist = useMemo(() => (result ? checklistFor(result.rows, n, names, result.hasCycles) : []), [result, n, names]);
 
   const sensors = useSensors(
@@ -162,6 +168,12 @@ export function ListView({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" aria-pressed={!!scenario} onClick={() => setScenario(scenario ? null : allReachable(result.programs))}>
+            <FlaskConical className="h-4 w-4" aria-hidden /> Try an outcome
+          </Button>
+          <Link href="/app/explore" className={buttonVariants({ variant: 'secondary' })}>
+            <Compass className="h-4 w-4" aria-hidden /> Explore
+          </Link>
           <Link href="/app/map" className={buttonVariants({ variant: 'secondary' })}>
             <MapIcon className="h-4 w-4" aria-hidden /> Map
           </Link>
@@ -205,6 +217,10 @@ export function ListView({
         </div>
       ) : null}
 
+      {scenario ? (
+        <SimulatorPanel programs={result.programs} names={names} rows={simRows} scenario={scenario} onChange={setScenario} onClose={() => setScenario(null)} />
+      ) : null}
+
       <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section aria-label="Ranked pairs" className={cn('min-w-0', busy && 'opacity-70')}>
@@ -228,6 +244,7 @@ export function ListView({
                   ) : null}
                   <Row
                     row={r}
+                    reach={sim ? sim.reach[r.rank - 1] ?? 'out' : undefined}
                     overLimit={r.rank > RANK_LIMIT}
                     open={openWhy === r.pairId}
                     onWhy={() => setOpenWhy(openWhy === r.pairId ? null : r.pairId)}
@@ -263,6 +280,32 @@ export function ListView({
                 }}
                 className="w-full accent-[var(--accent)]"
               />
+            </Field>
+            <Field
+              label="Show the list in"
+              htmlFor="list-order"
+              hint={
+                result.order === 'engine'
+                  ? 'The engine’s own order.'
+                  : `Rows whose order can’t change where you match are sorted to read easily${result.tidied ? ` (${result.tidied} moved)` : ''}. The outcome is exactly the same.`
+              }
+            >
+              <select
+                id="list-order"
+                className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm"
+                value={result.order}
+                onChange={async (e) => {
+                  const order = e.target.value as ListOrder;
+                  setLocal((l) => ({ ...l, order }));
+                  const res = await setListOrder(order);
+                  if (res.error) toast({ message: `Couldn’t save: ${res.error}` });
+                }}
+              >
+                <option value="partner1">{names[0]}’s order first</option>
+                <option value="partner2">{names[1]}’s order first</option>
+                <option value="balanced">Both ranks together</option>
+                <option value="engine">Engine order (no tidying)</option>
+              </select>
             </Field>
             <div className="mt-3 flex items-center justify-between gap-3">
               <label htmlFor="nm-lock" className="text-sm">
@@ -378,7 +421,7 @@ export function ListView({
   );
 }
 
-function Row({ row, open, onWhy, overLimit, onRemove }: { row: ListRow; open: boolean; onWhy: () => void; overLimit: boolean; onRemove?: () => void }) {
+function Row({ row, open, onWhy, overLimit, onRemove, reach }: { row: ListRow; open: boolean; onWhy: () => void; overLimit: boolean; onRemove?: () => void; reach?: RowReach }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: row.pairId, disabled: row.locked });
   const name = BAND_NAME[row.band];
   return (
@@ -389,15 +432,22 @@ function Row({ row, open, onWhy, overLimit, onRemove }: { row: ListRow; open: bo
         'rounded-xl border px-2 py-2',
         BAND_ROW[row.band],
         overLimit && 'opacity-45 grayscale',
+        reach === 'out' && 'opacity-35 grayscale',
+        reach === 'match' && 'ring-2 ring-accent ring-offset-2 ring-offset-bg',
         isDragging && 'relative z-10 opacity-80 shadow-lg',
       )}
       data-band={row.band}
       data-over-limit={overLimit || undefined}
+      data-reach={reach}
     >
+      {reach === 'match' ? (
+        <p className="mb-1 ml-[4.75rem] text-xs font-semibold text-accent">You match here</p>
+      ) : null}
       <div className="grid grid-cols-[2.5rem_1.5rem_1fr] items-center gap-x-3 gap-y-1 sm:grid-cols-[2.5rem_1.5rem_1fr_1fr_auto]">
         <span className="text-right text-sm font-semibold tabular-nums">
           {row.rank}
           {overLimit ? <span className="sr-only"> (past the {RANK_LIMIT}-rank limit, won’t be submitted)</span> : null}
+          {reach === 'out' ? <span className="sr-only"> (out of reach in this outcome)</span> : null}
         </span>
         {row.locked ? (
           <span className="flex min-h-11 items-center justify-center text-muted" title="Locked at the end of the list">

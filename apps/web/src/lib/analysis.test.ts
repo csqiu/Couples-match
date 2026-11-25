@@ -67,4 +67,25 @@ describe('analyze', () => {
     expect(cycle.links).toHaveLength(2);
     for (const l of cycle.links!) expect(l.text).toMatch(/is over .* because you dragged it there/);
   });
+
+  it('come back to this later: a deferred question waits until nothing else is left, then returns', () => {
+    const base = { tierAPriority: 'case_by_case' as const };
+    const first = analyze(couple({ settings: base }), opts()).question!;
+    const key = [first.left.id, first.right.id].sort().join('#');
+    const later = analyze(couple({ settings: { ...base, deferredQuestions: [key] } }), opts());
+    expect(later.deferred).toBe(1);
+    const next = later.question!;
+    expect([next.left.id, next.right.id].sort().join('#')).not.toBe(key);
+  });
+
+  it('flagged questions are listed with where they stand, and the question shows its flag', () => {
+    const base = { tierAPriority: 'case_by_case' as const };
+    const q = analyze(couple({ settings: base }), opts()).question!;
+    const key = [q.left.id, q.right.id].sort().join('#');
+    const r = analyze(couple({ settings: { ...base, flaggedQuestions: [key] } }), opts());
+    expect(r.flagged).toHaveLength(1);
+    expect(r.flagged[0].answer).toBeNull();
+    expect(r.question?.flagged).toBe(true);
+  });
 });
+

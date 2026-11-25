@@ -9,6 +9,8 @@ import {
   mootWitnesses,
   pairId,
   runEngine,
+  tidyOrder,
+  type TidyRow,
   unreachableRows,
   type ProgramRef,
   type Reachable,
@@ -159,5 +161,44 @@ describe('Unreachable rows', () => {
     const { list: ranked } = runEngine(input);
     expect(ranked.rows.length).toBe(48);
     expect(unreachableRows(ranked.rows.map((r) => r.pair.programs))).toEqual([]);
+  });
+});
+
+describe('Readable order (tidyOrder)', () => {
+  const rankOf = (k: 0 | 1, p: ProgramRef) => (p === NM ? 99 : (k === 0 ? P1 : P2).indexOf(p) + 1);
+  const toRows = (rows: Row[]): TidyRow[] => rows.map(([a, b]) => ({ id: pairId(a, b), programs: [a, b], rank: [rankOf(0, a), rankOf(1, b)] }));
+  const back = (rows: TidyRow[]): Row[] => rows.map((r) => [r.programs[0], r.programs[1]]);
+
+  it('never changes the outcome, for any key (brute force)', () => {
+    for (let seed = 1; seed <= 300; seed++) {
+      const rows = randomList(seed);
+      for (const key of ['partner1', 'partner2', 'balanced'] as const) {
+        expect(sameOutcomes(rows, back(tidyOrder(toRows(rows), key))), `list ${seed}, ${key}`).toBe(true);
+      }
+    }
+  });
+
+  it('turns one ordering of the box into the other', () => {
+    // Two programs each, no shared programs: the figure in the guide.
+    const a = ['a1', 'b1', NM];
+    const b = ['a2', 'b2', NM];
+    const rank = (xs: string[], p: string) => xs.indexOf(p) + 1;
+    const rows = (outer: 0 | 1): TidyRow[] =>
+      (outer === 0 ? a.flatMap((x) => b.map((y) => [x, y])) : b.flatMap((y) => a.map((x) => [x, y])))
+        .filter(([x, y]) => !(x === NM && y === NM))
+        .map(([x, y]) => ({ id: pairId(x, y), programs: [x, y], rank: [rank(a, x), rank(b, y)] }));
+    const ids = (rs: TidyRow[]) => rs.map((r) => r.id);
+    expect(ids(tidyOrder(rows(1), 'partner1'))).toEqual(ids(rows(0)));
+    expect(ids(tidyOrder(rows(0), 'partner2'))).toEqual(ids(rows(1)));
+  });
+
+  it('leaves locked rows and ordered neighbours alone', () => {
+    const all = toRows([['p', 'q'], ['r', 'q'], ['p', 's']]);
+    // (r, q) and (p, s): (p, q) is above both, so partner 1's order may swap them…
+    expect(tidyOrder(all, 'partner1').map((r) => r.id)).toEqual(['p|q', 'p|s', 'r|q']);
+    // …unless one of them is locked, or something orders them.
+    const locked = all.map((r, i) => (i === 2 ? { ...r, locked: true } : r));
+    expect(tidyOrder(locked, 'partner1').map((r) => r.id)).toEqual(['p|q', 'r|q', 'p|s']);
+    expect(tidyOrder(all, 'partner1', (h, l) => h === 'r|q' && l === 'p|s').map((r) => r.id)).toEqual(['p|q', 'r|q', 'p|s']);
   });
 });

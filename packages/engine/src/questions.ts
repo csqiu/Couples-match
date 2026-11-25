@@ -99,11 +99,14 @@ export interface QuestionOptions {
   /** Answers so far (to skip questions already asked and to decide on calibration). */
   comparisons?: Comparison[];
   window?: number;
+  /** Questions (questionKey) the couple chose to come back to later: not asked for now. */
+  skip?: Iterable<string>;
 }
 
 const BAND_ORDER: Record<Band, number> = { together: 0, commutable: 1, drivable: 2, apart: 3, no_match: 4 };
 
-function questionKey(a: PairId, b: PairId): string {
+/** One key per question, whichever pair is on the left. */
+export function questionKey(a: PairId, b: PairId): string {
   return a < b ? `${a}#${b}` : `${b}#${a}`;
 }
 
@@ -128,7 +131,7 @@ interface Ctx {
   diff: Float64Array;
 }
 
-function makeCtx(list: RankedList, posterior: Posterior, comparisons: Comparison[]): Ctx {
+function makeCtx(list: RankedList, posterior: Posterior, comparisons: Comparison[], skip: Iterable<string> = []): Ctx {
   const g = list.graph;
   const position = new Int32Array(g.n);
   list.order.forEach((id, i) => (position[g.index.get(id)!] = i));
@@ -143,7 +146,7 @@ function makeCtx(list: RankedList, posterior: Posterior, comparisons: Comparison
     features: g.pairs.map((p) => pairFeatures(p, g.settings, posterior.layout)),
     position,
     impactPrefix,
-    asked: new Set(comparisons.map((c) => questionKey(c.left, c.right))),
+    asked: new Set([...comparisons.map((c) => questionKey(c.left, c.right)), ...skip]),
     diff: new Float64Array(posterior.layout?.dim ?? THETA_DIM),
   };
 }
@@ -234,7 +237,7 @@ const byValue = (a: Question, b: Question) =>
  * question that trades one partner's program against the other's at the same distance.
  */
 export function calibrationQuestions(list: RankedList, posterior: Posterior, opts: QuestionOptions = {}): Question[] {
-  const ctx = makeCtx(list, posterior, opts.comparisons ?? []);
+  const ctx = makeCtx(list, posterior, opts.comparisons ?? [], opts.skip);
   const g = ctx.g;
   const templates: Array<[Band, Band] | 'partners'> = [
     ['apart', 'together'],
@@ -311,7 +314,7 @@ export function nextQuestions(list: RankedList, posterior: Posterior, k = 1, opt
   }
   if (out.length >= k) return out;
 
-  const ctx = makeCtx(list, posterior, comparisons);
+  const ctx = makeCtx(list, posterior, comparisons, opts.skip);
   const candidates = openQuestions(list, ctx, opts.window ?? QUESTION_WINDOW)
     .map(([u, v]) => evaluate(ctx, u, v, 'active'))
     .filter((q) => !seen.has(questionKey(q.left, q.right)))
@@ -325,7 +328,7 @@ export function nextQuestions(list: RankedList, posterior: Posterior, k = 1, opt
 
 /** Every open question (unordered by the hard graph, within the window, not yet asked). Used for baselines. */
 export function allOpenQuestions(list: RankedList, posterior: Posterior, opts: QuestionOptions = {}): Question[] {
-  const ctx = makeCtx(list, posterior, opts.comparisons ?? []);
+  const ctx = makeCtx(list, posterior, opts.comparisons ?? [], opts.skip);
   return openQuestions(list, ctx, opts.window ?? QUESTION_WINDOW).map(([u, v]) => evaluate(ctx, u, v, 'active'));
 }
 
