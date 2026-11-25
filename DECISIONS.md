@@ -938,5 +938,6 @@ option was taken. Newest phases are at the bottom.
      - Known gap: `merge_programs` doesn't rewrite parked drafts, so a merged program comes
        back as "added since" (Tier B) the next time that list is opened.
 
-133. **Guides from the app header.** A "Guides" menu at the top right lists the published
-     guides (`content/guides.ts`) and links to `/guides`.
+133. **Guides from the app header.** A "Guides" link at the top right goes straight to the
+     list of guides (`/guides`). A dropdown of the guides was tried first and dropped: one
+     click to the list is simpler.
