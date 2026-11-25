@@ -37,7 +37,7 @@ option was taken. Newest phases are at the bottom.
 7. **`scorePairs` takes the couple's settings** as an optional third argument. The pair
    score depends on the balance slider `w` and on strong-mode bonuses, and neither is
    part of the posterior.
-8. **Pins come only from the `pins` input.** Locked comparisons don't create edges by
+8. **Pins come only from the `pins` input** (but see #118: every counted answer is now also an edge). Locked comparisons don't create edges by
    themselves; the app writes a pin when "I'm certain" is on (spec 5.6). This avoids
    counting the same assertion twice.
 9. **Disagreements.** A question is a disagreement when two different people's latest
@@ -721,3 +721,139 @@ option was taken. Newest phases are at the bottom.
      - Programs a couple added by hand belong to that couple and are deleted with it, so
        they're left out.
      - One saved list per person: the latest couple to end wins. It's deleted with the account.
+117. **Which comparisons and rows can matter** (`packages/engine/src/equivalence.ts`). Model:
+     each partner has a set of reachable programs (No Match always is); the couple matches
+     on the first row with both sides reachable. Explained for users in the "How the
+     Couples Match Works" doc.
+     - **Moot comparisons use the whole box.** The order of rows X = (a1, b1) and
+       Y = (a2, b2) can't decide the match when some pair from
+       {a1, a2, No Match} × {b1, b2, No Match} is above both: if X and Y are reachable, so
+       is every pair in it. This adds the half-No-Match pairs to the two swapped pairs used
+       before, so rows sharing a program can now be moot too. It only matters with No
+       Match at the bottom turned off.
+     - **A pair with both partners at one program is never a witness.** (q, q) needs two
+       positions at q at once; q being reachable for each partner separately doesn't give
+       that. Before this, (q, q) above (q, s) and (p, q) made them moot, and the question
+       between them was skipped although its answer can decide the match.
+     - **Unreachable rows** are rows below (A, No Match), (No Match, B) or a copy of
+       themselves. They can never be the match but count toward the 300-rank limit and fees.
+       The final list's checklist flags them ("Every row can be your match"). With No Match
+       rows locked at the end they can't happen.
+     - Both rules are checked in `test/equivalence.test.ts` against brute force over every
+       reachable-program scenario of a small couple with shared programs.
+     - The bench's "relevant" τ uses the same rule; its numbers are unchanged, since the
+       simulated couples share no programs and keep No Match at the bottom. The README's
+       table was refreshed to the bench's current output (it had drifted before this change).
+118. **Every answer holds in the list.** Before this, answers were only evidence for the
+     12-parameter model, which could overrule them: a couple's direct answer could be
+     contradicted by the final list unless they marked it "I'm certain".
+     - Each answer that counts (`effectiveComparisons`: the agreed one, else the latest;
+       ties and disagreements don't) is an edge with reason `answer`
+       (`packages/engine/src/answers.ts`, step 4 of `buildConstraintGraph`).
+     - Answers that go in a circle, with each other or with the automatic rules, show up as
+       a cycle on the Conflicts step. Breaking an answer's link creates a rule exception: the
+       order goes back to the score, and the answer stays as evidence for the model.
+     - "Still true?" (surprising answers) is unchanged. A strong preference still saves a
+       pin and locks the answer, so it is never asked about again.
+119. **Per-program values: built, measured, left off.** The model spaces programs evenly
+     within a tier, so it cannot learn that #1 is far ahead of #2 while #5 to #10 are close.
+     - `buildLayout` (`features.ts`) adds one offset per program per partner to θ. Each
+       program's latent sets the gap before it within its tier; gaps are i.i.d. log-normal
+       (`PRIOR_LOG_SD.spacing`) and rescaled to fill the tier, so a partner's own order and
+       the tiers always hold. The offset is how far the learned spacing moves a program
+       from even spacing, so the score stays linear in θ. Spacing latents use a separate
+       random stream; random-walk steps shrink with the dimension.
+     - **Measured, it does not help.** Bench, 12 couples, 40 answers, τ over the top 100
+       (`--truth even|uneven`, `--model shared|per-program`):
+
+       | Model | Even true spacing | Uneven true spacing (log-sd 0.8) |
+       |---|---|---|
+       | Shared parameters (the app) | 0.940 | 0.925 |
+       | Per-program, prior log-sd 0.8 | 0.926 | 0.924 |
+       | Per-program, prior log-sd 0.4 | 0.927 | 0.911 |
+       | Per-program, prior log-sd 0.2 | 0.937 | 0.914 |
+
+       Forty answers cannot pin down ~30 extra numbers, and the extra uncertainty costs more
+       than the flexibility gains. So `runEngine` does not pass a layout; the code stays,
+       tested, for the bench and for a later version where the couple marks big gaps
+       themselves.
+     - The bench rebuilds the graph after each answer, as the app does (#118). Its default
+       is even true spacing and the shared model, which is what the README table reports.
+120. **The final list is shown in a readable, outcome-equivalent order** (`tidyOrder`,
+     `packages/engine/src/tidy.ts`). Two neighbouring rows may trade places when a row of
+     their box is above both (#117): whenever both are reachable, that row is too. The pass
+     bubble-sorts by a reading key using only such swaps, so the shown list matches exactly
+     like the engine's order (brute-force tested over every scenario).
+     - Keys: a partner's order first (the default is partner 1's), or both ranks together.
+       "Engine order" turns it off. Stored as `settings.listOrder` (app-only).
+     - Never swapped: rows a rule, an answer or a drag orders (so every "why" still reads
+       right), and locked No Match rows.
+     - A swapped row's "why" says the two can go in either order, and names the row above
+       both. Exports, print and versions use the shown order.
+121. **"Try an outcome" on the final list.** The couple ticks the programs each of them
+     could get into (F₁, F₂), and for programs on both lists whether there is room for both.
+     The list dims rows out of reach, rings the row they would match on (`matchOutcome`), and
+     says where each would have matched applying separately. Only rows up to the NRMP limit
+     count. Nothing is saved.
+122. **Explore** (`/app/explore`, `apps/web/src/lib/explore.ts`). Drag (or send) any two pairs
+     into "This" and "That". It shows their ranks, which is higher and why, whether a rule or
+     answer fixes it, whether their order is moot, the answer so far and the model's guess.
+     For each way round it previews what answering would do, by re-running the list with
+     that answer added: rows that move (biggest first) and conflicts it would create. The
+     answer is saved like a This or that answer (strong preference optional).
+123. **Come back to this later, and flags** (This or that). Both are kept in the couple's
+     settings as question keys (`deferredQuestions`, `flaggedQuestions`, app-only), so both
+     partners see them. A deferred question is skipped (`QuestionOptions.skip`) until no
+     other question is left, then asked again, labelled as saved for later; answering it
+     clears it. The flag box applies to whatever is done next (answer or later); flagged
+     questions are listed under the question with where they stand, a link to Explore, and
+     Unflag.
+124. **No "strong preference" answer.** Every answer is already a rule (#118), so a stronger
+     kind of answer had nothing left to add, and the two buttons suggested that a plain answer
+     could be overruled. This or that and Explore now save every answer the same way (not
+     locked, no pin). "Still true?" → "Yes" still locks an answer so it isn't asked again;
+     older strong answers keep their pins.
+125. **Tier C rule; tier clashes go to "this or that"; wider B–C gap.**
+     - Tier meanings: A, almost no distance makes you drop to B; B, most programs, and only
+       rarely would you drop to C to be together; C, you'd rather be long distance than
+       match here.
+     - **Tier C rule** (`settings.tierCRule`, per partner, on by default): a pair that gives
+       you A or B, with your partner matched at any distance, goes above every pair that
+       gives you C. C pairs still go above No Match pairs ("rather apart", not "rather
+       unmatched"). B's "a few cases" are the exceptions the couple accepts in Conflicts
+       when an answer says otherwise.
+     - **Clashes.** When the two partners' tier rules point opposite ways for two pairs (one
+       pair gives partner 1 a better tier, the other gives partner 2 one), neither rule orders
+       them: the score and the couple's answers do. This replaces the Tier A priority
+       question (`tierAPriority` is ignored; the `tier_a_collision` conflict is gone).
+       `isTierClash` questions get a 1.5× boost so they are asked early.
+     - **Prior:** base values A 1.4, B 1.0, C 0.3 (was 1.0, 0.6, 0.3), so the bottom of B is
+       worth about the top of C plus being apart. `TIER_A_STRONG_BONUS` 3.0 → 4.0 to stay
+       above the widest gap.
+     - **Bench** (12 couples, 40 answers): τ over the true top 100 0.873 (was 0.940), but
+       relevant τ 0.993 (was 0.969). The raw number fell because the rules push C pairs out
+       of the top 100 and what's left is mostly moot; against the same hidden couple, the
+       engine with the C rule scores 0.873 / 0.993 and without it 0.789 / 0.941. The
+       learning test now checks relevant τ ≥ 0.9 per couple.
+     - There is no screen to turn the tier rules off; the README no longer says there is.
+126. **The Tier C rule is removed** (the wider B–C gap and "clashes go to this or that"
+     from #125 stay). Tested against simulated couples who do and don't follow it, as τ on
+     the orderings that can change the match (12 couples, 40 answers):
+
+     | Couple's real preferences | Rule on | Rule off |
+     |---|---|---|
+     | Never drop to C to be together | 0.993 | 0.941 |
+     | Sometimes drop to C to be together | 0.873 (worst 0.500) | 0.981 |
+     | Same, only 2 Tier C programs each: follow / don't | 0.983 / 0.952 | 0.979 / 0.979 |
+
+     The rule helps a little when true and hurts a lot when not, and "this or that" never
+     asks about pairs a rule already orders, so a wrong rule is never questioned. With few
+     Tier C programs (the advice: use A and C sparingly) its gain is near zero. The wider
+     B–C gap in the prior keeps C below B unless an answer says otherwise.
+     - Tier clashes are now only Tier A against Tier A (`isTierClash`), left to the score
+       and answers, with the 1.5× question boost.
+     - Bench now: τ 0.955 (lowest 0.892), relevant τ 0.982 (lowest 0.945); was 0.940 /
+       0.969 before #125.
+     - The "list confidence rises" test now averages four couples and builds the list with
+       the answers as rules, as the app does: one couple can start confident and stay flat.
+

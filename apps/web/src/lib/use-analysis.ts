@@ -83,3 +83,7 @@ export function useAnalysis(data: CoupleData, opts: AnalyzeOptions) {
 export function useFinalList(data: CoupleData, opts: ListOptions) {
   return useEngineResult<import('./final-list').FinalList>(() => ({ kind: 'list', data, opts }), JSON.stringify(['l', data, opts]));
 }
+
+export function useExplore(data: CoupleData, opts: import('./explore').ExploreOptions) {
+  return useEngineResult<import('./explore').ExploreResult>(() => ({ kind: 'explore', data, opts }), JSON.stringify(['e', data, opts]));
+}

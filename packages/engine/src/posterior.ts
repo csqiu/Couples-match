@@ -3,7 +3,7 @@
  * and its variance is φᵀ Σ φ, so these never need to loop over particles per pair.
  */
 import { BT_BETA } from './defaults';
-import { THETA_DIM, dot, paramsToTheta, quadForm } from './features';
+import { dot, paramsToTheta, quadForm } from './features';
 import type { Posterior } from './types';
 
 export interface PosteriorMoments {
@@ -11,7 +11,7 @@ export interface PosteriorMoments {
   /** Normalized weights. */
   weights: Float64Array;
   mean: Float64Array;
-  /** Row-major THETA_DIM × THETA_DIM covariance. */
+  /** Row-major dim × dim covariance (dim = θ's length). */
   cov: Float64Array;
 }
 
@@ -21,19 +21,25 @@ export function posteriorMoments(posterior: Posterior): PosteriorMoments {
   const cached = momentCache.get(posterior);
   if (cached) return cached;
   const n = posterior.particles.length;
-  const thetas = posterior.particles.map(paramsToTheta);
+  const thetas = posterior.particles.map((p) => paramsToTheta(p, posterior.layout));
+  const dim = thetas[0]?.length ?? 0;
   const total = posterior.weights.reduce((a, b) => a + b, 0) || 1;
   const weights = Float64Array.from(posterior.weights, (w) => w / total);
-  const mean = new Float64Array(THETA_DIM);
-  for (let p = 0; p < n; p++) for (let i = 0; i < THETA_DIM; i++) mean[i] += weights[p] * thetas[p][i];
-  const cov = new Float64Array(THETA_DIM * THETA_DIM);
-  const d = new Float64Array(THETA_DIM);
+  const mean = new Float64Array(dim);
+  for (let p = 0; p < n; p++) for (let i = 0; i < dim; i++) mean[i] += weights[p] * thetas[p][i];
+  const cov = new Float64Array(dim * dim);
+  const d = new Float64Array(dim);
   for (let p = 0; p < n; p++) {
     const w = weights[p];
     if (w === 0) continue;
-    for (let i = 0; i < THETA_DIM; i++) d[i] = thetas[p][i] - mean[i];
-    for (let i = 0; i < THETA_DIM; i++) for (let j = 0; j < THETA_DIM; j++) cov[i * THETA_DIM + j] += w * d[i] * d[j];
+    for (let i = 0; i < dim; i++) d[i] = thetas[p][i] - mean[i];
+    for (let i = 0; i < dim; i++) {
+      const wi = w * d[i];
+      if (wi === 0) continue;
+      for (let j = i; j < dim; j++) cov[i * dim + j] += wi * d[j];
+    }
   }
+  for (let i = 0; i < dim; i++) for (let j = 0; j < i; j++) cov[i * dim + j] = cov[j * dim + i];
   const m = { thetas, weights, mean, cov };
   momentCache.set(posterior, m);
   return m;

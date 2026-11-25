@@ -13,10 +13,11 @@ import {
   STOP_ADJACENT_FRACTION,
   STOP_ORDER_CONFIDENCE,
   STOP_TOP,
+  TIER_CLASH_BOOST,
   TRADEOFF_BOOST,
 } from './defaults';
 import { THETA_DIM, pairFeatures, type PairFeatures } from './features';
-import { pairId } from './candidates';
+import { mootWitnesses } from './equivalence';
 import { isHub, type Graph } from './graph';
 import { linearMoments, orderConfidence, posteriorMoments, predictiveApprox, type PosteriorMoments } from './posterior';
 import type { RankedList } from './rank';
@@ -91,6 +92,8 @@ export interface Question {
   impact: number;
   /** True when one pair is closer together and the other is better for at least one partner. */
   tradeoff: boolean;
+  /** One pair gives one partner Tier A, the other pair the other partner: left to the couple. */
+  clash: boolean;
   value: number;
   kind: 'calibration' | 'active';
 }
@@ -99,12 +102,21 @@ export interface QuestionOptions {
   /** Answers so far (to skip questions already asked and to decide on calibration). */
   comparisons?: Comparison[];
   window?: number;
+  /** Questions (questionKey) the couple chose to come back to later: not asked for now. */
+  skip?: Iterable<string>;
 }
 
 const BAND_ORDER: Record<Band, number> = { together: 0, commutable: 1, drivable: 2, apart: 3, no_match: 4 };
 
-function questionKey(a: PairId, b: PairId): string {
+/** One key per question, whichever pair is on the left. */
+export function questionKey(a: PairId, b: PairId): string {
   return a < b ? `${a}#${b}` : `${b}#${a}`;
+}
+
+/** x gives one partner Tier A (and not the other) and y the reverse: the Tier A rules leave these to the couple. */
+export function isTierClash(x: Pair, y: Pair): boolean {
+  const onlyA = (p: Pair, k: 0 | 1) => p.tier[k] === 'A' && p.tier[1 - k] !== 'A';
+  return (onlyA(x, 0) && onlyA(y, 1)) || (onlyA(x, 1) && onlyA(y, 0));
 }
 
 /** One pair is closer together while the other gives at least one partner a better program. */
@@ -124,9 +136,11 @@ interface Ctx {
   position: Int32Array;
   impactPrefix: Float64Array;
   asked: Set<string>;
+  /** Scratch space for feature differences. */
+  diff: Float64Array;
 }
 
-function makeCtx(list: RankedList, posterior: Posterior, comparisons: Comparison[]): Ctx {
+function makeCtx(list: RankedList, posterior: Posterior, comparisons: Comparison[], skip: Iterable<string> = []): Ctx {
   const g = list.graph;
   const position = new Int32Array(g.n);
   list.order.forEach((id, i) => (position[g.index.get(id)!] = i));
@@ -138,21 +152,22 @@ function makeCtx(list: RankedList, posterior: Posterior, comparisons: Comparison
     g,
     closure: hardClosure(g),
     moments: posteriorMoments(posterior),
-    features: g.pairs.map((p) => pairFeatures(p, g.settings)),
+    features: g.pairs.map((p) => pairFeatures(p, g.settings, posterior.layout)),
     position,
     impactPrefix,
-    asked: new Set(comparisons.map((c) => questionKey(c.left, c.right))),
+    asked: new Set([...comparisons.map((c) => questionKey(c.left, c.right)), ...skip]),
+    diff: new Float64Array(posterior.layout?.dim ?? THETA_DIM),
   };
 }
 
-const diff = new Float64Array(THETA_DIM);
 
 function evaluate(ctx: Ctx, u: number, v: number, kind: Question['kind']): Question {
   // Orient so `left` is the one currently higher.
   if (ctx.position[u] > ctx.position[v]) [u, v] = [v, u];
   const fu = ctx.features[u];
   const fv = ctx.features[v];
-  for (let i = 0; i < THETA_DIM; i++) diff[i] = fu.phi[i] - fv.phi[i];
+  const diff = ctx.diff;
+  for (let i = 0; i < diff.length; i++) diff[i] = fu.phi[i] - fv.phi[i];
   const { mean, variance } = linearMoments(ctx.moments, diff, fu.bonus - fv.bonus);
   // Display probability: what the couple is predicted to answer (includes answer noise).
   const pLeft = predictiveApprox(mean, variance);
@@ -161,6 +176,7 @@ function evaluate(ctx: Ctx, u: number, v: number, kind: Question['kind']): Quest
   const uncertainty = 1 - Math.abs(2 * orderConfidence(mean, variance) - 1);
   const impact = ctx.impactPrefix[ctx.position[v] + 1] - ctx.impactPrefix[ctx.position[u]];
   const tradeoff = isTradeoff(ctx.g.pairs[u], ctx.g.pairs[v]);
+  const clash = isTierClash(ctx.g.pairs[u], ctx.g.pairs[v]);
   return {
     left: ctx.g.pairs[u].id,
     right: ctx.g.pairs[v].id,
@@ -168,7 +184,8 @@ function evaluate(ctx: Ctx, u: number, v: number, kind: Question['kind']): Quest
     uncertainty,
     impact,
     tradeoff,
-    value: uncertainty * impact * (tradeoff ? TRADEOFF_BOOST : 1),
+    clash,
+    value: uncertainty * impact * (tradeoff ? TRADEOFF_BOOST : 1) * (clash ? TIER_CLASH_BOOST : 1),
     kind,
   };
 }
@@ -179,23 +196,21 @@ function surelyAbove(ctx: Ctx, u: number, v: number): boolean {
   if (ctx.position[u] > ctx.position[v]) return false;
   const fu = ctx.features[u];
   const fv = ctx.features[v];
-  for (let i = 0; i < THETA_DIM; i++) diff[i] = fu.phi[i] - fv.phi[i];
+  const diff = ctx.diff;
+  for (let i = 0; i < diff.length; i++) diff[i] = fu.phi[i] - fv.phi[i];
   const { mean, variance } = linearMoments(ctx.moments, diff, fu.bonus - fv.bonus);
   return orderConfidence(mean, variance) >= MOOT_CONFIDENCE;
 }
 
 /**
- * True when the order of u and v can never decide where the couple matches.
- * For (a1, b1) vs (a2, b2) with a1 ≠ a2 and b1 ≠ b2: if both pairs are reachable,
- * partner 1 can get a1 and partner 2 can get b2 (and likewise a2, b1), so the swapped
- * pairs are reachable too. If a swapped pair is above both, the Match stops there first.
- * Pairs that share a program have no swapped pair and are never moot.
+ * True when the order of u and v can never decide where the couple matches: some pair
+ * from their box (see mootWitnesses) is above both. If u and v are both reachable, that
+ * pair is too, and the Match stops there first. Witnesses are the swapped pairs
+ * (a1, b2) and (a2, b1) and the pairs with one partner at No Match; a pair that puts
+ * both partners at one program never counts, since it needs two positions at once.
  */
 export function isMootComparison(g: Graph, u: number, v: number, above: (c: number, x: number) => boolean): boolean {
-  const [a1, b1] = g.pairs[u].programs;
-  const [a2, b2] = g.pairs[v].programs;
-  if (a1 === a2 || b1 === b2) return false;
-  for (const id of [pairId(a1, b2), pairId(a2, b1)]) {
+  for (const id of mootWitnesses(g.pairs[u].programs, g.pairs[v].programs)) {
     const c = g.index.get(id);
     if (c !== undefined && above(c, u) && above(c, v)) return true;
   }
@@ -233,7 +248,7 @@ const byValue = (a: Question, b: Question) =>
  * question that trades one partner's program against the other's at the same distance.
  */
 export function calibrationQuestions(list: RankedList, posterior: Posterior, opts: QuestionOptions = {}): Question[] {
-  const ctx = makeCtx(list, posterior, opts.comparisons ?? []);
+  const ctx = makeCtx(list, posterior, opts.comparisons ?? [], opts.skip);
   const g = ctx.g;
   const templates: Array<[Band, Band] | 'partners'> = [
     ['apart', 'together'],
@@ -310,7 +325,7 @@ export function nextQuestions(list: RankedList, posterior: Posterior, k = 1, opt
   }
   if (out.length >= k) return out;
 
-  const ctx = makeCtx(list, posterior, comparisons);
+  const ctx = makeCtx(list, posterior, comparisons, opts.skip);
   const candidates = openQuestions(list, ctx, opts.window ?? QUESTION_WINDOW)
     .map(([u, v]) => evaluate(ctx, u, v, 'active'))
     .filter((q) => !seen.has(questionKey(q.left, q.right)))
@@ -324,7 +339,7 @@ export function nextQuestions(list: RankedList, posterior: Posterior, k = 1, opt
 
 /** Every open question (unordered by the hard graph, within the window, not yet asked). Used for baselines. */
 export function allOpenQuestions(list: RankedList, posterior: Posterior, opts: QuestionOptions = {}): Question[] {
-  const ctx = makeCtx(list, posterior, opts.comparisons ?? []);
+  const ctx = makeCtx(list, posterior, opts.comparisons ?? [], opts.skip);
   return openQuestions(list, ctx, opts.window ?? QUESTION_WINDOW).map(([u, v]) => evaluate(ctx, u, v, 'active'));
 }
 
@@ -344,10 +359,11 @@ export function learningStatus(list: RankedList, posterior: Posterior, compariso
   const closure = hardClosure(g);
   const m = posteriorMoments(posterior);
   const top = Math.min(STOP_TOP, list.order.length);
+  const diff = new Float64Array(posterior.layout?.dim ?? THETA_DIM);
   const orderSure = (u: number, v: number) => {
-    const fu = pairFeatures(g.pairs[u], g.settings);
-    const fv = pairFeatures(g.pairs[v], g.settings);
-    for (let d = 0; d < THETA_DIM; d++) diff[d] = fu.phi[d] - fv.phi[d];
+    const fu = pairFeatures(g.pairs[u], g.settings, posterior.layout);
+    const fv = pairFeatures(g.pairs[v], g.settings, posterior.layout);
+    for (let d = 0; d < diff.length; d++) diff[d] = fu.phi[d] - fv.phi[d];
     const { mean, variance } = linearMoments(m, diff, fu.bonus - fv.bonus);
     return orderConfidence(mean, variance);
   };

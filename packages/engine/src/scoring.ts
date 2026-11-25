@@ -23,6 +23,7 @@ export function cloneParams(p: ModelParams): ModelParams {
     s: [p.s[0], p.s[1]],
     pen: { ...p.pen },
     vNM: p.vNM,
+    ...(p.offsets ? { offsets: [{ ...p.offsets[0] }, { ...p.offsets[1] }] as [Record<string, number>, Record<string, number>] } : {}),
   };
 }
 
@@ -31,12 +32,12 @@ export function defaultPosterior(params: ModelParams = DEFAULT_PARAMS): Posterio
   return { particles: [cloneParams(params)], weights: [1] };
 }
 
-/** v_k(i) = base_k(tier) + s_k * (1 - (pos - 1) / max(1, n - 1)); NO_MATCH gets v_NM. */
+/** v_k(i) = base_k(tier) + s_k * (1 - (pos - 1) / max(1, n - 1)) + offset_k(i); NO_MATCH gets v_NM. */
 export function partnerValue(params: ModelParams, pair: Pair, k: PartnerIndex): number {
   if (pair.programs[k] === NO_MATCH) return params.vNM;
   const tier = pair.tier[k]!;
   const frac = (pair.posInTier[k] - 1) / Math.max(1, pair.tierSize[k] - 1);
-  return params.base[k][tier] + params.s[k] * (1 - frac);
+  return params.base[k][tier] + params.s[k] * (1 - frac) + (params.offsets?.[k][pair.programs[k]] ?? 0);
 }
 
 /** Saturating step penalty: Together = 0; Apart is flat no matter how far. */
@@ -85,7 +86,7 @@ export function scorePairs(
   const m = posteriorMoments(posterior);
   const out = new Map<PairId, ScoreSummary>();
   for (const pair of pairs) {
-    const { phi, bonus } = pairFeatures(pair, settings);
+    const { phi, bonus } = pairFeatures(pair, settings, posterior.layout);
     const { mean, variance } = linearMoments(m, phi, bonus);
     out.set(pair.id, { mean, sd: Math.sqrt(variance) });
   }

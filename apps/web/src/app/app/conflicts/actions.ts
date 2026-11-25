@@ -38,14 +38,6 @@ export async function breakLink(link: { from: string; to: string; reasons: EdgeR
   return done();
 }
 
-export async function setTierAPriority(priority: 'partner1' | 'partner2' | 'case_by_case'): Promise<Result> {
-  const ctx = await requireCouple();
-  const supabase = await createClient();
-  const settings: StoredSettings = { ...((ctx.couple.settings ?? {}) as StoredSettings), tierAPriority: priority };
-  const { error } = await supabase.from('couples').update({ settings: settings as never }).eq('id', ctx.couple.id);
-  return done(error);
-}
-
 /** "Still true? Yes": lock the answer and make it a hard ordering. */
 export async function confirmAnswer(id: string): Promise<Result> {
   const ctx = await requireCouple();

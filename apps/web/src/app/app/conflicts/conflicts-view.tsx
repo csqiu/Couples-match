@@ -9,11 +9,10 @@ import { useToast } from '@/components/ui/toast';
 import type { ConflictView } from '@/lib/analysis';
 import { useAnalysis } from '@/lib/use-analysis';
 import { PairCard } from '../compare/compare-view';
-import { breakLink, confirmAnswer, flipAnswer, removeAnswer, resolveDisagreement, setTierAPriority } from './actions';
+import { breakLink, confirmAnswer, flipAnswer, removeAnswer, resolveDisagreement } from './actions';
 
 const TITLES: Record<ConflictView['kind'], string> = {
   cycle: 'These answers go in a circle',
-  tier_a_collision: 'Who gets priority for Tier A?',
   surprising_answer: 'Still true?',
   disagreement: 'You answered differently',
 };
@@ -89,31 +88,6 @@ export function ConflictsView({
                         <span>{l.text}</span>
                       </button>
                     ))}
-                  </div>
-                ) : null}
-
-                {c.kind === 'tier_a_collision' ? (
-                  <div className="flex flex-col gap-4">
-                    <p className="text-sm text-muted">
-                      You both have Tier A programs. When only one of you can get one, whose Tier A comes first? For example:
-                    </p>
-                    {c.left && c.right ? (
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <PairCard pair={c.left} names={names} hideTierOf={hideTierOf} />
-                        <PairCard pair={c.right} names={names} hideTierOf={hideTierOf} />
-                      </div>
-                    ) : null}
-                    <div className="flex flex-wrap gap-2">
-                      <Button disabled={!!pending} onClick={() => run(c.id, () => setTierAPriority('partner1'), `${names[0]}’s Tier A comes first.`)}>
-                        {names[0]} gets priority
-                      </Button>
-                      <Button disabled={!!pending} onClick={() => run(c.id, () => setTierAPriority('partner2'), `${names[1]}’s Tier A comes first.`)}>
-                        {names[1]} gets priority
-                      </Button>
-                      <Button variant="secondary" disabled={!!pending} onClick={() => run(c.id, () => setTierAPriority('case_by_case'), 'We’ll decide case by case.')}>
-                        Decide case by case
-                      </Button>
-                    </div>
                   </div>
                 ) : null}
 

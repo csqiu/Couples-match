@@ -5,11 +5,13 @@ import { SURPRISE_THRESHOLD } from './defaults';
 import { pairFeatures } from './features';
 import { posteriorMoments, predictiveExact } from './posterior';
 import { pathToLinks, type Graph } from './graph';
+import { effectiveComparisons, unorderedKey } from './answers';
 import type { Comparison, EngineInput, Link, PairId, Posterior, RuleException } from './types';
+
+export { effectiveComparisons };
 
 export type Conflict =
   | { kind: 'cycle'; id: string; links: Link[] }
-  | { kind: 'tier_a_collision'; id: string; partner1Example: PairId; partner2Example: PairId }
   | { kind: 'surprising_answer'; id: string; comparison: Comparison; predictedOtherWay: number }
   | { kind: 'disagreement'; id: string; comparisons: Comparison[] };
 
@@ -126,72 +128,19 @@ export function findCycles(g: Graph): Link[][] {
   return out;
 }
 
-function unorderedKey(a: PairId, b: PairId): string {
-  return a < b ? `${a}#${b}` : `${b}#${a}`;
-}
-
-/** Winner expressed as the pair that won, or null for a tie. */
-function winningPair(c: Comparison): PairId | null {
-  return c.winner === 'tie' ? null : c.winner === 'left' ? c.left : c.right;
-}
-
-/**
- * Comparisons that count, plus disagreements that don't (yet).
- * - An answer marked bothAgreed settles its question.
- * - Otherwise, if two different people answered the same question differently, it is a disagreement.
- * - Otherwise the latest answer counts.
- */
-export function effectiveComparisons(comparisons: Comparison[]): { counted: Comparison[]; disagreements: Comparison[][] } {
-  const groups = new Map<string, Comparison[]>();
-  for (const c of comparisons) {
-    const k = unorderedKey(c.left, c.right);
-    const list = groups.get(k);
-    if (list) list.push(c);
-    else groups.set(k, [c]);
-  }
-  const counted: Comparison[] = [];
-  const disagreements: Comparison[][] = [];
-  const latest = (cs: Comparison[]) =>
-    cs.reduce((a, b) => ((b.seq ?? 0) >= (a.seq ?? 0) ? b : a));
-
-  for (const group of groups.values()) {
-    const agreed = group.filter((c) => c.bothAgreed);
-    if (agreed.length) {
-      counted.push(latest(agreed));
-      continue;
-    }
-    // Latest answer per person.
-    const byPerson = new Map<string, Comparison>();
-    for (const c of group) {
-      const who = c.answeredBy ?? '';
-      const prev = byPerson.get(who);
-      if (!prev || (c.seq ?? 0) >= (prev.seq ?? 0)) byPerson.set(who, c);
-    }
-    const answers = [...byPerson.values()];
-    const winners = new Set(answers.map(winningPair));
-    if (answers.length > 1 && winners.size > 1) disagreements.push(answers);
-    else counted.push(latest(answers));
-  }
-  return { counted, disagreements };
-}
-
 /** Probability (under the posterior predictive) that the couple prefers `a` to `b`. */
 export function preferenceProbability(g: Graph, posterior: Posterior, a: PairId, b: PairId): number {
   const ia = g.index.get(a);
   const ib = g.index.get(b);
   if (ia === undefined || ib === undefined) return 0.5;
-  const fa = pairFeatures(g.pairs[ia], g.settings);
-  const fb = pairFeatures(g.pairs[ib], g.settings);
+  const fa = pairFeatures(g.pairs[ia], g.settings, posterior.layout);
+  const fb = pairFeatures(g.pairs[ib], g.settings, posterior.layout);
   const x = fa.phi.map((v, i) => v - fb.phi[i]);
   return predictiveExact(posteriorMoments(posterior), x, fa.bonus - fb.bonus);
 }
 
 export function findConflicts(g: Graph, posterior: Posterior, comparisons: Comparison[]): Conflict[] {
   const conflicts: Conflict[] = [];
-
-  if (g.tierACollision && g.settings.tierAPriority === null) {
-    conflicts.push({ kind: 'tier_a_collision', id: 'tier_a_collision', ...g.tierACollision });
-  }
 
   for (const links of findCycles(g)) {
     const ids = links.map((l) => l.from).sort();

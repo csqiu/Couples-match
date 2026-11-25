@@ -36,6 +36,8 @@ export function describeReason(ctx: TextContext, r: EdgeReason): string {
       return `of ${r.partner === 0 ? n1 : n2}'s Tier A rule (rule)`;
     case 'no_match_bottom':
       return 'pairs where you both match go above No Match pairs (rule)';
+    case 'answer':
+      return 'you answered so';
     case 'pin':
       if (r.source === 'comparison') return `you said so${r.comparisonId ? ` (comparison ${r.comparisonId})` : ''}`;
       if (r.source === 'manual_drag') return 'you dragged it there';
@@ -47,6 +49,7 @@ export function describeLink(ctx: TextContext, link: Link): string {
   const a = pairLabel(ctx, link.from);
   const b = pairLabel(ctx, link.to);
   const pin = link.reasons.find((r) => r.kind === 'pin');
+  if (link.reasons.some((r) => r.kind === 'answer')) return `You said ${a} over ${b}.`;
   if (pin && pin.kind === 'pin' && pin.source === 'comparison') {
     return `You said ${a} over ${b}${pin.comparisonId ? ` (comparison ${pin.comparisonId})` : ''}.`;
   }
@@ -58,8 +61,6 @@ export function describeConflict(ctx: TextContext, c: Conflict): string {
   switch (c.kind) {
     case 'cycle':
       return c.links.map((l) => describeLink(ctx, l)).join(' ');
-    case 'tier_a_collision':
-      return `When only one of you can get a Tier A program, who gets priority? (e.g. ${pairLabel(ctx, c.partner1Example)} vs. ${pairLabel(ctx, c.partner2Example)}) — ${n1}, ${n2}, or decide case by case.`;
     case 'surprising_answer': {
       const won = c.comparison.winner === 'left' ? c.comparison.left : c.comparison.right;
       const lost = c.comparison.winner === 'left' ? c.comparison.right : c.comparison.left;

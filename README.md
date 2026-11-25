@@ -18,20 +18,28 @@ between being close together and getting the programs each of you likes most.
 ## What it does (when finished)
 
 1. **Each of you ranks your own programs** and sorts them into tiers:
-   - **A**: "I'd take this over any lower program, wherever my partner lands."
-   - **B**: "Strong preference, but I'd trade down to be with my partner."
-   - **C**: "Acceptable fallback."
+   - **A**: "Almost no amount of distance would make me drop to Tier B."
+   - **B**: "Most of my programs. I'd take a lower Tier B program to be closer to my partner."
+   - **C**: "My least favourite programs. I'd rather be long distance than match here."
+
+   Use Tier A and Tier C sparingly.
 2. **Pairwise builds every possible pair** (your program + your partner's program, plus
    "No Match" for either of you) and works out how far apart each pair is.
 3. **You answer a few "this or that" questions** ("Both at your #1 programs but on
    opposite coasts, or both at your #4 programs in the same city?"). That teaches it how
    much distance matters to you.
-4. **It catches contradictions.** If your answers go in a circle, or both of your Tier A
-   programs can't come first, it shows you why in plain language and asks you to decide.
-5. **You get an editable final list.** It is colour-coded by how close together each
+4. **It catches contradictions.** If your answers go in a circle, or an answer goes
+   against one of your rules, it shows you why in plain language and asks you to decide.
+5. **Explore any comparison.** Drag two pairs into "this" and "that" to see how the list
+   orders them and why, and preview what answering either way would change before you do.
+   On "this or that", you can also save a question for later or flag it to discuss.
+6. **You get an editable final list.** It is colour-coded by how close together each
    pair is, can be saved as versions, and exports to a checklist, PDF and CSV for typing
    into R3. A **map** shows every pair in the list as a line between the two programs.
-6. **Activity and account.** An activity feed shows what each of you changed. The account
+   The list is shown in the easiest-to-read order that matches exactly the same way, and
+   **"Try an outcome"** lets you tick the programs each of you could get into and see where
+   you would match.
+7. **Activity and account.** An activity feed shows what each of you changed. The account
    page lets you leave a couple or delete your account.
 
 ## How the engine decides an order
@@ -43,14 +51,17 @@ The engine has two layers.
 - **Common sense ("dominance").** If pair X is at least as good for both of you as
   pair Y, and no farther apart, X goes above Y. Example: you both get your #1 program in
   the same city, versus you both get your #2 programs in that same city.
-- **Tier A rule** (each partner can turn this on or off). Any pair that gives you a Tier
-  A program, while your partner matches somewhere, goes above every pair that doesn't
-  give you Tier A.
+- **Tier A rule.** Any pair that gives you a Tier A program, while your partner matches
+  somewhere, goes above every pair that doesn't give you Tier A.
+- **When your Tier A programs clash, you decide.** If one pair gives one of you Tier A and
+  another gives the other one Tier A, neither partner's rule wins. The score and your
+  "this or that" answers order them, and those questions are asked early.
 - **No Match goes last.** Every pair where you both match goes above every pair where one
   of you doesn't. This follows NRMP's guidance. You can turn it off, but you'll get a
   warning.
-- **Things you told it for certain.** These are "I'm certain" answers, rows you dragged
-  into place, and decisions you made while resolving a conflict.
+- **Things you told it.** Every "this or that" answer, rows you dragged into place, and
+  decisions you made while resolving a conflict. If answers go in a circle, the Conflicts
+  step shows you the loop and you choose which one gives way.
 
 **2. A score for everything else.** Each program is worth something to each of you,
 based on its tier and where it sits in the tier. Being apart costs some points.
@@ -73,8 +84,8 @@ engine also knows how *sure* it is. It uses that to:
 - **Flag answers that no longer fit.** If the engine is now more than 85% sure you'd
   answer a question the other way, it asks "Still true?" It never deletes an answer.
 
-Every answer is "soft" by default. Turn on **"I'm certain"** and the answer also becomes a
-hard rule.
+Every answer holds in the final list. If an answer clashes with a rule or another answer,
+the Conflicts step shows both and you choose which gives way; nothing is overruled silently.
 
 **How well does it work?** We tested it on 12 simulated couples. Each one has a hidden
 "true" preference, answers 40 questions, and gets 1 in 10 answers wrong on purpose.
@@ -83,8 +94,13 @@ identical:
 
 | | Before any questions | After 40 questions |
 |---|---|---|
-| Pairwise's question choice | 0.835 | **0.962** (lowest couple: 0.920) |
-| Random questions | 0.835 | 0.913 (lowest couple: 0.833) |
+| Pairwise's question choice | 0.845 | **0.955** (lowest couple: 0.892) |
+| Random questions | 0.845 | 0.921 (lowest couple: 0.845) |
+
+Counting only the orderings that can change where a couple matches (for the rest, the
+order never decides the match), the score is 0.892 before any questions and **0.982**
+after 40 of Pairwise's questions (lowest couple 0.945), against 0.957 with random ones.
+Every answer holds in the list, including the 1 in 10 that are wrong on purpose.
 
 Run it yourself with `pnpm --filter @pairwise/engine bench`.
 

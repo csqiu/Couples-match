@@ -32,10 +32,19 @@ export interface StoredSettings extends Partial<Omit<CoupleSettings, 'matchType'
   includedPairs?: string[];
   /** True when the No Match rows at the end of the final list may be moved. */
   noMatchUnlocked?: boolean;
+  /**
+   * How the final list is shown: tidied by a reading key into an order that matches
+   * exactly the same way (engine `tidyOrder`), or the engine's own order. Default 'partner1'.
+   */
+  listOrder?: 'partner1' | 'partner2' | 'balanced' | 'engine';
+  /** Questions (engine questionKey) the couple chose to come back to later. */
+  deferredQuestions?: string[];
+  /** Questions (engine questionKey) flagged to discuss together. */
+  flaggedQuestions?: string[];
 }
 
 /** Settings keys the app keeps but the engine never sees. */
-export const APP_ONLY_SETTINGS = ['privacy', 'includedPairs', 'noMatchUnlocked'] as const;
+export const APP_ONLY_SETTINGS = ['privacy', 'includedPairs', 'noMatchUnlocked', 'listOrder', 'deferredQuestions', 'flaggedQuestions'] as const;
 
 export interface CoupleData {
   couple: Pick<CoupleRow, 'id' | 'partner_a' | 'partner_b' | 'match_type' | 'settings'>;
@@ -64,7 +73,7 @@ export function coupleSeed(coupleId: string): number {
 
 export function settingsFrom(couple: Pick<CoupleRow, 'match_type' | 'settings'>): CoupleSettings {
   const stored = (couple.settings ?? {}) as StoredSettings;
-  const { privacy: _privacy, includedPairs: _included, noMatchUnlocked: _unlocked, ...engine } = stored;
+  const { privacy: _p, includedPairs: _i, noMatchUnlocked: _u, listOrder: _o, deferredQuestions: _d, flaggedQuestions: _f, ...engine } = stored;
   return withDefaults({ ...engine, matchType: couple.match_type as MatchType });
 }
 
