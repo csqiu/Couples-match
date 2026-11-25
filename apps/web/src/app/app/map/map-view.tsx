@@ -33,10 +33,10 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
   const visible = useMemo(() => map.lines.filter((l) => !hidden.has(l.band)), [map, hidden]);
   const byRank = useMemo(() => new Map(rows.map((r) => [r.rank, r])), [rows]);
 
-  if (!result) return <div className="h-96 animate-pulse rounded-2xl bg-surface-2" aria-label="Loading" />;
+  if (!result) return <div className="h-96 glass animate-pulse" aria-label="Loading" />;
   if (!rows.length) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center">
+      <div className="flex flex-col items-center gap-3 glass border-dashed p-10 text-center">
         <p className="font-medium">Nothing to map yet</p>
         <p className="max-w-md text-sm text-muted">The map shows your final list. It appears once you’ve both added and ranked programs.</p>
         <Link href="/app/programs" className={buttonVariants({ variant: 'secondary' })}>Choose programs</Link>
@@ -58,7 +58,7 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Map of your list</h1>
+          <h1 className="page-title">Map of your list</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Each line joins the two programs in one pair. Filled dots are {names[0]}’s programs, rings are {names[1]}’s. Pick a pair to see it.
           </p>
@@ -88,8 +88,8 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
                 aria-pressed={on}
                 onClick={() => toggle(b)}
                 className={cn(
-                  'inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium',
-                  on ? 'border-border bg-surface' : 'border-dashed border-border bg-transparent text-muted line-through',
+                  'inline-flex min-h-9 items-center gap-1.5 border px-3 text-xs font-medium transition-opacity duration-150',
+                  on ? 'glass glass-strong rounded-full' : 'glass rounded-full border-dashed text-muted line-through opacity-50',
                 )}
               >
                 <LineSwatch band={b} />
@@ -113,7 +113,7 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
           {selectedRow ? (
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3 text-sm" aria-live="polite">
               <span className="min-w-0">
-                <strong>#{selectedRow.rank}</strong> {selectedRow.sides[0].name} + {selectedRow.sides[1].name}
+                <strong className="font-mono text-plum-deep">#{selectedRow.rank}</strong> {selectedRow.sides[0].name} + {selectedRow.sides[1].name}
               </span>
               <BandBadge band={selectedRow.band} bandLabel={selectedRow.bandLabel} distanceMi={selectedRow.distanceMi} />
             </div>
@@ -128,7 +128,7 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
         </Card>
 
         <Card className="min-w-0 p-0 sm:p-0">
-          <h2 className="border-b border-border px-4 py-3 text-sm font-semibold">Pairs on the map ({visible.length})</h2>
+          <h2 className="small-title border-b border-border px-4 py-3">Pairs on the map <span className="font-mono text-sm font-normal text-muted">({visible.length})</span></h2>
           <ol className="max-h-[560px] divide-y divide-border overflow-y-auto" aria-label="Pairs on the map">
             {visible.map((l) => {
               const row = byRank.get(l.rank)!;
@@ -138,10 +138,10 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
                     type="button"
                     onClick={() => setSelected(l.rank === selected ? null : l.rank)}
                     aria-pressed={l.rank === selected}
-                    className={cn('flex w-full flex-col gap-1 px-4 py-2.5 text-left text-sm hover:bg-surface-2', l.rank === selected && 'bg-accent-soft')}
+                    className={cn('flex w-full flex-col gap-1 px-4 py-2.5 text-left text-sm hover:bg-glass-strong', l.rank === selected && 'bg-action-soft ring-2 ring-action/25 ring-inset')}
                   >
                     <span className="flex min-w-0 items-baseline gap-2">
-                      <span className="w-8 shrink-0 tabular-nums text-muted">#{l.rank}</span>
+                      <span className="w-8 shrink-0 font-mono font-semibold tabular-nums text-plum-deep">#{l.rank}</span>
                       <span className="min-w-0">
                         <span className="block truncate">{row.sides[0].name}</span>
                         <span className="block truncate text-muted">{row.sides[1].name}</span>

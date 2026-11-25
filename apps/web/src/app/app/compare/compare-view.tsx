@@ -4,9 +4,10 @@ import { questionKey } from '@pairwise/engine';
 import { Check, Clock, Compass, Flag, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
+import { Avatar } from '@/components/avatar';
 import { MiniMap } from '@/components/mini-map';
 import { BandBadge as ProximityBadge } from '@/components/proximity';
-import { Badge } from '@/components/ui/badge';
+import { TierBadge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import type { FlaggedView, PairView, QuestionView } from '@/lib/analysis';
@@ -36,29 +37,39 @@ export function PairCard({
 }) {
   const points = pair.sides.flatMap((s) => (s && s.lat != null && s.lon != null ? [{ lat: s.lat, lon: s.lon }] : []));
   return (
-    <div className={cn('flex flex-col overflow-hidden rounded-2xl border bg-surface', highlight ? 'border-accent' : 'border-border')}>
+    <div className={cn('glass glass-strong flex flex-col overflow-hidden', highlight && 'ring-2 ring-action/40')}>
       <MiniMap
         points={points}
         className="h-36 w-full bg-surface-2 sm:h-44"
         label={`Map: ${pair.sides.map((s) => s?.place ?? 'No Match').join(' and ')}`}
       />
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <BandBadge pair={pair} />
+      <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
         {pair.sides.map((side, k) => (
-          <div key={k} className={cn('border-l-4 pl-3', k === 0 ? 'border-partner-1' : 'border-partner-2')}>
-            <p className={cn('text-base font-semibold', k === 0 ? 'text-partner-1' : 'text-partner-2')}>{names[k]}</p>
-            {side ? (
-              <>
-                <p className="font-medium leading-snug" title={side.name}>{side.short}</p>
-                {side.short !== side.name ? <p className="text-xs leading-snug text-muted">{side.name}</p> : null}
-                <p className="flex items-center gap-2 text-sm text-muted">
-                  {side.place}
-                  {side.tier && hideTierOf !== k ? <Badge tone={side.tier}>Tier {side.tier}</Badge> : null}
-                </p>
-              </>
-            ) : (
-              <p className="font-medium text-warn">No Match</p>
-            )}
+          <div key={k} className="flex flex-col gap-2">
+            {k === 1 ? (
+              <div className="flex items-center gap-2 pl-3">
+                <span className="h-6 border-l-2 border-dashed border-border" aria-hidden />
+                <BandBadge pair={pair} />
+              </div>
+            ) : null}
+            <div className="flex items-start gap-3">
+              <Avatar name={names[k]} slot={k === 0 ? 1 : 2} className="mt-0.5" />
+              <div className="min-w-0">
+                <p className="eyebrow text-muted">{names[k]}</p>
+                {side ? (
+                  <>
+                    <p className="mt-1 flex items-center gap-2 font-display text-lg leading-snug font-semibold" title={side.name}>
+                      {side.tier && hideTierOf !== k ? <TierBadge tier={side.tier} /> : null}
+                      {side.short}
+                    </p>
+                    {side.short !== side.name ? <p className="text-xs leading-snug text-muted">{side.name}</p> : null}
+                    <p className="text-sm text-muted">{side.place}</p>
+                  </>
+                ) : (
+                  <p className="mt-1 font-display text-lg font-semibold text-warn">No Match</p>
+                )}
+              </div>
+            </div>
           </div>
         ))}
         {action ? <div className="mt-auto pt-2">{action}</div> : null}
@@ -172,7 +183,7 @@ export function CompareView({
   const lastMine = [...local].reverse().find((l) => l.realId);
 
   if (!result) {
-    return <div className="h-96 animate-pulse rounded-2xl bg-surface-2" aria-label="Loading" />;
+    return <div className="glass h-96 animate-pulse" aria-label="Loading" />;
   }
   if (error) return <p className="text-danger" role="alert">Something went wrong: {error}</p>;
 
@@ -190,7 +201,7 @@ export function CompareView({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">This or that</h1>
+          <h1 className="page-title">This or that</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Which pair would you rather match into? There are no wrong answers — this teaches the app how much distance
             matters to you{answerMode === 'together' ? ' as a couple' : ''}.
@@ -207,13 +218,13 @@ export function CompareView({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="glass p-4 sm:p-5">
         <div className="flex items-baseline justify-between text-sm">
           <span className="font-medium">List confidence</span>
-          <span className="tabular-nums text-muted" data-testid="confidence">{pct}%</span>
+          <span className="font-mono tabular-nums text-muted" data-testid="confidence">{pct}%</span>
         </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="List confidence">
-          <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${pct}%` }} />
+        <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-text/8" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="List confidence">
+          <div className="h-full rounded-full bg-[linear-gradient(90deg,var(--partner-1),var(--partner-2))] transition-[width] duration-500" style={{ width: `${pct}%` }} />
         </div>
         <p className="mt-2 text-xs text-muted">
           {result.answered} answer{result.answered === 1 ? '' : 's'} so far.
@@ -288,21 +299,21 @@ function QuestionBlock({
   return (
     <section aria-label="Question" className={cn('flex flex-col gap-4 transition-opacity', busy && 'opacity-60')}>
       {q.kind === 'partner' ? (
-        <p className="rounded-xl bg-accent-soft px-4 py-2 text-sm text-accent">{partnerName} answered this one — what’s your take? (You’ll see if you differ.)</p>
+        <p className="rounded-2xl border border-glass-border bg-accent-soft/80 px-4 py-3 text-sm text-accent">{partnerName} answered this one — what’s your take? (You’ll see if you differ.)</p>
       ) : null}
       {q.kind === 'later' ? (
-        <p className="rounded-xl bg-surface-2 px-4 py-2 text-sm">You saved this one for later. Ready to answer it?</p>
+        <p className="rounded-2xl border border-glass-border bg-glass-strong px-4 py-3 text-sm">You saved this one for later. Ready to answer it?</p>
       ) : null}
       <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
         <PairCard pair={q.left} names={names} hideTierOf={hideTierOf} action={<ChoiceButton disabled={busy} onChoose={() => onChoose('left', flag)} />} />
         <div className="flex items-center justify-center">
-          <span className="text-sm font-medium text-muted">or</span>
+          <span className="glass glass-strong flex h-[52px] w-[52px] items-center justify-center rounded-full font-display text-base font-semibold text-muted">or</span>
         </div>
         <PairCard pair={q.right} names={names} hideTierOf={hideTierOf} action={<ChoiceButton disabled={busy} onChoose={() => onChoose('right', flag)} />} />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm">
-          <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={flag} onChange={(e) => setFlag(e.target.checked)} data-testid="flag" />
+          <input type="checkbox" className="h-4 w-4 accent-[var(--action)]" checked={flag} onChange={(e) => setFlag(e.target.checked)} data-testid="flag" />
           <Flag className="h-4 w-4 text-warn" aria-hidden /> Flag to discuss together
         </label>
         <div className="flex flex-wrap gap-2">
@@ -329,13 +340,13 @@ function FlaggedList({ items, names, onUnflag }: { items: FlaggedView[]; names: 
   const status = (f: FlaggedView) =>
     f.answer === 'left' ? `You chose ${pairText(f.left)}.` : f.answer === 'right' ? `You chose ${pairText(f.right)}.` : f.answer === 'tie' ? 'Too close to call.' : f.deferred ? 'Saved for later.' : 'Not answered yet.';
   return (
-    <section aria-labelledby="flagged-title" className="rounded-2xl border border-border bg-surface p-4" data-testid="flagged">
-      <h2 id="flagged-title" className="flex items-center gap-2 font-semibold">
+    <section aria-labelledby="flagged-title" className="glass p-4 sm:p-5" data-testid="flagged">
+      <h2 id="flagged-title" className="card-title flex items-center gap-2">
         <Flag className="h-4 w-4 text-warn" aria-hidden /> Flagged to discuss ({items.length})
       </h2>
-      <ul className="mt-2 flex flex-col divide-y divide-border">
+      <ul className="mt-3 flex flex-col gap-2">
         {items.map((f) => (
-          <li key={f.key} className="flex flex-wrap items-center justify-between gap-2 py-2">
+          <li key={f.key} className="glass-row flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5">
             <div className="min-w-0 text-sm">
               <p className="truncate" title={`${names[0]} + ${names[1]}`}>
                 {pairText(f.left)} <span className="text-muted">or</span> {pairText(f.right)}
@@ -365,8 +376,8 @@ function ChoiceButton({ disabled, onChoose }: { disabled: boolean; onChoose: () 
 
 function Empty({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center">
-      <p className="font-medium">{title}</p>
+    <div className="glass flex flex-col items-center gap-3 border-dashed p-10 text-center">
+      <p className="card-title">{title}</p>
       <p className="max-w-md text-sm text-muted">{body}</p>
       {children}
     </div>

@@ -3,62 +3,100 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Calm, neutral palette with one accent (teal). Every color is a token so light
- * and dark mode stay in step; contrast pairs meet WCAG AA.
+ * Sage & Plum, frosted glass (docs/design-spec.md). Sage is partner 1, plum is partner 2;
+ * controls use the neutral ink "action" color. Every color is a token so light and dark
+ * stay in step; text pairs meet WCAG AA on the worst-case glass.
  */
 :root {
-  --bg: #f7f7f5;
-  --surface: #ffffff;
-  --surface-2: #f1f1ee;
-  --border: #e3e3de;
-  --text: #1c1c1a;
-  --muted: #5f5f58;
-  --accent: #0f766e;
+  --bg: #f4f5f0;
+  --surface: #fdfdfa;
+  --surface-2: #eef0e8;
+  --border: #dcdfd2;
+  --text: #232620;
+  --muted: #585d51;
+  --action: #2b3529;
+  --action-hover: #3c4a39;
+  --action-fg: #f7f8f2;
+  --action-soft: #e9ece3;
+  --accent: #3d6838;
+  --accent-soft: #e6eee3;
   --accent-fg: #ffffff;
-  --accent-soft: #e6f3f1;
-  --warn: #9a5b00;
-  --warn-soft: #fdf3e2;
-  --danger: #b42318;
-  --tier-a: #0f766e;
-  --tier-b: #3f5f8a;
-  --tier-c: #6b6b64;
-  --focus: #0f766e;
-  /* Map lines by distance band (the map also uses line style, never color alone). */
-  --band-together: #0f766e;
-  --band-commutable: #2b8a3e;
-  --band-drivable: #b26b00;
-  --band-apart: #b42318;
-  /* The two partners, wherever their names label something (compare cards). */
-  --partner-1: #0f766e;
-  --partner-1-soft: #e6f3f1;
-  --partner-2: #5b3fa0;
-  --partner-2-soft: #efeafa;
+  --focus: #2b3529;
+  --partner-1: #5f7d5a;
+  --partner-1-soft: #e6eee3;
+  --partner-2: #6b4a7a;
+  --partner-2-soft: #efe7f2;
+  --partner-fg: #ffffff;
+  --plum-deep: #573a65;
+  --tier-a: #5f7d5a;
+  --tier-a-fg: #ffffff;
+  --tier-b: #573a65;
+  --tier-c: #585d51;
+  /* Map lines and row tints by distance band (always with a label and icon too). */
+  --band-together: #3d6838;
+  --band-commutable: #4b6219;
+  --band-drivable: #865611;
+  --band-apart: #8f2f2f;
+  --warn: #865611;
+  --warn-soft: #f6ecd9;
+  --danger: #a33232;
+  --danger-soft: #fdf5f4;
+  --glass: rgba(253, 253, 250, 0.56);
+  --glass-strong: rgba(253, 253, 250, 0.8);
+  --glass-row: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.78);
+  --blob-1: #8fae88;
+  --blob-2: #a983b8;
+  --blob-3: #c9d6b8;
+  --shadow: 0 14px 36px -18px rgba(35, 38, 32, 0.32), 0 2px 6px -2px rgba(35, 38, 32, 0.08);
+  --shadow-button: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 22px -12px rgba(43, 53, 41, 0.7);
+  --shadow-soft: 0 6px 16px -10px rgba(35, 38, 32, 0.4);
+  --logo-blend: multiply;
 }
 .dark {
-  --bg: #121412;
-  --surface: #1a1d1b;
-  --surface-2: #222624;
-  --border: #2f3431;
-  --text: #ecece8;
-  --muted: #a3a39b;
-  --accent: #3cc2b3;
-  --accent-fg: #0b1f1c;
-  --accent-soft: #15302c;
-  --warn: #f0b45c;
-  --warn-soft: #33270f;
-  --danger: #f97066;
-  --tier-a: #3cc2b3;
-  --tier-b: #8fb0dc;
-  --tier-c: #a3a39b;
-  --focus: #3cc2b3;
-  --band-together: #3cc2b3;
-  --band-commutable: #74c476;
-  --band-drivable: #f0b45c;
-  --band-apart: #f97066;
-  --partner-1: #3cc2b3;
-  --partner-1-soft: #15302c;
-  --partner-2: #b8a4f0;
-  --partner-2-soft: #2a2340;
+  --bg: #141612;
+  --surface: #1d201b;
+  --surface-2: #262a23;
+  --border: #2f342b;
+  --text: #eceee6;
+  --muted: #a2a797;
+  --action: #dfe6d4;
+  --action-hover: #ccd5bf;
+  --action-fg: #1a2018;
+  --action-soft: #2a3027;
+  --accent: #9cc095;
+  --accent-soft: #1f2a1d;
+  --accent-fg: #10170e;
+  --focus: #dfe6d4;
+  --partner-1: #7fa278;
+  --partner-1-soft: #1f2a1d;
+  --partner-2: #9a74ab;
+  --partner-2-soft: #2a2230;
+  --partner-fg: #141612;
+  --plum-deep: #c8a4d8;
+  --tier-a: #7fa278;
+  --tier-a-fg: #141612;
+  --tier-b: #c8a4d8;
+  --tier-c: #a2a797;
+  --band-together: #9cc095;
+  --band-commutable: #c4d27a;
+  --band-drivable: #e4b46a;
+  --band-apart: #ee8a80;
+  --warn: #e4b46a;
+  --warn-soft: #33280f;
+  --danger: #f08a80;
+  --danger-soft: #2a1716;
+  --glass: rgba(29, 32, 27, 0.6);
+  --glass-strong: rgba(29, 32, 27, 0.82);
+  --glass-row: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --blob-1: #3f5a3a;
+  --blob-2: #4a3556;
+  --blob-3: #2c3a28;
+  --shadow: 0 14px 36px -18px rgba(0, 0, 0, 0.6), 0 2px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-button: none;
+  --shadow-soft: 0 6px 16px -10px rgba(0, 0, 0, 0.5);
+  --logo-blend: screen;
 }
 
 @theme inline {
@@ -68,6 +106,10 @@
   --color-border: var(--border);
   --color-text: var(--text);
   --color-muted: var(--muted);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-action-fg: var(--action-fg);
+  --color-action-soft: var(--action-soft);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
   --color-accent-soft: var(--accent-soft);
@@ -78,14 +120,33 @@
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
   --color-tier-a: var(--tier-a);
+  --color-tier-a-fg: var(--tier-a-fg);
   --color-tier-b: var(--tier-b);
   --color-tier-c: var(--tier-c);
   --color-partner-1: var(--partner-1);
   --color-partner-1-soft: var(--partner-1-soft);
   --color-partner-2: var(--partner-2);
   --color-partner-2-soft: var(--partner-2-soft);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-partner-fg: var(--partner-fg);
+  --color-plum-deep: var(--plum-deep);
+  --color-glass: var(--glass);
+  --color-glass-strong: var(--glass-strong);
+  --color-glass-row: var(--glass-row);
+  --color-glass-border: var(--glass-border);
+
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --radius-card: 24px;
+  --radius-panel: 20px;
+  --radius-row: 16px;
+  --radius-input: 14px;
+  --shadow-glass: var(--shadow);
+  --shadow-button: var(--shadow-button);
+  --shadow-soft: var(--shadow-soft);
 }
 
 html {
@@ -97,7 +158,15 @@ html.dark {
 body {
   background: var(--bg);
   color: var(--text);
+  font-size: 15px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+}
+@layer base {
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
 }
 :focus-visible {
   outline: 2px solid var(--focus);
@@ -114,9 +183,76 @@ body {
   }
 }
 
+/* In the components layer so utilities (hover:bg-…, tone fills) can still override them. */
+@layer components {
+/* Frosted glass: containers only. Rows inside a card use .glass-row (no blur of their own). */
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+}
+.glass-strong {
+  background: var(--glass-strong);
+}
+.glass-row {
+  background: var(--glass-row);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-row);
+}
+/* No blur support, or the person asked for less transparency: go solid. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass, .glass-strong { background: var(--surface); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .glass-strong { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .backdrop { display: none; }
+}
+
+/* Type scale (spec section 2). */
+.page-title { font-family: var(--font-display); font-size: 28px; line-height: 1.08; font-weight: 600; letter-spacing: -0.025em; }
+@media (min-width: 640px) { .page-title { font-size: 34px; } }
+.section-title { font-family: var(--font-display); font-size: 30px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; }
+.card-title { font-family: var(--font-display); font-size: 19px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; }
+.small-title { font-family: var(--font-display); font-size: 15.5px; line-height: 1.3; font-weight: 600; }
+
+/* Eyebrow / kicker labels. */
+.eyebrow { font-family: var(--font-mono); font-size: 11.5px; line-height: 1; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+
+}
+
+/* The decorative blobs behind every page. They never animate. */
+.backdrop { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.backdrop i { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.55; }
+.backdrop .b1 { width: 560px; height: 560px; left: -160px; top: -140px; background: var(--blob-1); }
+.backdrop .b2 { width: 520px; height: 520px; right: -150px; top: 40vh; background: var(--blob-2); }
+.backdrop .b3 { width: 480px; height: 480px; left: 35%; bottom: -200px; background: var(--blob-3); opacity: 0.7; }
+@media (max-width: 640px) {
+  .backdrop i { width: 320px !important; height: 320px !important; filter: blur(70px); }
+}
+
+/* The Pairwise mark: two overlapping circles, one per partner. */
+.logo-mark { position: relative; display: inline-block; width: 30px; height: 20px; flex-shrink: 0; }
+.logo-mark::before, .logo-mark::after {
+  content: ""; position: absolute; top: 0; width: 20px; height: 20px; border-radius: 50%; mix-blend-mode: var(--logo-blend);
+}
+.logo-mark::before { left: 0; background: var(--partner-1); }
+.logo-mark::after { right: 0; background: var(--partner-2); }
+
+body:has(.print-route) .backdrop { display: none; }
+.print-route .glass, .print-route .glass-strong { background: var(--surface); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+@media print {
+  .backdrop { display: none; }
+  .glass, .glass-strong { background: #fff; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
 /* Guides (src/content/guides.ts rendered from Markdown). */
 .guide { font-size: 1.0625rem; line-height: 1.7; color: var(--text); }
 .guide > * + * { margin-top: 1.1em; }
+.guide h2, .guide h3 { font-family: var(--font-display); }
 .guide h2 { margin-top: 2.2em; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; }
 .guide h3 { margin-top: 1.8em; font-size: 1.2rem; font-weight: 600; line-height: 1.35; }
 .guide a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
@@ -126,9 +262,10 @@ body {
 .guide ol { list-style: decimal; }
 .guide li + li { margin-top: 0.4em; }
 .guide li::marker { color: var(--muted); }
-.guide blockquote { border-left: 4px solid var(--accent); background: var(--accent-soft); border-radius: 0 0.75rem 0.75rem 0; padding: 0.9em 1.2em; }
+.guide blockquote { border-left: 4px solid var(--partner-1); background: var(--accent-soft); border-radius: 0 16px 16px 0; padding: 0.9em 1.2em; }
 .guide table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 0.95rem; line-height: 1.5; }
 .guide th, .guide td { border-bottom: 1px solid var(--border); padding: 0.55em 0.8em; text-align: left; vertical-align: top; }
-.guide th { font-weight: 600; background: var(--surface-2); }
+.guide th { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+.guide code { font-family: var(--font-mono); font-size: 0.9em; }
 .guide .formula { text-align: center; font-size: 1.15rem; font-weight: 600; }
 .guide :target { scroll-margin-top: 1.5rem; }

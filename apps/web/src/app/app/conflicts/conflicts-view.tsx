@@ -47,13 +47,13 @@ export function ConflictsView({
     toast({ message: res.error ? `Couldn’t save: ${res.error}` : ok });
   }
 
-  if (!result) return <div className="h-64 animate-pulse rounded-2xl bg-surface-2" aria-label="Loading" />;
+  if (!result) return <div className="glass h-64 animate-pulse" aria-label="Loading" />;
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Resolve conflicts</h1>
+          <h1 className="page-title">Resolve conflicts</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Places where your answers and rules can’t all be true at once, or where you two disagree. Nothing is ever
             changed without you.
@@ -63,31 +63,37 @@ export function ConflictsView({
       </div>
 
       {result.conflicts.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center" role="status">
+        <div className="glass flex flex-col items-center gap-3 p-10 text-center" role="status">
           <CircleCheck className="h-8 w-8 text-accent" aria-hidden />
-          <p className="font-medium">No conflicts</p>
+          <p className="card-title">No conflicts</p>
           <p className="max-w-md text-sm text-muted">Everything you’ve said fits together. The final list comes next.</p>
         </div>
       ) : (
         <ul className="flex flex-col gap-4" data-testid="conflicts">
           {result.conflicts.map((c) => (
             <li key={c.id}>
-              <Card className={busy || pending === c.id ? 'opacity-60' : ''}>
-                <h2 className="mb-3 font-semibold">{TITLES[c.kind]}</h2>
+              <Card tone="strong" className={busy || pending === c.id ? 'opacity-60' : ''}>
+                <h2 className="card-title mb-3">{TITLES[c.kind]}</h2>
                 {c.kind === 'cycle' ? (
                   <div className="flex flex-col gap-2">
                     <p className="text-sm text-muted">Tap the statement that’s least true for you; we’ll drop just that one.</p>
                     {c.links!.map((l, i) => (
-                      <button
-                        key={i}
-                        className="flex min-h-11 items-start gap-3 rounded-xl border border-border px-3 py-2 text-left text-sm hover:border-accent hover:bg-accent-soft"
-                        disabled={!!pending}
-                        onClick={() => run(c.id, () => breakLink({ from: l.from, to: l.to, reasons: l.reasons }), 'Dropped that link.')}
-                      >
-                        <Link2Off className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
-                        <span>{l.text}</span>
-                      </button>
+                      <div key={i} className="flex flex-col">
+                        {i ? <span className="ml-5 font-mono text-sm leading-5 text-muted" aria-hidden>↓</span> : null}
+                        <button
+                          className="glass-row flex min-h-12 items-start gap-3 px-3.5 py-3 text-left text-[15px] transition-colors duration-150 hover:border-action hover:bg-action-soft"
+                          disabled={!!pending}
+                          onClick={() => run(c.id, () => breakLink({ from: l.from, to: l.to, reasons: l.reasons }), 'Dropped that link.')}
+                        >
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] bg-surface-2 font-mono text-xs font-semibold text-muted" aria-hidden>
+                            {String.fromCharCode(65 + i)}
+                          </span>
+                          <span className="flex-1">{l.text}</span>
+                          <Link2Off className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
+                        </button>
+                      </div>
                     ))}
+                    <p className="ml-1 font-mono text-xs text-muted" aria-hidden>↺ back to A</p>
                   </div>
                 ) : null}
 

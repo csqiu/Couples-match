@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function GuidesIndex() {
   return (
     <main id="main" tabIndex={-1} className="mx-auto max-w-3xl py-10 outline-none sm:py-14">
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Guides</h1>
+      <h1 className="page-title">Guides</h1>
       <p className="mt-3 max-w-2xl text-muted">
         How the Couples Match reads your list, why couples lists are hard to get right, and how to use Pairwise to build one
         that says what you mean.
@@ -19,10 +19,10 @@ export default function GuidesIndex() {
       <ul className="mt-8 flex flex-col gap-3">
         {GUIDES.map((g) => (
           <li key={g.slug}>
-            <Link href={`/guides/${g.slug}`} className="group block rounded-2xl border border-border bg-surface p-5 hover:border-accent">
-              <h2 className="flex items-center justify-between gap-3 text-lg font-semibold">
+            <Link href={`/guides/${g.slug}`} className="group glass block p-5 transition-colors duration-150 hover:bg-glass-strong sm:p-6">
+              <h2 className="card-title flex items-center justify-between gap-3">
                 {g.title}
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted group-hover:text-accent" aria-hidden />
+                <ArrowRight className="h-4 w-4 shrink-0 text-muted group-hover:text-text" aria-hidden />
               </h2>
               <p className="mt-1 text-sm text-muted">{g.description}</p>
             </Link>

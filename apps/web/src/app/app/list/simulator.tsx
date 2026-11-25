@@ -74,23 +74,23 @@ export function SimulatorPanel({
   };
 
   return (
-    <Card className="p-4 sm:p-4" data-testid="simulator">
+    <Card tone="strong" className="p-4 sm:p-5" data-testid="simulator">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="flex items-center gap-2 font-semibold">
-            <FlaskConical className="h-4 w-4 text-accent" aria-hidden /> Try an outcome
+          <h2 className="card-title flex items-center gap-2">
+            <FlaskConical className="h-4 w-4 text-muted" aria-hidden /> Try an outcome
           </h2>
           <p className="mt-0.5 max-w-2xl text-xs text-muted">
             Tick the programs each of you could get into. The Match gives you the first row where both of you are within
             reach; rows out of reach are dimmed.
           </p>
         </div>
-        <button onClick={onClose} className="flex min-h-9 min-w-9 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text" aria-label="Close the outcome simulator">
+        <button onClick={onClose} className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong hover:text-text" aria-label="Close the outcome simulator">
           <X className="h-4 w-4" aria-hidden />
         </button>
       </div>
 
-      <div role="status" aria-live="polite" className={cn('mt-3 rounded-xl px-3 py-2 text-sm', row ? 'bg-accent-soft' : 'bg-warn-soft text-warn')} data-testid="sim-outcome">
+      <div role="status" aria-live="polite" className={cn('mt-3 rounded-2xl border border-glass-border px-4 py-3 text-sm', row ? 'bg-accent-soft/80' : 'bg-warn-soft/85 text-warn')} data-testid="sim-outcome">
         {row ? (
           <>
             <span className="font-semibold">You match at #{row.rank}:</span> {names[0]} at {row.sides[0].name}, {names[1]} at {row.sides[1].name}
@@ -117,9 +117,9 @@ export function SimulatorPanel({
             <ul className="flex max-h-56 flex-col gap-0.5 overflow-y-auto pr-1">
               {programs[k].map((p) => (
                 <li key={p.id}>
-                  <label className="flex min-h-9 cursor-pointer items-center gap-2 rounded-md px-1 text-sm hover:bg-surface-2">
-                    <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={scenario.reach[k].has(p.id)} onChange={() => toggle(k, p.id)} />
-                    <span className="w-6 shrink-0 text-right text-xs tabular-nums text-muted">{p.rank}</span>
+                  <label className="flex min-h-9 cursor-pointer items-center gap-2 rounded-[10px] px-1 text-sm hover:bg-glass-strong">
+                    <input type="checkbox" className="h-4 w-4 accent-[var(--action)]" checked={scenario.reach[k].has(p.id)} onChange={() => toggle(k, p.id)} />
+                    <span className="w-6 shrink-0 text-right font-mono text-xs tabular-nums text-plum-deep">{p.rank}</span>
                     <span className="min-w-0 truncate" title={`${p.name}${p.place ? ` · ${p.place}` : ''}`}>{p.short}</span>
                   </label>
                 </li>
@@ -137,7 +137,7 @@ export function SimulatorPanel({
             {shared.map((p) => (
               <li key={p.id}>
                 <label className="flex min-h-9 cursor-pointer items-center gap-2 text-sm">
-                  <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={scenario.both.has(p.id)} onChange={() => toggleBoth(p.id)} />
+                  <input type="checkbox" className="h-4 w-4 accent-[var(--action)]" checked={scenario.both.has(p.id)} onChange={() => toggleBoth(p.id)} />
                   {p.short}
                 </label>
               </li>

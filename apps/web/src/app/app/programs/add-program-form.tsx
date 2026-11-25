@@ -55,7 +55,7 @@ export function AddProgramForm({
 
   if (!open) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-surface-2 px-3 py-2 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] bg-surface-2 px-3.5 py-2.5 text-sm">
         <span className="text-muted">Can’t find a program?</span>
         <Button
           variant="secondary"
@@ -73,7 +73,7 @@ export function AddProgramForm({
 
   return (
     <form
-      className="flex flex-col gap-3 rounded-xl border border-border p-3"
+      className="glass-row flex flex-col gap-3 p-3.5"
       aria-label="Add a program not listed"
       onSubmit={(e) => {
         e.preventDefault();
@@ -81,7 +81,7 @@ export function AddProgramForm({
       }}
     >
       <div>
-        <h2 className="text-sm font-semibold">Add a program not listed</h2>
+        <h2 className="small-title">Add a program not listed</h2>
         <p className="text-xs text-muted">Only you and your partner will see it until we’ve checked it. We use the address to work out distances.</p>
       </div>
       <Field label="Program name" htmlFor={`${id}-name`}>
@@ -117,7 +117,7 @@ export function AddProgramForm({
       {error ? <p className="text-sm text-danger" role="alert">{error}</p> : null}
 
       {notFound ? (
-        <div className="rounded-lg bg-warn-soft p-3 text-sm" role="alert">
+        <div className="rounded-[14px] bg-warn-soft/85 p-3 text-sm" role="alert">
           <p className="font-medium">We couldn’t find that address on the map.</p>
           <p className="mt-1 text-muted">Check the street and city. You can also save it without a location, but then the app can’t tell how far apart you’d be.</p>
           <Button type="button" variant="secondary" size="sm" className="mt-2" disabled={saving} onClick={() => submit({ allowNoLocation: true })}>
@@ -127,7 +127,7 @@ export function AddProgramForm({
       ) : null}
 
       {similar ? (
-        <div className="rounded-lg bg-accent-soft p-3 text-sm" role="alert">
+        <div className="rounded-[14px] bg-accent-soft/80 p-3 text-sm" role="alert">
           <p className="font-medium">Is it one of these? They’re already listed, within a mile.</p>
           <ul className="mt-2 flex flex-col gap-2">
             {similar.map((p) => (

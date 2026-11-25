@@ -148,10 +148,10 @@ export function ListView({
     else setBlocked({ higher, lower, moved, res: check });
   }
 
-  if (!result) return <div className="h-96 animate-pulse rounded-2xl bg-surface-2" aria-label="Loading" />;
+  if (!result) return <div className="glass h-96 animate-pulse" aria-label="Loading" />;
   if (!result.rows.length) {
     return (
-      <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">
+      <div className="glass p-10 text-center text-sm text-muted">
         Your list appears here once you’ve both ranked programs.
       </div>
     );
@@ -161,7 +161,7 @@ export function ListView({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Final list</h1>
+          <h1 className="page-title">Final list</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Your couple’s rank list, in order. Drag a row to move it — if a rule you set blocks the move, we’ll say why.
             Pairs not on the list are in “Not on your list”: drag one in, or add it. Enter it into R3 exactly as shown.
@@ -190,7 +190,7 @@ export function ListView({
       </div>
 
       {blocked ? (
-        <div role="alertdialog" aria-labelledby="blocked-title" className="rounded-2xl border border-warn bg-warn-soft p-4">
+        <div role="alertdialog" aria-labelledby="blocked-title" className="rounded-[20px] border border-warn/50 bg-warn-soft/90 p-4">
           <p id="blocked-title" className="font-medium text-warn">That move goes against something you set:</p>
           <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm">
             {blocked.res.blocking.map((l, i) => (
@@ -223,8 +223,9 @@ export function ListView({
 
       <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <section aria-label="Ranked pairs" className={cn('min-w-0', busy && 'opacity-70')}>
-          <div className="mb-2 hidden grid-cols-[2.5rem_1.5rem_1fr_1fr_auto] gap-3 px-3 text-xs font-medium text-muted sm:grid">
+        <section aria-label="Ranked pairs" className={cn('glass min-w-0 p-2 sm:p-3', busy && 'opacity-70')}>
+          <BandCounts rows={rows} />
+          <div className="mt-1 mb-2 hidden grid-cols-[2.5rem_1.5rem_1fr_1fr_auto] gap-3 px-3 font-mono text-[11px] font-medium tracking-[0.08em] text-muted uppercase sm:grid">
             <span>#</span>
             <span />
             <span>{names[0]}</span>
@@ -258,7 +259,7 @@ export function ListView({
         </section>
 
         <aside className="flex min-w-0 flex-col gap-4">
-          <Card className="p-4 sm:p-4">
+          <Card className="flex flex-col gap-4 p-4 sm:p-4">
             <Field
               label={`List length: ${result.target} rank${result.target === 1 ? '' : 's'}`}
               htmlFor="length"
@@ -278,7 +279,7 @@ export function ListView({
                   if (lengthTimer.current) clearTimeout(lengthTimer.current);
                   lengthTimer.current = setTimeout(() => void setListLength(v), 500);
                 }}
-                className="w-full accent-[var(--accent)]"
+                className="w-full accent-[var(--action)]"
               />
             </Field>
             <Field
@@ -292,7 +293,7 @@ export function ListView({
             >
               <select
                 id="list-order"
-                className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm"
+                className="min-h-[46px] w-full rounded-[14px] border border-border bg-glass-strong px-3.5 text-[15px] focus-visible:outline-action"
                 value={result.order}
                 onChange={async (e) => {
                   const order = e.target.value as ListOrder;
@@ -307,7 +308,7 @@ export function ListView({
                 <option value="engine">Engine order (no tidying)</option>
               </select>
             </Field>
-            <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               <label htmlFor="nm-lock" className="text-sm">
                 <span className="font-medium">Keep No Match rows at the end</span>
                 <span className="block text-xs text-muted">Locked in order: {names[0]} matches first, then {names[1]}.</span>
@@ -329,11 +330,11 @@ export function ListView({
 
           {fees ? (
             <Card className="p-4 sm:p-4" data-testid="fees">
-              <h2 className="mb-2 font-semibold">Fee estimate</h2>
+              <h2 className="small-title mb-2">Fee estimate</h2>
               <dl className="flex flex-col gap-3 text-sm">
                 {fees.partners.map((p, k) => (
                   <div key={k}>
-                    <dt className="font-medium">{names[k]}: ${p.totalUsd}</dt>
+                    <dt className="font-medium">{names[k]}: <span className="font-mono">${p.totalUsd}</span></dt>
                     <dd className="text-xs text-muted">
                       {p.uniqueCodes} unique program codes ({NRMP_RULES.includedUniqueCodes} included) · extra ranks ${p.extraRankFeeUsd} · list
                       length ${p.lengthFeeUsd} · couples fee ${p.couplesFeeUsd}
@@ -342,7 +343,7 @@ export function ListView({
                 ))}
               </dl>
               {fees.tierWarning ? (
-                <p className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn">
+                <p className="mt-3 rounded-[12px] bg-warn-soft/85 px-3 py-2 text-xs text-warn">
                   Cutting {fees.tierWarning.pairsToCut} pair{fees.tierWarning.pairsToCut === 1 ? '' : 's'} would save $
                   {fees.tierWarning.saveUsdPerPartner} each.
                 </p>
@@ -354,7 +355,7 @@ export function ListView({
           ) : null}
 
           <Card className="p-4 sm:p-4" data-testid="checklist">
-            <h2 className="mb-2 font-semibold">Before you certify in R3</h2>
+            <h2 className="small-title mb-2">Before you certify in R3</h2>
             <ul className="flex flex-col gap-2 text-sm">
               {checklist.map((c) => (
                 <li key={c.label} className="flex gap-2">
@@ -369,8 +370,8 @@ export function ListView({
           </Card>
 
           {result.trades.length ? (
-            <Card className="p-4 sm:p-4">
-              <h2 className="mb-2 font-semibold">What you’re trading</h2>
+            <Card tone="strong" className="p-4 sm:p-4">
+              <h2 className="small-title mb-2">What you’re trading</h2>
               <ul className="flex list-disc flex-col gap-1.5 pl-5 text-xs text-muted">
                 {result.trades.map((t) => (
                   <li key={t}>{t}</li>
@@ -380,7 +381,7 @@ export function ListView({
           ) : null}
 
           <Card className="p-4 sm:p-4">
-            <h2 className="mb-2 font-semibold">Save a version</h2>
+            <h2 className="small-title mb-2">Save a version</h2>
             <form
               className="flex flex-col gap-2"
               onSubmit={async (e) => {
@@ -411,7 +412,7 @@ export function ListView({
         <div
           role="status"
           data-testid="over-limit"
-          className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-warn bg-warn-soft px-3 py-2 text-xs font-medium text-warn shadow-lg sm:px-4 sm:text-sm"
+          className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-warn bg-warn-soft px-3 py-2 text-xs font-medium text-warn shadow-glass sm:px-4 sm:text-sm"
         >
           <TriangleAlert className="h-4 w-4" aria-hidden />
           {rows.length} / {RANK_LIMIT} — {over} over the limit
@@ -429,12 +430,12 @@ function Row({ row, open, onWhy, overLimit, onRemove, reach }: { row: ListRow; o
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        'rounded-xl border px-2 py-2',
+        'rounded-[16px] border px-2 py-2',
         BAND_ROW[row.band],
         overLimit && 'opacity-45 grayscale',
         reach === 'out' && 'opacity-35 grayscale',
-        reach === 'match' && 'ring-2 ring-accent ring-offset-2 ring-offset-bg',
-        isDragging && 'relative z-10 opacity-80 shadow-lg',
+        reach === 'match' && 'ring-2 ring-action ring-offset-2 ring-offset-bg',
+        isDragging && 'relative z-10 border-action bg-surface opacity-90 shadow-glass',
       )}
       data-band={row.band}
       data-over-limit={overLimit || undefined}
@@ -444,7 +445,7 @@ function Row({ row, open, onWhy, overLimit, onRemove, reach }: { row: ListRow; o
         <p className="mb-1 ml-[4.75rem] text-xs font-semibold text-accent">You match here</p>
       ) : null}
       <div className="grid grid-cols-[2.5rem_1.5rem_1fr] items-center gap-x-3 gap-y-1 sm:grid-cols-[2.5rem_1.5rem_1fr_1fr_auto]">
-        <span className="text-right text-sm font-semibold tabular-nums">
+        <span className="text-right font-mono text-[15px] font-semibold tabular-nums text-plum-deep">
           {row.rank}
           {overLimit ? <span className="sr-only"> (past the {RANK_LIMIT}-rank limit, won’t be submitted)</span> : null}
           {reach === 'out' ? <span className="sr-only"> (out of reach in this outcome)</span> : null}
@@ -458,7 +459,7 @@ function Row({ row, open, onWhy, overLimit, onRemove, reach }: { row: ListRow; o
             ref={setActivatorNodeRef}
             {...attributes}
             {...listeners}
-            className="flex min-h-11 cursor-grab touch-none items-center justify-center rounded-md text-muted hover:bg-surface-2"
+            className="flex min-h-11 cursor-grab touch-none items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong"
             aria-label={`Drag rank ${row.rank}`}
           >
             <GripVertical className="h-4 w-4" aria-hidden />
@@ -476,7 +477,7 @@ function Row({ row, open, onWhy, overLimit, onRemove, reach }: { row: ListRow; o
         <div className="col-start-3 flex items-center gap-1 sm:col-start-auto">
           <BandBadge band={row.band} bandLabel={row.bandLabel} distanceMi={row.distanceMi} />
           <button
-            className="flex min-h-9 min-w-9 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+            className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong hover:text-text"
             onClick={onWhy}
             aria-expanded={open}
             aria-label={`Why is rank ${row.rank} here?`}
@@ -485,7 +486,7 @@ function Row({ row, open, onWhy, overLimit, onRemove, reach }: { row: ListRow; o
           </button>
           {onRemove ? (
             <button
-              className="flex min-h-9 min-w-9 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+              className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong hover:text-text"
               onClick={onRemove}
               aria-label={`Take rank ${row.rank} off the list`}
               title="You added this pair. Take it off the list."
@@ -500,6 +501,25 @@ function Row({ row, open, onWhy, overLimit, onRemove, reach }: { row: ListRow; o
   );
 }
 
+/** How many rows fall in each distance band (label and icon, not color alone). */
+function BandCounts({ rows }: { rows: ListRow[] }) {
+  const counts = new Map<ListRow['band'], { label: string; n: number }>();
+  for (const r of rows) {
+    const c = counts.get(r.band) ?? { label: r.bandLabel, n: 0 };
+    c.n++;
+    counts.set(r.band, c);
+  }
+  return (
+    <ul className="flex flex-wrap gap-1.5 px-1 pt-1" aria-label="Rows by distance">
+      {[...counts].map(([band, c]) => (
+        <li key={band}>
+          <BandBadge band={band} bandLabel={`${c.label} · ${c.n}`} distanceMi={null} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** Drop zone under the last row: a pair dropped here joins the list in its own place. */
 function ListEnd() {
   const { setNodeRef, isOver } = useDroppable({ id: 'list-end' });
@@ -507,8 +527,8 @@ function ListEnd() {
     <div
       ref={setNodeRef}
       className={cn(
-        'mt-2 rounded-xl border border-dashed border-border px-3 py-3 text-center text-xs text-muted',
-        isOver && 'border-accent bg-accent-soft text-accent',
+        'mt-2 rounded-[16px] border border-dashed border-border px-3 py-3 text-center text-xs text-muted',
+        isOver && 'border-action bg-action-soft text-text',
       )}
     >
       Drop a pair from “Not on your list” onto a row to put it there, or here to add it in its own place.
@@ -530,13 +550,13 @@ function AvailablePanel({ pairs, names, onAdd }: { pairs: AvailablePair[]; names
     : pairs;
   return (
     <Card className="p-4 sm:p-4" data-testid="available">
-      <h2 className="font-semibold">Not on your list</h2>
+      <h2 className="small-title">Not on your list</h2>
       <p className="mt-0.5 text-xs text-muted">
         {pairs.length} other pair{pairs.length === 1 ? '' : 's'}, best first. Drag one onto the list, or add it.
       </p>
       <div className="relative mt-2">
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
-        <Input aria-label="Search pairs not on your list" placeholder="Search programs or cities" value={q} onChange={(e) => setQ(e.target.value)} className="pl-8" />
+        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
+        <Input aria-label="Search pairs not on your list" placeholder="Search programs or cities" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
       </div>
       <ul className="mt-2 flex max-h-96 flex-col gap-1 overflow-y-auto pr-1">
         {hits.slice(0, PANEL_SHOWN).map((p) => (
@@ -556,12 +576,12 @@ function AvailableItem({ pair, names, onAdd }: { pair: AvailablePair; names: [st
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform) }}
-      className={cn('flex items-center gap-1 rounded-lg border border-border bg-surface px-1 py-1', isDragging && 'relative z-20 shadow-lg')}
+      className={cn('glass-row flex items-center gap-1 rounded-[12px] px-1 py-1', isDragging && 'relative z-20 border-action bg-surface shadow-glass')}
     >
       <button
         {...attributes}
         {...listeners}
-        className="flex min-h-9 min-w-7 cursor-grab touch-none items-center justify-center rounded-md text-muted hover:bg-surface-2"
+        className="flex min-h-9 min-w-7 cursor-grab touch-none items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong"
         aria-label={`Drag onto the list: ${label}`}
       >
         <GripVertical className="h-4 w-4" aria-hidden />
@@ -573,7 +593,7 @@ function AvailableItem({ pair, names, onAdd }: { pair: AvailablePair; names: [st
       <BandBadge band={pair.band} bandLabel={pair.bandLabel} distanceMi={pair.distanceMi} className="hidden xl:inline-flex" />
       <button
         onClick={onAdd}
-        className="flex min-h-9 min-w-9 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+        className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong hover:text-text"
         aria-label={`Add to the list: ${label}`}
       >
         <Plus className="h-4 w-4" aria-hidden />

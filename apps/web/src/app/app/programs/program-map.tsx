@@ -23,7 +23,7 @@ function toGeoJSON(points: MapPoint[]): GeoJSON.FeatureCollection {
 }
 
 /** Program pins: mine in the accent color, my partner's as rings. */
-export function ProgramMap({ points, className }: { points: MapPoint[]; className?: string }) {
+export function ProgramMap({ points, className, mySlot = 1 }: { points: MapPoint[]; className?: string; mySlot?: 1 | 2 }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const latest = useRef(points);
@@ -55,14 +55,14 @@ export function ProgramMap({ points, className }: { points: MapPoint[]; classNam
           type: 'circle',
           source: 'programs',
           filter: ['==', ['get', 'owner'], 'partner'],
-          paint: { 'circle-radius': 7, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-width': 2.5, 'circle-stroke-color': css('--tier-b') },
+          paint: { 'circle-radius': 7, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-width': 2.5, 'circle-stroke-color': css(mySlot === 1 ? '--partner-2' : '--partner-1') },
         });
         m.addLayer({
           id: 'me',
           type: 'circle',
           source: 'programs',
           filter: ['==', ['get', 'owner'], 'me'],
-          paint: { 'circle-radius': 5.5, 'circle-color': css('--accent'), 'circle-stroke-width': 1.5, 'circle-stroke-color': css('--surface') },
+          paint: { 'circle-radius': 5.5, 'circle-color': css(mySlot === 1 ? '--partner-1' : '--partner-2'), 'circle-stroke-width': 1.5, 'circle-stroke-color': css('--surface') },
         });
         for (const layer of ['me', 'partner']) {
           m.on('click', layer, (e: MapLayerMouseEvent) => {
