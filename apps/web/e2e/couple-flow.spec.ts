@@ -215,6 +215,9 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await sam.goto('/app/conflicts');
   await expect(sam.getByRole('heading', { name: 'You answered differently' })).toBeVisible();
   await expect(sam.getByText(/Sam \(you\) picked the second pair/)).toBeVisible();
+  // Each card says who picked it, in that partner's colour.
+  await expect(sam.getByText('Alex picked this')).toBeVisible();
+  await expect(sam.getByText('Sam picked this')).toBeVisible();
   await sam.getByRole('button', { name: 'We choose this pair' }).first().click();
   await expect(sam.getByText('No conflicts')).toBeVisible();
 
@@ -224,8 +227,12 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await expect(finalList.getByRole('listitem').first()).toBeVisible();
   expect(await finalList.getByRole('listitem').count()).toBeGreaterThan(5);
   await expect(finalList.getByRole('listitem').first()).toHaveAttribute('data-band', /together|commutable|drivable|apart/);
-  await alex.getByRole('button', { name: 'Why is rank 2 here?' }).click();
-  await expect(finalList.getByRole('listitem').nth(1).locator('p.mt-2')).toHaveText(/./);
+  // A row opens its details card (full names, codes, why it's there) on tap.
+  await finalList.getByRole('button', { name: /^Rank 2: .*Show details\.$/ }).click();
+  const details = alex.getByRole('dialog', { name: /^Rank 2:/ });
+  await expect(details).toContainText('Why here:');
+  await alex.keyboard.press('Escape');
+  await expect(details).toBeHidden();
   await expect(alex.getByTestId('fees')).toContainText('Alex: $');
   await expect(alex.getByTestId('checklist')).toContainText('No Match pairs are at the bottom');
 

@@ -33,13 +33,15 @@ export const BAND_NAME: Record<Band, string> = {
   no_match: 'font-normal',
 };
 
-export function BandBadge({ band, bandLabel, distanceMi, className }: { band: Band; bandLabel: string; distanceMi: number | null; className?: string }) {
+/** `compact`: on phones, the icon and miles only (the label is kept for screen readers). */
+export function BandBadge({ band, bandLabel, distanceMi, className, compact }: { band: Band; bandLabel: string; distanceMi: number | null; className?: string; compact?: boolean }) {
   const Icon = BAND_ICON[band];
+  const short = compact && distanceMi != null;
   return (
     <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs leading-none font-semibold whitespace-nowrap', BAND_CHIP[band], className)}>
       <Icon className="h-3.5 w-3.5" aria-hidden />
-      {bandLabel}
-      {distanceMi != null ? <span className="font-mono font-medium tabular-nums">{` · ${Math.round(distanceMi)} mi`}</span> : null}
+      {short ? <span className="sr-only sm:not-sr-only">{bandLabel}</span> : bandLabel}
+      {distanceMi != null ? <span className="font-mono font-medium tabular-nums">{short ? <span className="hidden sm:inline"> · </span> : ' · '}{`${Math.round(distanceMi)} mi`}</span> : null}
     </span>
   );
 }
