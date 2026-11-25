@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import { PROGRAM_COLUMNS, SEARCH_LIMIT, type ProgramLite } from './types';
 
 /** Search programs in the couple's match by name, institution, city or NRMP code, optionally within one specialty and state. */
-export async function searchPrograms(query: string, specialty: string, state = ''): Promise<{ results: ProgramLite[]; total: number }> {
+export async function searchPrograms(query: string, specialty: string, state = '', offset = 0): Promise<{ results: ProgramLite[]; total: number }> {
   const ctx = await requireCouple();
   const supabase = await createClient();
   let q = supabase
@@ -18,7 +18,8 @@ export async function searchPrograms(query: string, specialty: string, state = '
     .eq('match_type', ctx.couple.match_type)
     .neq('specialty_code', 'no-match')
     .order('name')
-    .limit(SEARCH_LIMIT);
+    .order('id')
+    .range(Math.max(0, offset), Math.max(0, offset) + SEARCH_LIMIT - 1);
   if (specialty) q = q.eq('specialty_code', specialty);
   if (/^[A-Z]{2}$/.test(state)) q = q.eq('state', state);
   for (const f of searchFilters(query)) q = q.or(f);
@@ -42,6 +43,23 @@ export async function addProgram(programId: string): Promise<{ error?: string }>
     .from('individual_ranks')
     .insert({ couple_id: ctx.couple.id, user_id: ctx.user.id, program_id: programId, rank, tier: 'B' });
   if (error && !error.message.includes('duplicate')) return { error: error.message };
+  revalidatePath('/app', 'layout');
+  return {};
+}
+
+/** My own short name for a program on my list. Blank goes back to the automatic one. */
+export async function saveShortName(programId: string, raw: string): Promise<{ error?: string }> {
+  const name = raw.replace(/\s+/g, ' ').trim();
+  if (name.length > 40) return { error: 'Keep it to 40 characters.' };
+  const ctx = await requireCouple();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('individual_ranks')
+    .update({ short_name: name || null })
+    .eq('couple_id', ctx.couple.id)
+    .eq('user_id', ctx.user.id)
+    .eq('program_id', programId);
+  if (error) return { error: error.message };
   revalidatePath('/app', 'layout');
   return {};
 }

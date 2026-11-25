@@ -41,6 +41,8 @@ export interface RankEntry {
   acceptable: boolean;
   nrmpCode?: string | null;
   note?: string;
+  /** This partner's own short name for the program, if they set one. */
+  shortName?: string;
 }
 
 export type Band = 'together' | 'commutable' | 'drivable' | 'apart' | 'no_match';

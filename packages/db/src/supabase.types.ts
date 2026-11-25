@@ -171,6 +171,7 @@ export type Database = {
           nrmp_code: string | null
           program_id: string
           rank: number
+          short_name: string | null
           tier: Database["public"]["Enums"]["tier"]
           updated_at: string
           user_id: string
@@ -182,6 +183,7 @@ export type Database = {
           nrmp_code?: string | null
           program_id: string
           rank: number
+          short_name?: string | null
           tier: Database["public"]["Enums"]["tier"]
           updated_at?: string
           user_id: string
@@ -193,6 +195,7 @@ export type Database = {
           nrmp_code?: string | null
           program_id?: string
           rank?: number
+          short_name?: string | null
           tier?: Database["public"]["Enums"]["tier"]
           updated_at?: string
           user_id?: string

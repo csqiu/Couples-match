@@ -96,14 +96,15 @@ export interface AnalyzeOptions {
 
 /** Builds the display view of a pair (names, places, tiers, distance). */
 export function pairViewer(input: EngineInput): (pair: Pair) => PairView {
-  const tierOf = (k: 0 | 1, programId: string) => input.lists[k].find((e) => e.programId === programId)?.tier ?? null;
+  const entry = (k: 0 | 1, programId: string) => input.lists[k].find((e) => e.programId === programId);
+  const tierOf = (k: 0 | 1, programId: string) => entry(k, programId)?.tier ?? null;
   return (pair) => ({
     id: pair.id,
     sides: [0, 1].map((k) => {
       const ref = pair.programs[k as 0 | 1];
       if (ref === NO_MATCH) return null;
       const p = input.programs[ref];
-      return { id: ref, name: p.name, short: shortProgramName(p.name, p.shortName), place: [p.city, p.state].filter(Boolean).join(', '), lat: p.lat, lon: p.lon, tier: tierOf(k as 0 | 1, ref) };
+      return { id: ref, name: p.name, short: shortProgramName(p.name, entry(k as 0 | 1, ref)?.shortName ?? p.shortName), place: [p.city, p.state].filter(Boolean).join(', '), lat: p.lat, lon: p.lon, tier: tierOf(k as 0 | 1, ref) };
     }) as [ProgramSide | null, ProgramSide | null],
     distanceMi: pair.distanceMi,
     band: pair.band,

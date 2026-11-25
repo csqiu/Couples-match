@@ -242,11 +242,12 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
   const ctx = { programs: input.programs, partnerNames: opts.names };
   const noMatchCode = NRMP_RULES.noMatchCode[opts.matchType];
   const codeOf = (k: 0 | 1, id: string) => input.lists[k].find((e) => e.programId === id)?.nrmpCode ?? '';
+  const shortOf = (k: 0 | 1, id: string) => input.lists[k].find((e) => e.programId === id)?.shortName;
 
   const side = (k: 0 | 1, id: string): ListSide => {
     if (id === NO_MATCH) return { id, name: 'No Match', short: 'No Match', place: '', code: noMatchCode };
     const p = input.programs[id];
-    return { id, name: p.name, short: shortProgramName(p.name, p.shortName), place: [p.city, p.state].filter(Boolean).join(', '), code: codeOf(k, id) ?? '' };
+    return { id, name: p.name, short: shortProgramName(p.name, shortOf(k, id) ?? p.shortName), place: [p.city, p.state].filter(Boolean).join(', '), code: codeOf(k, id) ?? '' };
   };
 
   const byId = new Map(result.pairs.map((p) => [p.id, p]));
