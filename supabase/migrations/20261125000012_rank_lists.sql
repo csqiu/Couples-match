@@ -366,7 +366,7 @@ begin
 end;
 $$;
 
--- Restoring a version only makes sense inside its own list.
+-- Restoring a version only makes sense inside its own list (and now keeps short names).
 create or replace function public.restore_version(p_version uuid)
 returns void
 language plpgsql volatile security definer set search_path = ''
@@ -399,9 +399,9 @@ begin
   for side in 0..1 loop
     owner := case side when 0 then c.partner_a else c.partner_b end;
     continue when owner is null;
-    insert into public.individual_ranks (couple_id, user_id, program_id, rank, tier, acceptable, note, nrmp_code)
+    insert into public.individual_ranks (couple_id, user_id, program_id, rank, tier, acceptable, note, nrmp_code, short_name)
     select c.id, owner, e->>'programId', (e->>'rank')::int, (e->>'tier')::public.tier,
-           coalesce((e->>'acceptable')::boolean, true), e->>'note', nullif(e->>'nrmpCode', '')
+           coalesce((e->>'acceptable')::boolean, true), e->>'note', nullif(e->>'nrmpCode', ''), nullif(btrim(e->>'shortName'), '')
     from jsonb_array_elements(coalesce(snap->'lists'->side, '[]'::jsonb)) e
     join public.programs p on p.id = e->>'programId'
     where p.created_by_couple is null or p.created_by_couple = c.id;
