@@ -1,14 +1,12 @@
-import { CircleUser, History } from 'lucide-react';
+import { BookOpen, CircleUser, History } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { AppShell } from '@/components/app-shell';
-import { GuidesMenu } from '@/components/guides-menu';
 import { HeaderLink } from '@/components/header-link';
 import { Live } from '@/components/live';
 import { Logo } from '@/components/logo';
 import { ProgressRail } from '@/components/progress-rail';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { GUIDES } from '@/content/guides';
 import { displayName, requireContext } from '@/lib/context';
 import { versionLabel } from '@/lib/lists';
 import { createClient } from '@/lib/supabase/server';
@@ -56,7 +54,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
               <History className="h-5 w-5" aria-hidden />
             </HeaderLink>
           ) : null}
-          <GuidesMenu guides={GUIDES.map((g) => ({ slug: g.slug, title: g.title, description: g.description }))} />
+          <Link
+            href="/guides"
+            title="Guides"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-[14px] border border-transparent px-2.5 text-sm text-muted transition-colors duration-150 hover:border-glass-border hover:bg-glass hover:text-text"
+          >
+            <BookOpen className="h-5 w-5" aria-hidden />
+            <span className="sr-only sm:not-sr-only">Guides</span>
+          </Link>
           <ThemeToggle />
           <HeaderLink href="/app/account" label="Account">
             <CircleUser className="h-5 w-5" aria-hidden />
