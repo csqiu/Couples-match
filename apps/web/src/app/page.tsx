@@ -28,6 +28,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
       <header className="flex items-center justify-between">
         <span className="text-lg font-semibold">{BRAND.name}</span>
         <div className="flex items-center gap-1">
+          <Link href="/guides" className={buttonVariants({ variant: 'ghost' })}>
+            Guides
+          </Link>
           <ThemeToggle />
           <Link href="/login" className={buttonVariants({ variant: 'ghost' })}>
             Sign in

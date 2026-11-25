@@ -22,6 +22,9 @@ export function SiteFooter() {
               NRMP couples rules
             </a>
           ) : null}
+          <Link className="underline underline-offset-2" href="/guides">
+            Guides
+          </Link>
           <Link className="underline underline-offset-2" href="/privacy">
             Privacy
           </Link>
