@@ -171,7 +171,7 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
       }}
     >
       <p className="sr-only" aria-live="polite">{said}</p>
-      <div className="grid gap-4 lg:grid-cols-3 lg:items-start" data-testid="rank-board">
+      <div className="flex flex-col gap-4" data-testid="rank-board">
         {TIERS.map((tier) => (
           <TierZone key={tier} tier={tier} count={board[tier].length}>
             <SortableContext items={board[tier].map((e) => e.programId)} strategy={verticalListSortingStrategy}>
@@ -305,7 +305,7 @@ function RowCard({
   return (
     <div
       className={cn(
-        'glass-row flex flex-wrap items-center gap-x-2 gap-y-2 px-2 py-2 sm:flex-nowrap lg:flex-wrap',
+        'glass-row flex flex-wrap items-center gap-x-2 gap-y-2 px-2 py-2 sm:flex-nowrap',
         overlay && '-rotate-[1.2deg] border-action bg-surface shadow-glass',
         !entry.acceptable && 'opacity-60',
       )}
@@ -317,10 +317,10 @@ function RowCard({
         <p className="truncate text-xs text-muted">{entry.place}{!entry.acceptable ? ' · not acceptable (left off your list)' : ''}</p>
       </div>
       {overlay ? null : (
-        <div className="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:flex-nowrap lg:w-full lg:flex-wrap">
+        <div className="flex w-full items-center justify-end gap-1 sm:w-auto">
           {entry.officialCode ? (
             <span
-              className="inline-flex min-h-11 w-28 min-w-0 items-center px-2 font-mono text-xs text-muted lg:order-last lg:w-full lg:basis-full"
+              className="inline-flex min-h-11 w-28 min-w-0 items-center px-2 font-mono text-xs text-muted"
               title="NRMP code from the official program directory"
             >
               <span className="sr-only">NRMP code </span>
@@ -348,7 +348,7 @@ function RowCard({
               aria-invalid={!!codeError}
               title={codeError ?? 'Type the program code from R3'}
               className={cn(
-                'min-h-11 w-28 min-w-0 rounded-[12px] border bg-glass-strong px-2 font-mono lg:order-last lg:w-full lg:basis-full text-xs uppercase placeholder:font-sans placeholder:normal-case',
+                'min-h-11 w-28 min-w-0 rounded-[12px] border bg-glass-strong px-2 font-mono text-xs uppercase placeholder:font-sans placeholder:normal-case',
                 codeError ? 'border-danger' : 'border-border',
               )}
             />
