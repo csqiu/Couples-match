@@ -1,7 +1,7 @@
 'use client';
 /**
  * The four ways the app shows a pair (docs/design-spec.md, "Pair display"):
- *  - large  (PairLarge):   This or that, Conflicts, Explore's slots
+ *  - large  (PairLarge):   This or that, Conflicts, specific comparisons
  *  - medium (PairMedium):  the details card that opens from a small row (hover, focus or tap)
  *  - small  (PairNames, PairTile): final list rows, side panels, conflict statements
  *  - inline (ProgramChip, PairChip): program names inside sentences

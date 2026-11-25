@@ -5,7 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { CoupleData, StoredSettings } from '@pairwise/db';
 import { useDroppable } from '@dnd-kit/core';
 import { NRMP_RULES, type MatchType } from '@pairwise/engine';
-import { CircleAlert, CircleCheck, Compass, Download, FlaskConical, GripVertical, History, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, X } from 'lucide-react';
+import { ArrowDownUp, CircleAlert, CircleCheck, Crosshair, Download, FlaskConical, GripVertical, History, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, X } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useId, useMemo, useRef, useState } from 'react';
 import { PairDetails, PairMedium, PairNames, ProgramChip } from '@/components/pair';
@@ -174,8 +174,8 @@ export function ListView({
           <Button variant="secondary" aria-pressed={!!scenario} onClick={() => setScenario(scenario ? null : allReachable(result.programs))}>
             <FlaskConical className="h-4 w-4" aria-hidden /> Try an outcome
           </Button>
-          <Link href="/app/explore" className={buttonVariants({ variant: 'secondary' })}>
-            <Compass className="h-4 w-4" aria-hidden /> Explore
+          <Link href="/app/compare?mode=specific" className={buttonVariants({ variant: 'outline' })}>
+            <Crosshair className="h-4 w-4" aria-hidden /> Make a specific comparison
           </Link>
           <Link href="/app/map" className={buttonVariants({ variant: 'secondary' })}>
             <MapIcon className="h-4 w-4" aria-hidden /> Map
@@ -492,10 +492,10 @@ function Row({
         >
           <PairMedium pair={row.pair} names={names} heading={`Rank ${row.rank} of ${total}`} why={row.why}>
             <Link
-              href={`/app/explore?a=${encodeURIComponent(row.pairId)}`}
+              href={`/app/compare?mode=specific&a=${encodeURIComponent(row.pairId)}`}
               className={buttonVariants({ variant: 'secondary', size: 'sm', className: 'self-start' })}
             >
-              <Compass className="h-4 w-4" aria-hidden /> Open in Explore
+              <ArrowDownUp className="h-4 w-4" aria-hidden /> Compare with another pair
             </Link>
           </PairMedium>
         </PairDetails>

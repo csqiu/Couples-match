@@ -1,8 +1,9 @@
 'use client';
 import type { ComparisonRow, CoupleData, StoredSettings } from '@pairwise/db';
 import { questionKey } from '@pairwise/engine';
-import { Check, Clock, Compass, Flag, Undo2 } from 'lucide-react';
+import { ArrowLeft, Check, Clock, Crosshair, Flag, Undo2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import { PairChip, PairLarge } from '@/components/pair';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import type { FlaggedView, QuestionView } from '@/lib/analysis';
 import { cn } from '@/lib/cn';
 import { useAnalysis } from '@/lib/use-analysis';
 import { answer, deferQuestion, setQuestionFlag, undoAnswer } from './actions';
+import { SpecificComparison } from './specific';
 
 type LocalAnswer = { tempId: string; realId?: string; row: Pick<ComparisonRow, 'id' | 'pair_left' | 'pair_right' | 'winner' | 'answered_by' | 'both_agreed' | 'locked' | 'seq'> };
 
@@ -21,6 +23,9 @@ export function CompareView({
   role,
   answerMode,
   privateTiers,
+  initialSpecific = false,
+  initialA = null,
+  initialB = null,
 }: {
   data: CoupleData;
   me: string;
@@ -28,7 +33,22 @@ export function CompareView({
   role: 'a' | 'b';
   answerMode: 'together' | 'separately';
   privateTiers: boolean;
+  /** Open in "Make a specific comparison" mode (?mode=specific). */
+  initialSpecific?: boolean;
+  /** A pair to start that mode's "This" with (?a=). */
+  initialA?: string | null;
+  /** And "That" (?b=). */
+  initialB?: string | null;
 }) {
+  const router = useRouter();
+  const [specific, setSpecific] = useState(initialSpecific);
+  function toggleSpecific() {
+    const next = !specific;
+    setSpecific(next);
+    router.replace(next ? '/app/compare?mode=specific' : '/app/compare', { scroll: false });
+    // Answers saved in specific mode come back with the server's copy.
+    if (!next) router.refresh();
+  }
   const [local, setLocal] = useState<LocalAnswer[]>([]);
   // Saved-for-later and flag changes, shown at once (the server copy catches up on revalidate).
   const [localDeferred, setLocalDeferred] = useState<string[]>([]);
@@ -139,14 +159,23 @@ export function CompareView({
         <div>
           <h1 className="page-title">This or that</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
-            Which pair would you rather match into? There are no wrong answers — this teaches the app how much distance
-            matters to you{answerMode === 'together' ? ' as a couple' : ''}.
+            {specific
+              ? 'Pick any two pairs: one program for each of you, on each side. See which one your list puts higher, and keep it, swap it or call it a tie.'
+              : `Which pair would you rather match into? There are no wrong answers — this teaches the app how much distance matters to you${answerMode === 'together' ? ' as a couple' : ''}.`}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/app/explore" className={buttonVariants({ variant: 'secondary' })}>
-            <Compass className="h-4 w-4" aria-hidden /> Explore
-          </Link>
+          <Button variant="outline" aria-pressed={specific} onClick={toggleSpecific} data-testid="specific-toggle">
+            {specific ? (
+              <>
+                <ArrowLeft className="h-4 w-4" aria-hidden /> Back to suggested questions
+              </>
+            ) : (
+              <>
+                <Crosshair className="h-4 w-4" aria-hidden /> Make a specific comparison
+              </>
+            )}
+          </Button>
           <Link href="/app/conflicts" className={buttonVariants({ variant: 'secondary' })}>
             Conflicts{result.conflicts.length ? ` (${result.conflicts.length})` : ''}
           </Link>
@@ -175,7 +204,9 @@ export function CompareView({
         </p>
       </div>
 
-      {q ? (
+      {specific ? (
+        <SpecificComparison data={data} me={me} names={names} answerMode={answerMode} hideTierOf={hideTierOf} initialA={initialA} initialB={initialB} />
+      ) : q ? (
         <QuestionBlock
           key={`${q.left.id}#${q.right.id}`}
           q={q}
@@ -206,7 +237,7 @@ export function CompareView({
         </Empty>
       )}
 
-      {result.flagged.length ? <FlaggedList items={result.flagged} names={names} onUnflag={(f) => void unflag(f)} /> : null}
+      {!specific && result.flagged.length ? <FlaggedList items={result.flagged} names={names} onUnflag={(f) => void unflag(f)} /> : null}
     </div>
   );
 }
@@ -290,8 +321,8 @@ function FlaggedList({ items, names, onUnflag }: { items: FlaggedView[]; names: 
               <p className="mt-1 text-xs text-muted">{status(f)}</p>
             </div>
             <div className="flex gap-1">
-              <Link href={`/app/explore?a=${encodeURIComponent(f.left.id)}&b=${encodeURIComponent(f.right.id)}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-                <Compass className="h-4 w-4" aria-hidden /> Explore
+              <Link href={`/app/compare?mode=specific&a=${encodeURIComponent(f.left.id)}&b=${encodeURIComponent(f.right.id)}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+                <Crosshair className="h-4 w-4" aria-hidden /> Compare
               </Link>
               <Button variant="ghost" size="sm" onClick={() => onUnflag(f)}>Unflag</Button>
             </div>
