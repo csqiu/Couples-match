@@ -872,7 +872,21 @@ option was taken. Newest phases are at the bottom.
      - Not done from the spec: tier squares on final-list rows (rows don't carry tiers, and
        private tiers would need care); the Strong-preference button and Tier-A priority card
        (those features were removed, #124, #126).
-128. **My programs: details cards, my own short names, infinite scroll.**
+
+128. **One way to show a pair, in four sizes** (bug log #17–#19; docs/design-spec.md §7a). Nine
+     separate pair layouts built from three data shapes had drifted apart. Now one shape
+     (`lib/pair-view.ts`: short and full name, place, tier, each partner's own rank, NRMP code,
+     band) feeds four components (`components/pair.tsx`): large cards, a medium details card,
+     small rows and inline chips.
+     - Final list rows show short names only (codes and full names moved to the details card,
+       which opens on hover, focus or tap and replaces the "Why is this here?" toggle). No tier
+       marks on rows: colour on a row means only whose program it is.
+     - Conflicts: each statement in a circle is a row of two small pair tiles with where it comes
+       from ("Your answer", "Rule", "You moved it"); Still true? and disagreements use large cards
+       tagged with who picked which.
+     - Explanations (final list, conflicts, Explore) use short names.
+
+129. **My programs: details cards, my own short names, infinite scroll.**
      - Tapping a search result opens it into a card with everything we have on the program;
        one program is open at a time across the page.
      - "My list" shows short names as chips. A chip opens the program's card, where you can

@@ -3,7 +3,7 @@
  * answering either way would do (rows that move, new conflicts). Pure, so it runs in
  * the Web Worker and in unit tests.
  */
-import { shortProgramName } from '@pairwise/data';
+import { shortNamed } from './pair-view';
 import type { CoupleData } from '@pairwise/db';
 import {
   describeConflict,
@@ -95,7 +95,7 @@ export function explore(data: CoupleData, opts: ExploreOptions): ExploreResult {
     ra !== null && rb !== null ? (ra < rb ? 'a' : 'b') : enginePos.get(pa.id)! < enginePos.get(pb.id)! ? 'a' : 'b';
   const [hi, lo] = higher === 'a' ? [pa.id, pb.id] : [pb.id, pa.id];
   // Short names ("MGH IM") keep the reasons readable in this screen's narrow cards.
-  const programs = Object.fromEntries(Object.entries(input.programs).map(([id, p]) => [id, { ...p, name: shortProgramName(p.name, p.shortName) }]));
+  const programs = shortNamed(input.programs, input.lists);
   const ctx = { programs, partnerNames: opts.names };
 
   // A witness above both on the list means their order can never decide the match.

@@ -4,6 +4,7 @@
  * Web Worker and in unit tests.
  */
 import { shortProgramName } from '@pairwise/data';
+import { pairViewer, shortNamed, type PairView, type ProgramSide } from './pair-view';
 import { buildEngineInput, type CoupleData, type StoredSettings } from '@pairwise/db';
 import {
   BAND_LABEL,
@@ -59,6 +60,8 @@ export interface ListRow {
   why: string;
   /** A No Match row held at the end of the list (moves only once unlocked). */
   locked: boolean;
+  /** The pair in the shared display shape (short names, tiers, ranks, codes). */
+  pair: PairView;
   /** Added by hand from "Not on your list" (can be taken off again). */
   added: boolean;
 }
@@ -67,9 +70,20 @@ export interface ListRow {
 export interface AvailablePair {
   pairId: string;
   sides: [ListSide, ListSide];
+  pair: PairView;
   distanceMi: number | null;
   band: Band;
   bandLabel: string;
+}
+
+/** "What you're trading": a row where one partner gets a program they ranked lower. */
+export interface Trade {
+  rank: number;
+  partner: 0 | 1;
+  got: ProgramSide | null;
+  better: ProgramSide | null;
+  betterRank: number;
+  because: string;
 }
 
 export interface ChecklistItem {
@@ -109,7 +123,7 @@ export interface FinalList {
   /** Pairs where both match that aren't on the list, best first. */
   available: AvailablePair[];
   noMatchLocked: boolean;
-  trades: string[];
+  trades: Trade[];
   hasCycles: boolean;
   /** How the rows are shown (see StoredSettings.listOrder). */
   order: ListOrder;
@@ -239,7 +253,7 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
   const { input, result } = run(data);
   const { list } = result;
   const stored = (data.couple.settings ?? {}) as StoredSettings;
-  const ctx = { programs: input.programs, partnerNames: opts.names };
+  const ctx = { programs: shortNamed(input.programs, input.lists), partnerNames: opts.names };
   const noMatchCode = NRMP_RULES.noMatchCode[opts.matchType];
   const codeOf = (k: 0 | 1, id: string) => input.lists[k].find((e) => e.programId === id)?.nrmpCode ?? '';
   const shortOf = (k: 0 | 1, id: string) => input.lists[k].find((e) => e.programId === id)?.shortName;
@@ -251,6 +265,7 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
   };
 
   const byId = new Map(result.pairs.map((p) => [p.id, p]));
+  const view = pairViewer(input);
   const all = list.order.map((id) => byId.get(id)!);
   const matched = all.filter((p) => p.band !== 'no_match');
   const noMatch = all.filter((p) => p.band === 'no_match');
@@ -305,6 +320,7 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
       why,
       locked,
       added: added.has(pair.id),
+      pair: view(pair),
     };
   });
   const tidied = ordered.filter((p, i) => engineOrder[i].id !== p.id).length;
@@ -321,19 +337,22 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
     .map((p) => ({
       pairId: p.id,
       sides: [side(0, p.programs[0]), side(1, p.programs[1])],
+      pair: view(p),
       distanceMi: p.distanceMi,
       band: p.band,
       bandLabel: BAND_LABEL[p.band],
     }));
 
-  const trades = inversionReport(list, 5).map((t) => {
-    const who = opts.names[t.partner];
-    const got = input.programs[list.rows[t.rank - 1].pair.programs[t.partner]]?.name ?? 'a program';
-    const better = input.programs[t.betterProgram]?.name ?? t.betterProgram;
-    const why = t.because.length
+  const trades: Trade[] = inversionReport(list, 5).map((t) => {
+    const row = list.rows[t.rank - 1].pair;
+    const sideOf = (pairId: string) => {
+      const p = byId.get(pairId);
+      return p ? view(p).sides[t.partner] : null;
+    };
+    const because = t.because.length
       ? t.because.map((b) => (b === 'closer' ? 'you’d be closer together' : `${opts.names[1 - t.partner]} gets a program they prefer`)).join(' and ')
       : 'of a rule you set';
-    return `#${t.rank}: ${who} gets ${got} ahead of ${better} (first at #${t.betterProgramFirstRank}), because ${why}.`;
+    return { rank: t.rank, partner: t.partner, got: sideOf(row.id), better: sideOf(t.betterPair), betterRank: t.betterProgramFirstRank, because };
   });
 
   return {
@@ -364,6 +383,6 @@ export function checkMove(data: CoupleData, higher: string, lower: string, names
   const { input, result } = run(data);
   const res = proposeMove(result.list, higher, lower, moved);
   if (res.ok) return res;
-  const ctx = { programs: input.programs, partnerNames: names };
+  const ctx = { programs: shortNamed(input.programs, input.lists), partnerNames: names };
   return { ok: false, blocking: res.blocking.map((l) => ({ ...l, text: describeLink(ctx, l) })) };
 }

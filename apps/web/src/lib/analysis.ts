@@ -2,10 +2,8 @@
  * Runs the engine for the comparison and conflict screens. Pure (no I/O), so it
  * can run in a Web Worker and in unit tests.
  */
-import { shortProgramName } from '@pairwise/data';
 import { buildEngineInput, type CoupleData, type StoredSettings } from '@pairwise/db';
 import {
-  BAND_LABEL,
   effectiveComparisons,
   describeConflict,
   describeLink,
@@ -14,33 +12,27 @@ import {
   NO_MATCH,
   questionKey,
   runEngine,
-  type Band,
   type Comparison,
   type Conflict,
   type EngineInput,
   type Link,
   type Pair,
-  type Tier,
 } from '@pairwise/engine';
 
-export interface ProgramSide {
-  id: string;
-  name: string;
-  /** Abbreviation for tight spaces ("Hopkins Plastics"). */
-  short: string;
-  place: string;
-  lat: number | null;
-  lon: number | null;
-  tier: Tier | null;
-}
+import { linkSource, pairViewer, shortNamed, type LinkSource, type PairView, type ProgramSide } from './pair-view';
 
-export interface PairView {
-  id: string;
-  /** [partner A's program, partner B's program]; null side = No Match. */
-  sides: [ProgramSide | null, ProgramSide | null];
-  distanceMi: number | null;
-  band: Band;
-  bandLabel: string;
+export { pairViewer };
+export type { PairView, ProgramSide };
+
+/** One "this pair above that one" statement in a conflict, with both pairs and where it comes from. */
+export interface LinkView extends Link {
+  text: string;
+  fromPair: PairView | null;
+  toPair: PairView | null;
+  /** Each pair's place in the engine's order (1-based), for "#4"-style labels. */
+  fromRank: number | null;
+  toRank: number | null;
+  source: LinkSource;
 }
 
 export interface QuestionView {
@@ -58,7 +50,7 @@ export interface ConflictView {
   id: string;
   kind: Conflict['kind'];
   text: string;
-  links?: Array<Link & { text: string }>;
+  links?: LinkView[];
   comparisonIds?: string[];
   /** Disagreements: the two answers, by who gave them. */
   answers?: Array<{ by: 'me' | 'partner'; winner: 'left' | 'right' | 'tie' }>;
@@ -94,24 +86,6 @@ export interface AnalyzeOptions {
   answerMode: 'together' | 'separately';
 }
 
-/** Builds the display view of a pair (names, places, tiers, distance). */
-export function pairViewer(input: EngineInput): (pair: Pair) => PairView {
-  const entry = (k: 0 | 1, programId: string) => input.lists[k].find((e) => e.programId === programId);
-  const tierOf = (k: 0 | 1, programId: string) => entry(k, programId)?.tier ?? null;
-  return (pair) => ({
-    id: pair.id,
-    sides: [0, 1].map((k) => {
-      const ref = pair.programs[k as 0 | 1];
-      if (ref === NO_MATCH) return null;
-      const p = input.programs[ref];
-      return { id: ref, name: p.name, short: shortProgramName(p.name, entry(k as 0 | 1, ref)?.shortName ?? p.shortName), place: [p.city, p.state].filter(Boolean).join(', '), lat: p.lat, lon: p.lon, tier: tierOf(k as 0 | 1, ref) };
-    }) as [ProgramSide | null, ProgramSide | null],
-    distanceMi: pair.distanceMi,
-    band: pair.band,
-    bandLabel: BAND_LABEL[pair.band],
-  });
-}
-
 export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
   const input = buildEngineInput(data);
   const hasBothLists = input.lists[0].some((e) => e.acceptable) && input.lists[1].some((e) => e.acceptable);
@@ -123,6 +97,10 @@ export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
     return p ? view(p) : undefined;
   };
 
+  const rankOf = (id: string) => {
+    const i = list.position.get(id);
+    return i === undefined ? null : i + 1;
+  };
   const status = learningStatus(list, posterior, input.comparisons);
   const stored = (data.couple.settings ?? {}) as StoredSettings;
   const counted = effectiveComparisons(input.comparisons).counted;
@@ -130,7 +108,7 @@ export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
   const deferred = (stored.deferredQuestions ?? []).filter((k) => !answeredKeys.has(k));
   const flaggedKeys = new Set(stored.flaggedQuestions ?? []);
   const splitKey = (k: string) => k.split('#') as [string, string];
-  const ctx = { programs: input.programs, partnerNames: opts.names };
+  const ctx = { programs: shortNamed(input.programs, input.lists), partnerNames: opts.names };
   const key = (a: string, b: string) => (a < b ? `${a}#${b}` : `${b}#${a}`);
 
   let question: QuestionView | null = null;
@@ -196,7 +174,18 @@ export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
     const base = { id: c.id, kind: c.kind, text: describeConflict(ctx, c) };
     switch (c.kind) {
       case 'cycle':
-        return { ...base, links: c.links.map((l) => ({ ...l, text: describeLink(ctx, l) })) };
+        return {
+          ...base,
+          links: c.links.map((l) => ({
+            ...l,
+            text: describeLink(ctx, l),
+            fromPair: viewById(l.from) ?? null,
+            toPair: viewById(l.to) ?? null,
+            fromRank: rankOf(l.from),
+            toRank: rankOf(l.to),
+            source: linkSource(l, opts.names),
+          })),
+        };
       case 'surprising_answer':
         return { ...base, comparisonIds: [c.comparison.id], left: viewById(c.comparison.left), right: viewById(c.comparison.right), answers: [{ by: c.comparison.answeredBy === opts.me ? 'me' : 'partner', winner: c.comparison.winner }] };
       case 'disagreement': {
