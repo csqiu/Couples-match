@@ -18,16 +18,16 @@ between being close together and getting the programs each of you likes most.
 ## What it does (when finished)
 
 1. **Each of you ranks your own programs** and sorts them into tiers:
-   - **A**: "I'd take this over any lower program, wherever my partner lands."
-   - **B**: "Strong preference, but I'd trade down to be with my partner."
-   - **C**: "Acceptable fallback."
+   - **A**: "Almost no amount of distance would make me drop to Tier B."
+   - **B**: "Most programs. Only in a few cases would I drop to Tier C to be together."
+   - **C**: "My least favourite programs. I'd rather be long distance than match here."
 2. **Pairwise builds every possible pair** (your program + your partner's program, plus
    "No Match" for either of you) and works out how far apart each pair is.
 3. **You answer a few "this or that" questions** ("Both at your #1 programs but on
    opposite coasts, or both at your #4 programs in the same city?"). That teaches it how
    much distance matters to you.
-4. **It catches contradictions.** If your answers go in a circle, or both of your Tier A
-   programs can't come first, it shows you why in plain language and asks you to decide.
+4. **It catches contradictions.** If your answers go in a circle, or an answer goes
+   against one of your rules, it shows you why in plain language and asks you to decide.
 5. **Explore any comparison.** Drag two pairs into "this" and "that" to see how the list
    orders them and why, and preview what answering either way would change before you do.
    On "this or that", you can also save a question for later or flag it to discuss.
@@ -49,9 +49,14 @@ The engine has two layers.
 - **Common sense ("dominance").** If pair X is at least as good for both of you as
   pair Y, and no farther apart, X goes above Y. Example: you both get your #1 program in
   the same city, versus you both get your #2 programs in that same city.
-- **Tier A rule** (each partner can turn this on or off). Any pair that gives you a Tier
-  A program, while your partner matches somewhere, goes above every pair that doesn't
-  give you Tier A.
+- **Tier A rule.** Any pair that gives you a Tier A program, while your partner matches
+  somewhere, goes above every pair that doesn't give you Tier A.
+- **Tier C rule.** Any pair that gives you a Tier A or B program, while your partner
+  matches somewhere (at any distance), goes above every pair that gives you Tier C. You'd
+  rather be apart than in Tier C, though still matched rather than not.
+- **When your tiers clash, you decide.** If one pair gives one of you a better tier and
+  another pair gives the other one a better tier, neither partner's rule wins. The score
+  and your "this or that" answers order them, and those questions are asked first.
 - **No Match goes last.** Every pair where you both match goes above every pair where one
   of you doesn't. This follows NRMP's guidance. You can turn it off, but you'll get a
   warning.
@@ -90,13 +95,14 @@ identical:
 
 | | Before any questions | After 40 questions |
 |---|---|---|
-| Pairwise's question choice | 0.835 | **0.940** (lowest couple: 0.895) |
-| Random questions | 0.835 | 0.927 (lowest couple: 0.858) |
+| Pairwise's question choice | 0.817 | **0.873** (lowest couple: 0.830) |
+| Random questions | 0.817 | 0.822 (lowest couple: 0.722) |
 
-Counting only the orderings that can change where a couple matches (for the rest, the
-order never decides the match), the scores after 40 questions are 0.969 with Pairwise's
-questions (lowest 0.923) and 0.955 with random ones (lowest 0.918). Every answer holds in
-the list, including the 1 in 10 that are wrong on purpose.
+The tier rules settle most of the order, so much of what is left in the top 100 can't
+change where a couple matches. Counting only the orderings that can (for the rest, the
+order never decides the match), the score is 0.985 before any questions and **0.993**
+after 40 of Pairwise's questions (lowest couple 0.983), against 0.975 with random ones.
+Every answer holds in the list, including the 1 in 10 that are wrong on purpose.
 
 Run it yourself with `pnpm --filter @pairwise/engine bench`.
 

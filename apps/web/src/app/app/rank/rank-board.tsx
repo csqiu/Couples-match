@@ -61,9 +61,9 @@ const tierAwareCoordinates: KeyboardCoordinateGetter = (event, args) => {
 };
 
 const TIER_COPY: Record<Tier, { title: string; body: string }> = {
-  A: { title: 'Tier A', body: 'I’d take this over any lower program, wherever my partner lands.' },
-  B: { title: 'Tier B', body: 'Strong preference, but I’d trade down to be with my partner.' },
-  C: { title: 'Tier C', body: 'Acceptable fallback.' },
+  A: { title: 'Tier A', body: 'Almost no amount of distance would make me drop to Tier B.' },
+  B: { title: 'Tier B', body: 'Most programs. Only in a few cases would I drop to Tier C to be together.' },
+  C: { title: 'Tier C', body: 'My least favourite programs. I’d rather be long distance than match here, so only if no Tier A or B program works out.' },
 };
 
 export function RankBoard({ initial }: { initial: BoardEntry[] }) {

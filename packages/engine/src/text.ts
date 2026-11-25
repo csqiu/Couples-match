@@ -34,6 +34,8 @@ export function describeReason(ctx: TextContext, r: EdgeReason): string {
       return 'both of you like it at least as much and it is no farther apart (automatic)';
     case 'tier_a':
       return `of ${r.partner === 0 ? n1 : n2}'s Tier A rule (rule)`;
+    case 'tier_c':
+      return `${r.partner === 0 ? n1 : n2} would rather be apart than in Tier C (rule)`;
     case 'no_match_bottom':
       return 'pairs where you both match go above No Match pairs (rule)';
     case 'answer':
@@ -61,8 +63,6 @@ export function describeConflict(ctx: TextContext, c: Conflict): string {
   switch (c.kind) {
     case 'cycle':
       return c.links.map((l) => describeLink(ctx, l)).join(' ');
-    case 'tier_a_collision':
-      return `When only one of you can get a Tier A program, who gets priority? (e.g. ${pairLabel(ctx, c.partner1Example)} vs. ${pairLabel(ctx, c.partner2Example)}) — ${n1}, ${n2}, or decide case by case.`;
     case 'surprising_answer': {
       const won = c.comparison.winner === 'left' ? c.comparison.left : c.comparison.right;
       const lost = c.comparison.winner === 'left' ? c.comparison.right : c.comparison.left;

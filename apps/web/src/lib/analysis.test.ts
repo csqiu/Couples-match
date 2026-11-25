@@ -26,13 +26,10 @@ describe('analyze', () => {
     expect(r.confidence).toBeLessThanOrEqual(1);
   });
 
-  it('asks Tier A priority once when both partners have Tier A programs', () => {
+  it('never asks who gets Tier A priority: clashing tier rules are left to this or that', () => {
     const r = analyze(couple(), opts());
-    const collision = r.conflicts.filter((c) => c.kind === 'tier_a_collision');
-    expect(collision).toHaveLength(1);
-    expect(collision[0].text).toMatch(/Alex, Sam, or decide case by case/);
-    expect(collision[0].left && collision[0].right).toBeTruthy();
-    expect(analyze(couple({ settings: { tierAPriority: 'partner1' } }), opts()).conflicts).toHaveLength(0);
+    expect(r.conflicts).toHaveLength(0);
+    expect(r.question).not.toBeNull();
   });
 
   it('separate answering: I get my partner’s pending question, and different answers become a disagreement', () => {

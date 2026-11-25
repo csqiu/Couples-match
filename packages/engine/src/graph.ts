@@ -16,13 +16,6 @@ import {
   type PartnerIndex,
 } from './types';
 
-export interface TierACollision {
-  /** Example: partner 1 gets Tier A, partner 2 does not. */
-  partner1Example: PairId;
-  /** Example: partner 2 gets Tier A, partner 1 does not. */
-  partner2Example: PairId;
-}
-
 /**
  * A hub stands for a complete "every top above every bottom" rule (Tier A, No
  * Match at bottom): tops → hub → bottoms. That is |tops| + |bottoms| edges
@@ -45,8 +38,6 @@ export interface Graph {
   /** Reasons keyed by from * size + to. */
   reasons: Map<number, EdgeReason[]>;
   settings: CoupleSettings;
-  /** Present when both partners' Tier A rules are hard and can contradict each other. */
-  tierACollision: TierACollision | null;
   /** Pins that refer to pairs that are not candidates (excluded, or a program was removed). */
   ignoredPins: number[];
   /**
@@ -60,8 +51,8 @@ export interface Graph {
   _scc?: { compOf: Int32Array; comps: number[][] };
 }
 
-/** Upper bound on hubs: Tier A for each partner (up to 2 hubs each) + No Match. */
-const MAX_HUBS = 5;
+/** Upper bound on hubs: two tier rules per partner, up to 4 groups each, + No Match. */
+const MAX_HUBS = 17;
 
 function reasonKey(r: EdgeReason): string {
   return JSON.stringify(r);
@@ -80,7 +71,6 @@ function createGraph(pairs: Pair[], settings: CoupleSettings): Graph {
     in: Array.from({ length: size }, () => []),
     reasons: new Map(),
     settings,
-    tierACollision: null,
     ignoredPins: [],
     drags: [],
     dragStage: new Map(),
@@ -213,16 +203,6 @@ function dominanceReduction(pairs: Pair[]): Array<[number, number]> {
   return edges;
 }
 
-/** Pairs where partner k gets Tier A and the other partner matches somewhere. */
-function tierATop(p: Pair, k: PartnerIndex): boolean {
-  return p.tier[k] === 'A' && p.programs[1 - k] !== NO_MATCH;
-}
-
-/** Pairs where partner k gets something other than Tier A (including No Match). */
-function tierABottom(p: Pair, k: PartnerIndex): boolean {
-  return p.tier[k] !== 'A';
-}
-
 export function buildConstraintGraph(pairs: Pair[], input: EngineInput): Graph {
   const { settings } = input;
   const g = createGraph(pairs, settings);
@@ -262,40 +242,59 @@ export function buildConstraintGraph(pairs: Pair[], input: EngineInput): Graph {
     for (const y of bottoms) addEdge(g, hub, y, reason);
   };
 
-  // 2. Tier A rule (hard mode only; "strong" mode lives in the score).
-  const hard: [boolean, boolean] = [settings.tierARule[0] === 'hard', settings.tierARule[1] === 'hard'];
-  const top: [boolean[], boolean[]] = [pairs.map((p) => tierATop(p, 0)), pairs.map((p) => tierATop(p, 1))];
-  const bottom: [boolean[], boolean[]] = [pairs.map((p) => tierABottom(p, 0)), pairs.map((p) => tierABottom(p, 1))];
-
-  // When both rules are hard, partner 1's rule says (A1, non-A2) > (non-A1, A2) and partner 2's says the reverse.
-  let collision: TierACollision | null = null;
-  if (hard[0] && hard[1]) {
-    const a = pairs.findIndex((_, i) => top[0][i] && bottom[1][i]);
-    const b = pairs.findIndex((_, i) => top[1][i] && bottom[0][i]);
-    if (a >= 0 && b >= 0) collision = { partner1Example: pairs[a].id, partner2Example: pairs[b].id };
+  // 2. Tier rules, per partner. Tier A (hard mode; "strong" lives in the score): a pair that
+  // gives you Tier A, while your partner matches, above every pair that doesn't. Tier C: a
+  // pair that gives you Tier A or B, while your partner matches, above every pair that gives
+  // you Tier C ("rather apart than in Tier C").
+  // When the two partners' rules point opposite ways for two pairs (X better for one
+  // partner's tier, Y for the other's), neither rule orders them: the score and the couple's
+  // answers ("this or that") decide. DECISIONS.md #125.
+  interface TierRule {
+    partner: PartnerIndex;
+    reason: EdgeReason;
+    top: boolean[];
+    bottom: boolean[];
   }
-  g.tierACollision = collision;
-  const priority = settings.tierAPriority;
-  const winner: PartnerIndex | null = priority === 'partner1' ? 0 : priority === 'partner2' ? 1 : null;
+  const matched = (p: Pair, k: PartnerIndex) => p.programs[1 - k] !== NO_MATCH;
+  const rules: TierRule[] = [];
+  for (const k of [0, 1] as const) {
+    if (settings.tierARule[k] === 'hard') {
+      rules.push({
+        partner: k,
+        reason: { kind: 'tier_a', partner: k },
+        top: pairs.map((p) => p.tier[k] === 'A' && matched(p, k)),
+        bottom: pairs.map((p) => p.tier[k] !== 'A'),
+      });
+    }
+    if (settings.tierCRule[k]) {
+      rules.push({
+        partner: k,
+        reason: { kind: 'tier_c', partner: k },
+        top: pairs.map((p) => (p.tier[k] === 'A' || p.tier[k] === 'B') && matched(p, k)),
+        bottom: pairs.map((p) => p.tier[k] === 'C'),
+      });
+    }
+  }
 
   const all = pairs.map((_, i) => i);
-  for (const k of [0, 1] as const) {
-    if (!hard[k]) continue;
-    const o = (1 - k) as PartnerIndex;
-    const reason: EdgeReason = { kind: 'tier_a', partner: k };
-    const tops = all.filter((i) => top[k][i]);
-    const bottoms = all.filter((i) => bottom[k][i]);
-    if (!collision || winner === k) {
-      completeRule(tops, bottoms, reason);
-      continue;
+  for (const rule of rules) {
+    const opposing = rules.filter((r) => r.partner !== rule.partner);
+    const tops = all.filter((i) => rule.top[i]);
+    const bottoms = all.filter((i) => rule.bottom[i]);
+    // Group the tops by which of the other partner's rules put them at the bottom.
+    const groups = new Map<number, number[]>();
+    for (const x of tops) {
+      let mask = 0;
+      opposing.forEach((r, j) => r.bottom[x] && (mask |= 1 << j));
+      const group = groups.get(mask);
+      if (group) group.push(x);
+      else groups.set(mask, [x]);
     }
-    // Contradicting edges — x in (top_k ∩ bottom_o) above y in (top_o ∩ bottom_k) —
-    // are left to the other partner's rule when it has priority, or to scores and
-    // comparisons when undecided / "case by case".
-    const contested = tops.filter((x) => bottom[o][x]);
-    const uncontested = tops.filter((x) => !bottom[o][x]);
-    completeRule(uncontested, bottoms, reason);
-    completeRule(contested, bottoms.filter((y) => !top[o][y]), reason);
+    for (const [mask, group] of groups) {
+      // Leave out the bottoms the other partner's rules put above this group: those clash.
+      const clashing = opposing.filter((_, j) => mask & (1 << j));
+      completeRule(group, clashing.length ? bottoms.filter((y) => !clashing.some((r) => r.top[y])) : bottoms, rule.reason);
+    }
   }
 
   // 3. No Match at the bottom.

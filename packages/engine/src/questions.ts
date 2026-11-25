@@ -13,6 +13,7 @@ import {
   STOP_ADJACENT_FRACTION,
   STOP_ORDER_CONFIDENCE,
   STOP_TOP,
+  TIER_CLASH_BOOST,
   TRADEOFF_BOOST,
 } from './defaults';
 import { THETA_DIM, pairFeatures, type PairFeatures } from './features';
@@ -91,6 +92,8 @@ export interface Question {
   impact: number;
   /** True when one pair is closer together and the other is better for at least one partner. */
   tradeoff: boolean;
+  /** One pair gives one partner a better tier, the other pair the other partner: left to the couple. */
+  clash: boolean;
   value: number;
   kind: 'calibration' | 'active';
 }
@@ -108,6 +111,16 @@ const BAND_ORDER: Record<Band, number> = { together: 0, commutable: 1, drivable:
 /** One key per question, whichever pair is on the left. */
 export function questionKey(a: PairId, b: PairId): string {
   return a < b ? `${a}#${b}` : `${b}#${a}`;
+}
+
+const TIER_LEVEL = { A: 0, B: 1, C: 2 } as const;
+const tierLevel = (p: Pair, k: 0 | 1) => (p.tier[k] ? TIER_LEVEL[p.tier[k]!] : 3);
+
+/** x gives one partner a better tier and y gives the other partner a better tier. */
+export function isTierClash(x: Pair, y: Pair): boolean {
+  const d0 = tierLevel(x, 0) - tierLevel(y, 0);
+  const d1 = tierLevel(x, 1) - tierLevel(y, 1);
+  return (d0 < 0 && d1 > 0) || (d0 > 0 && d1 < 0);
 }
 
 /** One pair is closer together while the other gives at least one partner a better program. */
@@ -167,6 +180,7 @@ function evaluate(ctx: Ctx, u: number, v: number, kind: Question['kind']): Quest
   const uncertainty = 1 - Math.abs(2 * orderConfidence(mean, variance) - 1);
   const impact = ctx.impactPrefix[ctx.position[v] + 1] - ctx.impactPrefix[ctx.position[u]];
   const tradeoff = isTradeoff(ctx.g.pairs[u], ctx.g.pairs[v]);
+  const clash = isTierClash(ctx.g.pairs[u], ctx.g.pairs[v]);
   return {
     left: ctx.g.pairs[u].id,
     right: ctx.g.pairs[v].id,
@@ -174,7 +188,8 @@ function evaluate(ctx: Ctx, u: number, v: number, kind: Question['kind']): Quest
     uncertainty,
     impact,
     tradeoff,
-    value: uncertainty * impact * (tradeoff ? TRADEOFF_BOOST : 1),
+    clash,
+    value: uncertainty * impact * (tradeoff ? TRADEOFF_BOOST : 1) * (clash ? TIER_CLASH_BOOST : 1),
     kind,
   };
 }

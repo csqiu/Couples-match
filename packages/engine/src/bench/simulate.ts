@@ -135,6 +135,11 @@ export interface SimulationOptions {
   topK?: number;
   /** true = the model also learns a value per program (off in the app; DECISIONS.md #119). */
   perProgram?: boolean;
+  /**
+   * Settings the engine uses, when different from the couple's true ones (input.settings,
+   * which build the true order). For comparing rule sets against the same hidden couple.
+   */
+  engineSettings?: Partial<CoupleSettings>;
 }
 
 export interface SimulationResult {
@@ -152,6 +157,7 @@ export function simulateCouple(input: EngineInput, truth: ModelParams, opts: Sim
   const rng = createRng(input.seed * 31 + (strategy === 'active' ? 1 : 2));
   const pairs = buildCandidates(input);
   const graph = buildConstraintGraph(pairs, input);
+  const engineInput: EngineInput = opts.engineSettings ? { ...input, settings: { ...input.settings, ...opts.engineSettings } } : input;
   const byId = new Map(pairs.map((p) => [p.id, p]));
   const layout = buildLayout(pairs);
 
@@ -167,13 +173,13 @@ export function simulateCouple(input: EngineInput, truth: ModelParams, opts: Sim
   const comparisons: Comparison[] = [];
   const tauByQuestion: number[] = [];
   const relevant: number[] = [];
-  const fit = () => fitModel(prior, comparisons, { pairs, settings: input.settings, seed: input.seed });
+  const fit = () => fitModel(prior, comparisons, { pairs, settings: engineInput.settings, seed: input.seed });
 
   for (let q = 0; q <= questions; q++) {
     const posterior = fit();
     // As in the app, every answer so far holds in the list (answers are hard rules).
-    const answered = buildConstraintGraph(pairs, { ...input, comparisons });
-    const list = rankPairs(answered, scorePairs(pairs, posterior, input.settings), { length: 10_000 });
+    const answered = buildConstraintGraph(pairs, { ...engineInput, comparisons });
+    const list = rankPairs(answered, scorePairs(pairs, posterior, engineInput.settings), { length: 10_000 });
     tauByQuestion.push(kendallTau(trueOrder, list.position, topK));
     relevant.push(kendallTauRelevant(trueOrder, list.position, topK));
     if (q === questions) break;

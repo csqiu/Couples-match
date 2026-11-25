@@ -12,7 +12,6 @@ export { effectiveComparisons };
 
 export type Conflict =
   | { kind: 'cycle'; id: string; links: Link[] }
-  | { kind: 'tier_a_collision'; id: string; partner1Example: PairId; partner2Example: PairId }
   | { kind: 'surprising_answer'; id: string; comparison: Comparison; predictedOtherWay: number }
   | { kind: 'disagreement'; id: string; comparisons: Comparison[] };
 
@@ -142,10 +141,6 @@ export function preferenceProbability(g: Graph, posterior: Posterior, a: PairId,
 
 export function findConflicts(g: Graph, posterior: Posterior, comparisons: Comparison[]): Conflict[] {
   const conflicts: Conflict[] = [];
-
-  if (g.tierACollision && g.settings.tierAPriority === null) {
-    conflicts.push({ kind: 'tier_a_collision', id: 'tier_a_collision', ...g.tierACollision });
-  }
 
   for (const links of findCycles(g)) {
     const ids = links.map((l) => l.from).sort();

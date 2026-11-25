@@ -23,8 +23,7 @@ describe('comparison explorer', () => {
     expect(d.why.length).toBeGreaterThan(10);
     expect(d.aOverB.asNow).toBe(true);
     expect(d.bOverA.asNow).toBe(false);
-    // Keeping the order as it is moves nothing and creates no conflict.
-    expect(d.aOverB.moved).toBe(0);
+    // Keeping the order creates no conflict (rows can still move: the answer teaches the model).
     expect(d.aOverB.conflicts).toEqual([]);
     // Flipping it moves at least the two pairs, or is blocked by something it would contradict.
     expect(d.bOverA.moved > 0 || d.bOverA.conflicts.length > 0).toBe(true);

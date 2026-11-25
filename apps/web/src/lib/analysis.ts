@@ -196,8 +196,6 @@ export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
     switch (c.kind) {
       case 'cycle':
         return { ...base, links: c.links.map((l) => ({ ...l, text: describeLink(ctx, l) })) };
-      case 'tier_a_collision':
-        return { ...base, left: viewById(c.partner1Example), right: viewById(c.partner2Example) };
       case 'surprising_answer':
         return { ...base, comparisonIds: [c.comparison.id], left: viewById(c.comparison.left), right: viewById(c.comparison.right), answers: [{ by: c.comparison.answeredBy === opts.me ? 'me' : 'partner', winner: c.comparison.winner }] };
       case 'disagreement': {

@@ -813,4 +813,27 @@ option was taken. Newest phases are at the bottom.
      could be overruled. This or that and Explore now save every answer the same way (not
      locked, no pin). "Still true?" → "Yes" still locks an answer so it isn't asked again;
      older strong answers keep their pins.
+125. **Tier C rule; tier clashes go to "this or that"; wider B–C gap.**
+     - Tier meanings: A, almost no distance makes you drop to B; B, most programs, and only
+       rarely would you drop to C to be together; C, you'd rather be long distance than
+       match here.
+     - **Tier C rule** (`settings.tierCRule`, per partner, on by default): a pair that gives
+       you A or B, with your partner matched at any distance, goes above every pair that
+       gives you C. C pairs still go above No Match pairs ("rather apart", not "rather
+       unmatched"). B's "a few cases" are the exceptions the couple accepts in Conflicts
+       when an answer says otherwise.
+     - **Clashes.** When the two partners' tier rules point opposite ways for two pairs (one
+       pair gives partner 1 a better tier, the other gives partner 2 one), neither rule orders
+       them: the score and the couple's answers do. This replaces the Tier A priority
+       question (`tierAPriority` is ignored; the `tier_a_collision` conflict is gone).
+       `isTierClash` questions get a 1.5× boost so they are asked early.
+     - **Prior:** base values A 1.4, B 1.0, C 0.3 (was 1.0, 0.6, 0.3), so the bottom of B is
+       worth about the top of C plus being apart. `TIER_A_STRONG_BONUS` 3.0 → 4.0 to stay
+       above the widest gap.
+     - **Bench** (12 couples, 40 answers): τ over the true top 100 0.873 (was 0.940), but
+       relevant τ 0.993 (was 0.969). The raw number fell because the rules push C pairs out
+       of the top 100 and what's left is mostly moot; against the same hidden couple, the
+       engine with the C rule scores 0.873 / 0.993 and without it 0.789 / 0.941. The
+       learning test now checks relevant τ ≥ 0.9 per couple.
+     - There is no screen to turn the tier rules off; the README no longer says there is.
 
