@@ -198,7 +198,7 @@ export function CompareView({
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-muted">
-              <strong className="font-semibold text-text">Strong preference</strong> locks this order: nothing later can put the other pair above it.
+              Every answer holds in your list. A <strong className="font-semibold text-text">strong preference</strong> also locks it, so we won’t ask “Still true?” about it later.
             </p>
             <div className="flex gap-2">
               {lastMine ? (

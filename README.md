@@ -49,8 +49,9 @@ The engine has two layers.
 - **No Match goes last.** Every pair where you both match goes above every pair where one
   of you doesn't. This follows NRMP's guidance. You can turn it off, but you'll get a
   warning.
-- **Things you told it for certain.** These are "I'm certain" answers, rows you dragged
-  into place, and decisions you made while resolving a conflict.
+- **Things you told it.** Every "this or that" answer, rows you dragged into place, and
+  decisions you made while resolving a conflict. If answers go in a circle, the Conflicts
+  step shows you the loop and you choose which one gives way.
 
 **2. A score for everything else.** Each program is worth something to each of you,
 based on its tier and where it sits in the tier. Being apart costs some points.
@@ -73,8 +74,8 @@ engine also knows how *sure* it is. It uses that to:
 - **Flag answers that no longer fit.** If the engine is now more than 85% sure you'd
   answer a question the other way, it asks "Still true?" It never deletes an answer.
 
-Every answer is "soft" by default. Turn on **"I'm certain"** and the answer also becomes a
-hard rule.
+Every answer holds in the final list. Mark it as a **strong preference** and it is also
+locked, so the engine won't ask "Still true?" about it.
 
 **How well does it work?** We tested it on 12 simulated couples. Each one has a hidden
 "true" preference, answers 40 questions, and gets 1 in 10 answers wrong on purpose.
@@ -83,12 +84,13 @@ identical:
 
 | | Before any questions | After 40 questions |
 |---|---|---|
-| Pairwise's question choice | 0.835 | **0.943** (lowest couple: 0.897) |
-| Random questions | 0.835 | 0.926 (lowest couple: 0.859) |
+| Pairwise's question choice | 0.835 | **0.940** (lowest couple: 0.895) |
+| Random questions | 0.835 | 0.927 (lowest couple: 0.858) |
 
 Counting only the orderings that can change where a couple matches (for the rest, the
-order never decides the match), the scores after 40 questions are 0.970 with Pairwise's questions (lowest 0.933)
-and 0.960 with random ones (lowest 0.908).
+order never decides the match), the scores after 40 questions are 0.969 with Pairwise's
+questions (lowest 0.923) and 0.955 with random ones (lowest 0.918). Every answer holds in
+the list, including the 1 in 10 that are wrong on purpose.
 
 Run it yourself with `pnpm --filter @pairwise/engine bench`.
 

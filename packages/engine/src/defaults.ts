@@ -5,7 +5,7 @@ import type { CoupleSettings, DistanceBands, ModelParams } from './types';
 import { NRMP_RULES } from './rules';
 
 /** Bumped whenever a change could reorder a saved list. Stored with each version. */
-export const ENGINE_VERSION = '0.2.0';
+export const ENGINE_VERSION = '0.3.0';
 
 export const DEFAULT_DISTANCE_BANDS: DistanceBands = {
   togetherMi: 30,
@@ -47,6 +47,12 @@ export const PRIOR_LOG_SD = {
   gap: 0.7,
   pen: 0.8,
   nm: 0.4,
+  /**
+   * Log-sd of each gap between neighbouring programs within a tier. The gaps are
+   * i.i.d. around equal spacing, so on average a program sits where even spacing puts
+   * it, but the model can learn that #1 is far ahead of #2 while #5 to #10 are close.
+   */
+  spacing: 0.8,
 };
 
 /** Active learning (Section 5.6). */

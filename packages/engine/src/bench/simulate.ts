@@ -10,15 +10,15 @@
  */
 import { buildCandidates, splitPairId } from '../candidates';
 import { mootWitnesses } from '../equivalence';
-import { withDefaults } from '../defaults';
-import { pairFeatures, dot, paramsToTheta } from '../features';
+import { PRIOR_LOG_SD, withDefaults } from '../defaults';
+import { buildLayout, pairFeatures, dot, paramsToTheta } from '../features';
 import { buildConstraintGraph } from '../graph';
-import { LATENT_DIM, fitModel, latentToParams, priorPosterior } from '../learning';
+import { LATENT_DIM, fitModel, latentDim, latentToParams, priorPosterior } from '../learning';
 import { allOpenQuestions, nextQuestions } from '../questions';
 import { rankPairs } from '../rank';
 import { createRng } from '../rng';
-import { defaultPosterior, scorePairs } from '../scoring';
-import type { Comparison, CoupleSettings, EngineInput, ModelParams, PairId, ProgramInfo, RankEntry, Tier } from '../types';
+import { scorePairs } from '../scoring';
+import type { Comparison, CoupleSettings, EngineInput, ModelLayout, ModelParams, PairId, ProgramInfo, RankEntry, Tier } from '../types';
 
 const METROS = [
   { name: 'Boston', lat: 42.36, lon: -71.06, cbsa: '14460' },
@@ -68,10 +68,25 @@ export function simulatedInput(seed: number, perPartner = 15, settings: Partial<
   };
 }
 
-/** Hidden parameters drawn from the prior. */
-export function hiddenParams(seed: number): ModelParams {
+/** Log-sd of the hidden couples' gaps between neighbouring programs, whatever the model assumes. */
+export const TRUE_SPACING_LOG_SD = 0.8;
+
+/**
+ * Hidden parameters drawn from the prior. With a layout, the couple's true program
+ * values are unevenly spaced within each tier (log-sd TRUE_SPACING_LOG_SD per gap).
+ */
+export function hiddenParams(seed: number, layout?: ModelLayout): ModelParams {
   const rng = createRng(seed ^ 0x5bd1e995);
-  return latentToParams(Array.from({ length: LATENT_DIM }, () => rng.normal()));
+  const extra = createRng(seed ^ 0x68e31da4);
+  const z = Array.from({ length: LATENT_DIM }, () => rng.normal());
+  const scale = TRUE_SPACING_LOG_SD / PRIOR_LOG_SD.spacing;
+  for (let d = LATENT_DIM; d < latentDim(layout); d++) z.push(scale * extra.normal());
+  return latentToParams(z, layout);
+}
+
+/** The layout simulateCouple uses for an input (for drawing uneven hidden values). */
+export function simulatedLayout(input: EngineInput): ModelLayout {
+  return buildLayout(buildCandidates(input));
 }
 
 /** Kendall's tau between the true order and the engine's order, over the true top `k`. */
@@ -118,6 +133,8 @@ export interface SimulationOptions {
   noise?: number;
   particles?: number;
   topK?: number;
+  /** true = the model also learns a value per program (off in the app; DECISIONS.md #119). */
+  perProgram?: boolean;
 }
 
 export interface SimulationResult {
@@ -131,20 +148,22 @@ export interface SimulationResult {
 }
 
 export function simulateCouple(input: EngineInput, truth: ModelParams, opts: SimulationOptions): SimulationResult {
-  const { strategy, questions = 40, noise = 0.1, particles, topK = 100 } = opts;
+  const { strategy, questions = 40, noise = 0.1, particles, topK = 100, perProgram = false } = opts;
   const rng = createRng(input.seed * 31 + (strategy === 'active' ? 1 : 2));
   const pairs = buildCandidates(input);
   const graph = buildConstraintGraph(pairs, input);
   const byId = new Map(pairs.map((p) => [p.id, p]));
+  const layout = buildLayout(pairs);
 
-  const trueTheta = paramsToTheta(truth);
+  const trueTheta = paramsToTheta(truth, layout);
   const trueScore = (id: PairId) => {
-    const f = pairFeatures(byId.get(id)!, input.settings);
+    const f = pairFeatures(byId.get(id)!, input.settings, layout);
     return dot(trueTheta, f.phi) + f.bonus;
   };
-  const trueOrder = rankPairs(graph, scorePairs(pairs, defaultPosterior(truth), input.settings), { length: 10_000 }).order;
+  const truePosterior = { particles: [truth], weights: [1], layout };
+  const trueOrder = rankPairs(graph, scorePairs(pairs, truePosterior, input.settings), { length: 10_000 }).order;
 
-  const prior = priorPosterior(input.seed, particles);
+  const prior = priorPosterior(input.seed, particles, perProgram ? layout : undefined);
   const comparisons: Comparison[] = [];
   const tauByQuestion: number[] = [];
   const relevant: number[] = [];
@@ -152,7 +171,9 @@ export function simulateCouple(input: EngineInput, truth: ModelParams, opts: Sim
 
   for (let q = 0; q <= questions; q++) {
     const posterior = fit();
-    const list = rankPairs(graph, scorePairs(pairs, posterior, input.settings), { length: 10_000 });
+    // As in the app, every answer so far holds in the list (answers are hard rules).
+    const answered = buildConstraintGraph(pairs, { ...input, comparisons });
+    const list = rankPairs(answered, scorePairs(pairs, posterior, input.settings), { length: 10_000 });
     tauByQuestion.push(kendallTau(trueOrder, list.position, topK));
     relevant.push(kendallTauRelevant(trueOrder, list.position, topK));
     if (q === questions) break;

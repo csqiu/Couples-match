@@ -2,6 +2,7 @@
  * Hard layer (Section 5.4): a directed graph over candidate pairs. An edge
  * X → Y means X must rank above Y. Every edge remembers why.
  */
+import { effectiveComparisons } from './answers';
 import { isNoMatchPair, pairId } from './candidates';
 import { DOMINANCE_BAND_RANK } from './geo';
 import {
@@ -306,7 +307,20 @@ export function buildConstraintGraph(pairs: Pair[], input: EngineInput): Graph {
     );
   }
 
-  // 4. Pins.
+  // 4. Answers. Every answer that counts (the latest one, or the agreed one; ties and
+  // disagreements don't) holds in the list. Answers that go in a circle show up as a
+  // cycle to resolve; breaking an answer's link makes an exception, and the answer
+  // stays as evidence for the model.
+  for (const c of effectiveComparisons(input.comparisons).counted) {
+    if (c.winner === 'tie') continue;
+    const [won, lost] = c.winner === 'left' ? [c.left, c.right] : [c.right, c.left];
+    const x = g.index.get(won);
+    const y = g.index.get(lost);
+    if (x === undefined || y === undefined || x === y || excepted(x, y)) continue;
+    addEdge(g, x, y, { kind: 'answer', comparisonId: c.id });
+  }
+
+  // 5. Pins.
   input.pins.forEach((pin, i) => {
     const x = g.index.get(pin.higher);
     const y = g.index.get(pin.lower);

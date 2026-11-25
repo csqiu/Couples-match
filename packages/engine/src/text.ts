@@ -36,6 +36,8 @@ export function describeReason(ctx: TextContext, r: EdgeReason): string {
       return `of ${r.partner === 0 ? n1 : n2}'s Tier A rule (rule)`;
     case 'no_match_bottom':
       return 'pairs where you both match go above No Match pairs (rule)';
+    case 'answer':
+      return 'you answered so';
     case 'pin':
       if (r.source === 'comparison') return `you said so${r.comparisonId ? ` (comparison ${r.comparisonId})` : ''}`;
       if (r.source === 'manual_drag') return 'you dragged it there';
@@ -47,6 +49,7 @@ export function describeLink(ctx: TextContext, link: Link): string {
   const a = pairLabel(ctx, link.from);
   const b = pairLabel(ctx, link.to);
   const pin = link.reasons.find((r) => r.kind === 'pin');
+  if (link.reasons.some((r) => r.kind === 'answer')) return `You said ${a} over ${b}.`;
   if (pin && pin.kind === 'pin' && pin.source === 'comparison') {
     return `You said ${a} over ${b}${pin.comparisonId ? ` (comparison ${pin.comparisonId})` : ''}.`;
   }

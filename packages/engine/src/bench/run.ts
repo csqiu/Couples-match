@@ -2,8 +2,12 @@
  * Learning benchmark: simulated couples answer 40 questions with 10% noise.
  *
  *   pnpm --filter @pairwise/engine bench [--couples 12] [--questions 40] [--noise 0.1]
+ *     [--truth even|uneven] [--model per-program|shared]
+ *
+ * --truth uneven: each couple's true program values are unevenly spaced within tiers.
+ * --model per-program: the engine also learns a value per program (off in the app).
  */
-import { hiddenParams, simulateCouple, simulatedInput } from './simulate';
+import { hiddenParams, simulateCouple, simulatedInput, simulatedLayout } from './simulate';
 
 const args = process.argv.slice(2);
 const flag = (name: string, dflt: number) => {
@@ -13,6 +17,13 @@ const flag = (name: string, dflt: number) => {
 const couples = flag('couples', 12);
 const questions = flag('questions', 40);
 const noise = flag('noise', 0.1);
+const opt = (name: string, dflt: string) => {
+  const i = args.indexOf(`--${name}`);
+  return i >= 0 ? args[i + 1] : dflt;
+};
+const unevenTruth = opt('truth', 'even') === 'uneven';
+const perProgram = opt('model', 'shared') === 'per-program';
+console.log(`truth: ${unevenTruth ? 'uneven' : 'even'} spacing · model: ${perProgram ? 'per-program values' : 'shared parameters only'}\n`);
 
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const rows: Array<{ seed: number; before: number; active: number; random: number; relBefore: number; relActive: number; relRandom: number }> = [];
@@ -21,9 +32,9 @@ const t0 = performance.now();
 
 for (let seed = 1; seed <= couples; seed++) {
   const input = simulatedInput(seed);
-  const truth = hiddenParams(seed);
-  const a = simulateCouple(input, truth, { strategy: 'active', questions, noise });
-  const r = simulateCouple(input, truth, { strategy: 'random', questions, noise });
+  const truth = hiddenParams(seed, unevenTruth ? simulatedLayout(input) : undefined);
+  const a = simulateCouple(input, truth, { strategy: 'active', questions, noise, perProgram });
+  const r = simulateCouple(input, truth, { strategy: 'random', questions, noise, perProgram });
   rows.push({ seed, before: a.tauBefore, active: a.tauAfter, random: r.tauAfter, relBefore: a.relevantBefore, relActive: a.relevantAfter, relRandom: r.relevantAfter });
   curves.active.push(a.tauByQuestion);
   curves.random.push(r.tauByQuestion);

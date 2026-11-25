@@ -37,7 +37,7 @@ option was taken. Newest phases are at the bottom.
 7. **`scorePairs` takes the couple's settings** as an optional third argument. The pair
    score depends on the balance slider `w` and on strong-mode bonuses, and neither is
    part of the posterior.
-8. **Pins come only from the `pins` input.** Locked comparisons don't create edges by
+8. **Pins come only from the `pins` input** (but see #118: every counted answer is now also an edge). Locked comparisons don't create edges by
    themselves; the app writes a pin when "I'm certain" is on (spec 5.6). This avoids
    counting the same assertion twice.
 9. **Disagreements.** A question is a disagreement when two different people's latest
@@ -744,3 +744,38 @@ option was taken. Newest phases are at the bottom.
      - The bench's "relevant" τ uses the same rule; its numbers are unchanged, since the
        simulated couples share no programs and keep No Match at the bottom. The README's
        table was refreshed to the bench's current output (it had drifted before this change).
+118. **Every answer holds in the list.** Before this, answers were only evidence for the
+     12-parameter model, which could overrule them: a couple's direct answer could be
+     contradicted by the final list unless they marked it "I'm certain".
+     - Each answer that counts (`effectiveComparisons`: the agreed one, else the latest;
+       ties and disagreements don't) is an edge with reason `answer`
+       (`packages/engine/src/answers.ts`, step 4 of `buildConstraintGraph`).
+     - Answers that go in a circle, with each other or with the automatic rules, show up as
+       a cycle on the Conflicts step. Breaking an answer's link creates a rule exception: the
+       order goes back to the score, and the answer stays as evidence for the model.
+     - "Still true?" (surprising answers) is unchanged. A strong preference still saves a
+       pin and locks the answer, so it is never asked about again.
+119. **Per-program values: built, measured, left off.** The model spaces programs evenly
+     within a tier, so it cannot learn that #1 is far ahead of #2 while #5 to #10 are close.
+     - `buildLayout` (`features.ts`) adds one offset per program per partner to θ. Each
+       program's latent sets the gap before it within its tier; gaps are i.i.d. log-normal
+       (`PRIOR_LOG_SD.spacing`) and rescaled to fill the tier, so a partner's own order and
+       the tiers always hold. The offset is how far the learned spacing moves a program
+       from even spacing, so the score stays linear in θ. Spacing latents use a separate
+       random stream; random-walk steps shrink with the dimension.
+     - **Measured, it does not help.** Bench, 12 couples, 40 answers, τ over the top 100
+       (`--truth even|uneven`, `--model shared|per-program`):
+
+       | Model | Even true spacing | Uneven true spacing (log-sd 0.8) |
+       |---|---|---|
+       | Shared parameters (the app) | 0.940 | 0.925 |
+       | Per-program, prior log-sd 0.8 | 0.926 | 0.924 |
+       | Per-program, prior log-sd 0.4 | 0.927 | 0.911 |
+       | Per-program, prior log-sd 0.2 | 0.937 | 0.914 |
+
+       Forty answers cannot pin down ~30 extra numbers, and the extra uncertainty costs more
+       than the flexibility gains. So `runEngine` does not pass a layout; the code stays,
+       tested, for the bench and for a later version where the couple marks big gaps
+       themselves.
+     - The bench rebuilds the graph after each answer, as the app does (#118). Its default
+       is even true spacing and the shared model, which is what the README table reports.

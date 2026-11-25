@@ -124,6 +124,8 @@ interface Ctx {
   position: Int32Array;
   impactPrefix: Float64Array;
   asked: Set<string>;
+  /** Scratch space for feature differences. */
+  diff: Float64Array;
 }
 
 function makeCtx(list: RankedList, posterior: Posterior, comparisons: Comparison[]): Ctx {
@@ -138,21 +140,22 @@ function makeCtx(list: RankedList, posterior: Posterior, comparisons: Comparison
     g,
     closure: hardClosure(g),
     moments: posteriorMoments(posterior),
-    features: g.pairs.map((p) => pairFeatures(p, g.settings)),
+    features: g.pairs.map((p) => pairFeatures(p, g.settings, posterior.layout)),
     position,
     impactPrefix,
     asked: new Set(comparisons.map((c) => questionKey(c.left, c.right))),
+    diff: new Float64Array(posterior.layout?.dim ?? THETA_DIM),
   };
 }
 
-const diff = new Float64Array(THETA_DIM);
 
 function evaluate(ctx: Ctx, u: number, v: number, kind: Question['kind']): Question {
   // Orient so `left` is the one currently higher.
   if (ctx.position[u] > ctx.position[v]) [u, v] = [v, u];
   const fu = ctx.features[u];
   const fv = ctx.features[v];
-  for (let i = 0; i < THETA_DIM; i++) diff[i] = fu.phi[i] - fv.phi[i];
+  const diff = ctx.diff;
+  for (let i = 0; i < diff.length; i++) diff[i] = fu.phi[i] - fv.phi[i];
   const { mean, variance } = linearMoments(ctx.moments, diff, fu.bonus - fv.bonus);
   // Display probability: what the couple is predicted to answer (includes answer noise).
   const pLeft = predictiveApprox(mean, variance);
@@ -179,7 +182,8 @@ function surelyAbove(ctx: Ctx, u: number, v: number): boolean {
   if (ctx.position[u] > ctx.position[v]) return false;
   const fu = ctx.features[u];
   const fv = ctx.features[v];
-  for (let i = 0; i < THETA_DIM; i++) diff[i] = fu.phi[i] - fv.phi[i];
+  const diff = ctx.diff;
+  for (let i = 0; i < diff.length; i++) diff[i] = fu.phi[i] - fv.phi[i];
   const { mean, variance } = linearMoments(ctx.moments, diff, fu.bonus - fv.bonus);
   return orderConfidence(mean, variance) >= MOOT_CONFIDENCE;
 }
@@ -341,10 +345,11 @@ export function learningStatus(list: RankedList, posterior: Posterior, compariso
   const closure = hardClosure(g);
   const m = posteriorMoments(posterior);
   const top = Math.min(STOP_TOP, list.order.length);
+  const diff = new Float64Array(posterior.layout?.dim ?? THETA_DIM);
   const orderSure = (u: number, v: number) => {
-    const fu = pairFeatures(g.pairs[u], g.settings);
-    const fv = pairFeatures(g.pairs[v], g.settings);
-    for (let d = 0; d < THETA_DIM; d++) diff[d] = fu.phi[d] - fv.phi[d];
+    const fu = pairFeatures(g.pairs[u], g.settings, posterior.layout);
+    const fv = pairFeatures(g.pairs[v], g.settings, posterior.layout);
+    for (let d = 0; d < diff.length; d++) diff[d] = fu.phi[d] - fv.phi[d];
     const { mean, variance } = linearMoments(m, diff, fu.bonus - fv.bonus);
     return orderConfidence(mean, variance);
   };
