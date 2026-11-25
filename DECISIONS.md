@@ -941,3 +941,17 @@ option was taken. Newest phases are at the bottom.
 133. **Guides from the app header.** A "Guides" link at the top right goes straight to the
      list of guides (`/guides`). A dropdown of the guides was tried first and dropped: one
      click to the list is simpler.
+
+134. **Explore merges into This or that as "Make a specific comparison".** Choosing a
+     specific comparison is just asking a this-or-that question of your own, so it lives on
+     the Compare page (`?mode=specific`, optionally `&a=` and `&b=` pair ids).
+     - Two cards, This and That, each with a map and a plate per partner. A plate opens that
+       partner's rank list: numbered, shaded by tier (hidden when their tiers are private to
+       me), a search box past 15 programs, No Match last.
+     - With all four picked, the engine's explore result (unchanged, `lib/explore.ts`) says
+       which pair the list puts higher (bold frame) and why, and what swapping would do:
+       rows moved, or the conflicts it would create. Keep this order, Swap order and Too
+       close to call each save a normal answer; "Flag to discuss together" rides along.
+     - The final list's "Explore" button and each row's "Open in Explore" now go here (the
+       row's pair fills "This"); flagged questions link here with both pairs. `/app/explore`
+       redirects, so old links still work.

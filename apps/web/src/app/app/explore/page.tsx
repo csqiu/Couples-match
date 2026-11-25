@@ -1,13 +1,7 @@
-import type { Metadata } from 'next';
-import { requireCouple } from '@/lib/context';
-import { loadCoupleBundle } from '@/lib/couple-data';
-import { ExploreView } from './explore-view';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'Explore comparisons' };
-
+/** Explore is now "Make a specific comparison" on the This or that page. */
 export default async function ExplorePage({ searchParams }: { searchParams: Promise<{ a?: string; b?: string }> }) {
   const { a, b } = await searchParams;
-  const ctx = await requireCouple();
-  const bundle = await loadCoupleBundle(ctx);
-  return <ExploreView data={bundle.data} me={bundle.me} names={bundle.names} answerMode={bundle.answerMode} initialA={a ?? null} initialB={b ?? null} />;
+  redirect(`/app/compare?mode=specific${a ? `&a=${encodeURIComponent(a)}` : ''}${b ? `&b=${encodeURIComponent(b)}` : ''}`);
 }
