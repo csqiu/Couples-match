@@ -75,7 +75,7 @@ export function ExploreView({
     if (over === 'slot-b') put('b', id);
   }
 
-  function choose(impact: Impact, strong: boolean) {
+  function choose(impact: Impact) {
     const row: LocalRow = {
       id: `local-${Date.now()}`,
       pair_left: impact.higher,
@@ -83,12 +83,12 @@ export function ExploreView({
       winner: 'left',
       answered_by: me,
       both_agreed: answerMode === 'together',
-      locked: strong,
+      locked: false,
       seq: Number.MAX_SAFE_INTEGER - 1000 + local.length,
     };
     setLocal((xs) => [...xs, row]);
     startSave(async () => {
-      const res = await answer({ left: impact.higher, right: impact.lower, winner: 'left', certain: strong });
+      const res = await answer({ left: impact.higher, right: impact.lower, winner: 'left' });
       if (res.error && !res.id) {
         setLocal((xs) => xs.filter((x) => x.id !== row.id));
         toast({ message: `Couldn’t save that answer: ${res.error}` });
@@ -236,7 +236,7 @@ function SlotCard({ slot, label, pair, names, onClear }: { slot: Slot; label: st
   );
 }
 
-function Detail({ d, onChoose, busy }: { d: ExploreDetail; onChoose: (impact: Impact, strong: boolean) => void; busy: boolean }) {
+function Detail({ d, onChoose, busy }: { d: ExploreDetail; onChoose: (impact: Impact) => void; busy: boolean }) {
   const [hi, lo] = d.higher === 'a' ? [d.a, d.b] : [d.b, d.a];
   const where = (p: ExplorePair) => (p.rank ? `#${p.rank}` : 'off the list');
   const answered = d.answer ? (d.answer.winner === 'tie' ? 'You said these are too close to call.' : `You answered: ${pairText(d.answer.winner === 'a' ? d.a : d.b)}.`) : null;
@@ -274,8 +274,7 @@ function Detail({ d, onChoose, busy }: { d: ExploreDetail; onChoose: (impact: Im
   );
 }
 
-function ImpactCard({ title, impact, over, under, onChoose, busy }: { title: string; impact: Impact; over: ExplorePair; under: ExplorePair; onChoose: (impact: Impact, strong: boolean) => void; busy: boolean }) {
-  const [strong, setStrong] = useState(false);
+function ImpactCard({ title, impact, over, under, onChoose, busy }: { title: string; impact: Impact; over: ExplorePair; under: ExplorePair; onChoose: (impact: Impact) => void; busy: boolean }) {
   return (
     <Card className={cn('flex flex-col gap-2 p-4 sm:p-4', impact.conflicts.length && 'border-warn')} data-testid={impact.asNow ? 'impact-keep' : 'impact-flip'}>
       <h3 className="font-semibold">{title}{impact.asNow ? <span className="ml-2 text-xs font-normal text-muted">as your list has it now</span> : null}</h3>
@@ -304,12 +303,8 @@ function ImpactCard({ title, impact, over, under, onChoose, busy }: { title: str
           <p className="mt-1">You can still answer; you’ll choose what gives way on the Conflicts step.</p>
         </div>
       ) : null}
-      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
-        <label className="flex min-h-9 items-center gap-2 text-xs">
-          <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={strong} onChange={(e) => setStrong(e.target.checked)} />
-          Strong preference (locks it)
-        </label>
-        <Button size="sm" disabled={busy} onClick={() => onChoose(impact, strong)}>
+      <div className="mt-auto flex justify-end pt-2">
+        <Button size="sm" disabled={busy} onClick={() => onChoose(impact)}>
           {impact.asNow ? 'Confirm this order' : 'Flip to this order'}
         </Button>
       </div>

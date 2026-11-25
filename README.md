@@ -80,8 +80,8 @@ engine also knows how *sure* it is. It uses that to:
 - **Flag answers that no longer fit.** If the engine is now more than 85% sure you'd
   answer a question the other way, it asks "Still true?" It never deletes an answer.
 
-Every answer holds in the final list. Mark it as a **strong preference** and it is also
-locked, so the engine won't ask "Still true?" about it.
+Every answer holds in the final list. If an answer clashes with a rule or another answer,
+the Conflicts step shows both and you choose which gives way; nothing is overruled silently.
 
 **How well does it work?** We tested it on 12 simulated couples. Each one has a hidden
 "true" preference, answers 40 questions, and gets 1 in 10 answers wrong on purpose.

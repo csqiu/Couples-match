@@ -808,4 +808,9 @@ option was taken. Newest phases are at the bottom.
      clears it. The flag box applies to whatever is done next (answer or later); flagged
      questions are listed under the question with where they stand, a link to Explore, and
      Unflag.
+124. **No "strong preference" answer.** Every answer is already a rule (#118), so a stronger
+     kind of answer had nothing left to add, and the two buttons suggested that a plain answer
+     could be overruled. This or that and Explore now save every answer the same way (not
+     locked, no pin). "Still true?" → "Yes" still locks an answer so it isn't asked again;
+     older strong answers keep their pins.
 

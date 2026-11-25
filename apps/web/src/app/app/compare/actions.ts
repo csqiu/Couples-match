@@ -10,8 +10,6 @@ export interface AnswerInput {
   left: string;
   right: string;
   winner: 'left' | 'right' | 'tie';
-  /** "I'm certain": also saves a hard ordering (pin). */
-  certain: boolean;
   /** Flag this question to discuss together (true), unflag it (false), or leave it (undefined). */
   flag?: boolean;
 }
@@ -31,7 +29,6 @@ export async function answer(input: AnswerInput): Promise<{ id?: string; error?:
   const ctx = await requireCouple();
   const supabase = await createClient();
   const together = ((ctx.couple.settings ?? {}) as StoredSettings).answerMode !== 'separately';
-  const certain = input.certain && input.winner !== 'tie';
   const { data, error } = await supabase
     .from('comparisons')
     .insert({
@@ -41,18 +38,11 @@ export async function answer(input: AnswerInput): Promise<{ id?: string; error?:
       winner: input.winner,
       answered_by: ctx.user.id,
       both_agreed: together,
-      locked: certain,
+      locked: false,
     })
     .select('id')
     .single();
   if (error || !data) return { error: error?.message ?? 'Could not save your answer.' };
-  if (certain) {
-    const [higher, lower] = input.winner === 'left' ? [input.left, input.right] : [input.right, input.left];
-    const { error: pinError } = await supabase
-      .from('pins')
-      .insert({ couple_id: ctx.couple.id, higher_pair: higher, lower_pair: lower, source: 'comparison', comparison_id: data.id, created_by: ctx.user.id });
-    if (pinError) return { id: data.id, error: pinError.message };
-  }
   // Answered: no longer waiting to come back to; flagged or unflagged as asked.
   const key = questionKey(input.left, input.right);
   const { error: settingsError } = await updateCoupleSettings((s) => ({

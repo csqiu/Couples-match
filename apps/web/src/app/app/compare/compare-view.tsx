@@ -1,7 +1,7 @@
 'use client';
 import type { ComparisonRow, CoupleData, StoredSettings } from '@pairwise/db';
 import { questionKey } from '@pairwise/engine';
-import { Check, ChevronsUp, Clock, Compass, Flag, Undo2 } from 'lucide-react';
+import { Check, Clock, Compass, Flag, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { MiniMap } from '@/components/mini-map';
@@ -140,9 +140,8 @@ export function CompareView({
   const hideTierOf = privateTiers ? (role === 'a' ? 1 : 0) : null;
   const partnerName = role === 'a' ? names[1] : names[0];
 
-  /** `strong`: "Strong preference for this pair" — saved as a locked answer (a pin the list can't override). */
-  function choose(q: QuestionView, winner: 'left' | 'right' | 'tie', strong = false, flag = q.flagged) {
-    const certain = strong && winner !== 'tie';
+  /** Every answer holds in the list (a rule); a clash with another rule goes to Conflicts. */
+  function choose(q: QuestionView, winner: 'left' | 'right' | 'tie', flag = q.flagged) {
     if (flag !== q.flagged) flagLocally(q.left.id, q.right.id, flag);
     const tempId = `local-${Date.now()}`;
     const row: LocalAnswer['row'] = {
@@ -152,14 +151,13 @@ export function CompareView({
       winner,
       answered_by: me,
       both_agreed: answerMode === 'together',
-      locked: certain,
+      locked: false,
       seq: Number.MAX_SAFE_INTEGER - 1000 + local.length,
     };
     setLocal((xs) => [...xs, { tempId, row }]);
-    const wasCertain = certain;
     setSaving((n) => n + 1);
     startSave(async () => {
-      const res = await answer({ left: q.left.id, right: q.right.id, winner, certain: wasCertain, flag }).finally(() =>
+      const res = await answer({ left: q.left.id, right: q.right.id, winner, flag }).finally(() =>
         setSaving((n) => n - 1),
       );
       if (res.error && !res.id) {
@@ -238,7 +236,7 @@ export function CompareView({
           hideTierOf={hideTierOf}
           partnerName={partnerName}
           busy={busy}
-          onChoose={(winner, strong, flag) => choose(q, winner, strong, flag)}
+          onChoose={(winner, flag) => choose(q, winner, flag)}
           onLater={(flag) => later(q, flag)}
           undo={
             lastMine ? (
@@ -281,7 +279,7 @@ function QuestionBlock({
   hideTierOf: 0 | 1 | null;
   partnerName: string;
   busy: boolean;
-  onChoose: (winner: 'left' | 'right' | 'tie', strong: boolean, flag: boolean) => void;
+  onChoose: (winner: 'left' | 'right' | 'tie', flag: boolean) => void;
   onLater: (flag: boolean) => void;
   undo: React.ReactNode;
 }) {
@@ -296,11 +294,11 @@ function QuestionBlock({
         <p className="rounded-xl bg-surface-2 px-4 py-2 text-sm">You saved this one for later. Ready to answer it?</p>
       ) : null}
       <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
-        <PairCard pair={q.left} names={names} hideTierOf={hideTierOf} action={<ChoiceButtons disabled={busy} onChoose={(strong) => onChoose('left', strong, flag)} />} />
+        <PairCard pair={q.left} names={names} hideTierOf={hideTierOf} action={<ChoiceButton disabled={busy} onChoose={() => onChoose('left', flag)} />} />
         <div className="flex items-center justify-center">
           <span className="text-sm font-medium text-muted">or</span>
         </div>
-        <PairCard pair={q.right} names={names} hideTierOf={hideTierOf} action={<ChoiceButtons disabled={busy} onChoose={(strong) => onChoose('right', strong, flag)} />} />
+        <PairCard pair={q.right} names={names} hideTierOf={hideTierOf} action={<ChoiceButton disabled={busy} onChoose={() => onChoose('right', flag)} />} />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm">
@@ -312,11 +310,11 @@ function QuestionBlock({
           <Button variant="secondary" disabled={busy} onClick={() => onLater(flag)}>
             <Clock className="h-4 w-4" aria-hidden /> Come back to this later
           </Button>
-          <Button variant="secondary" disabled={busy} onClick={() => onChoose('tie', false, flag)}>Too close to call</Button>
+          <Button variant="secondary" disabled={busy} onClick={() => onChoose('tie', flag)}>Too close to call</Button>
         </div>
       </div>
       <p className="text-xs text-muted">
-        Every answer holds in your list. A <strong className="font-semibold text-text">strong preference</strong> also locks it, so we won’t ask “Still true?” about it later.
+        Every answer holds in your list. If one ever clashes with a rule or another answer, we’ll show you both and you choose.
       </p>
     </section>
   );
@@ -357,22 +355,11 @@ function FlaggedList({ items, names, onUnflag }: { items: FlaggedView[]; names: 
   );
 }
 
-/** Two answers per card: a plain choice, and a strong one that locks the order (bug log #8). */
-function ChoiceButtons({ disabled, onChoose }: { disabled: boolean; onChoose: (strong: boolean) => void }) {
+function ChoiceButton({ disabled, onChoose }: { disabled: boolean; onChoose: () => void }) {
   return (
-    <div className="flex flex-col gap-2">
-      <Button className="w-full" disabled={disabled} onClick={() => onChoose(false)}>
-        <Check className="h-4 w-4" aria-hidden /> Choose this pair
-      </Button>
-      <Button
-        variant="secondary"
-        className="w-full border-2 border-accent font-semibold text-accent hover:bg-accent-soft"
-        disabled={disabled}
-        onClick={() => onChoose(true)}
-      >
-        <ChevronsUp className="h-4 w-4" aria-hidden /> Strong preference for this pair
-      </Button>
-    </div>
+    <Button className="w-full" disabled={disabled} onClick={onChoose}>
+      <Check className="h-4 w-4" aria-hidden /> Choose this pair
+    </Button>
   );
 }
 
