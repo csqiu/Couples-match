@@ -857,3 +857,18 @@ option was taken. Newest phases are at the bottom.
      - The "list confidence rises" test now averages four couples and builds the list with
        the answers as rules, as the app does: one couple can start confident and stay flat.
 
+127. **Visual design: Sage & Plum, frosted glass, technical type** (docs/design-spec.md).
+     Look only; copy, routes and behavior unchanged.
+     - Fonts via `next/font` (Space Grotesk, IBM Plex Sans, IBM Plex Mono); numbers in lists
+       are mono. Tokens per the spec in light and dark; controls use the ink `--action`, and
+       sage/plum mean partner 1/partner 2 (avatars, map pins, presence) and tiers.
+     - `.glass`, `.glass-strong`, `.glass-row` live in `@layer components` so utilities
+       (hover fills, card tones) can override them; they go solid without
+       `backdrop-filter`, with reduced transparency, and on print routes (`app/print/layout.tsx`).
+     - The app shell is `max-w-6xl` on the final list and map, `max-w-5xl` elsewhere
+       (`components/app-shell.tsx`).
+     - Rank tiers sit in three columns on desktop; in a column the NRMP code moves to its
+       own line so the controls fit.
+     - Not done from the spec: tier squares on final-list rows (rows don't carry tiers, and
+       private tiers would need care); the Strong-preference button and Tier-A priority card
+       (those features were removed, #124, #126).

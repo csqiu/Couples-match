@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BRAND } from '@/brand';
+import { Logo } from '@/components/logo';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { getContext } from '@/lib/context';
@@ -53,9 +53,9 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   return (
     <main id="main" tabIndex={-1} className="outline-none mx-auto flex max-w-md flex-col gap-6 px-4 py-12">
-      <Link href="/" className="text-lg font-semibold">{BRAND.name}</Link>
-      <Card>
-        <h1 className="mb-3 text-xl font-semibold">You’re invited</h1>
+      <Logo className="self-center" />
+      <Card tone="strong" className="p-6 sm:p-[30px]">
+        <h1 className="mb-3 font-display text-[28px] leading-tight font-semibold tracking-[-0.02em]">You’re invited</h1>
         {body}
       </Card>
     </main>

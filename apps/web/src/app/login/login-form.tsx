@@ -12,8 +12,8 @@ export function LoginForm({ next, email, devLogin }: { next: string; email?: str
   if (state.sent) {
     return (
       <div className="flex flex-col items-center gap-3 py-6 text-center" role="status">
-        <MailCheck className="h-8 w-8 text-accent" aria-hidden />
-        <p className="font-medium">Check your email</p>
+        <MailCheck className="h-9 w-9 text-partner-2" aria-hidden />
+        <p className="card-title">Check your email</p>
         <p className="text-sm text-muted">
           We sent a sign-in link to <strong className="text-text">{state.sent}</strong>. It works once.
         </p>
@@ -41,7 +41,7 @@ export function LoginForm({ next, email, devLogin }: { next: string; email?: str
       </form>
 
       {devLogin ? (
-        <form action={devAction} className="flex flex-col gap-3 rounded-xl border border-dashed border-border p-4" data-testid="dev-login">
+        <form action={devAction} className="flex flex-col gap-3 rounded-2xl border border-dashed border-border p-4" data-testid="dev-login">
           <p className="text-xs font-medium text-warn">Development sign-in (disabled in production)</p>
           <input type="hidden" name="next" value={next} />
           <Input name="email" type="email" placeholder="test user email" aria-label="Test user email" required />

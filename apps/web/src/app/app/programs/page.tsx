@@ -37,6 +37,7 @@ export default async function ProgramsPage() {
   return (
     <ProgramsView
       savedCount={savedCount}
+      mySlot={ctx.role === 'b' ? 2 : 1}
       mySpecialty={ctx.profile.specialty!}
       specialties={specialties ?? []}
       initialResults={(initial ?? []) as ProgramLite[]}

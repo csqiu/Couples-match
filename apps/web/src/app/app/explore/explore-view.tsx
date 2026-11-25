@@ -6,6 +6,7 @@ import { ArrowDownUp, CircleAlert, GripVertical, Info, Lock, Search, X } from 'l
 import Link from 'next/link';
 import { useId, useMemo, useState, useTransition } from 'react';
 import { BandBadge } from '@/components/proximity';
+import { Avatar } from '@/components/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/field';
@@ -100,7 +101,7 @@ export function ExploreView({
   }
 
   if (error) return <p className="text-danger" role="alert">Something went wrong: {error}</p>;
-  if (!result) return <div className="h-96 animate-pulse rounded-2xl bg-surface-2" aria-label="Loading" />;
+  if (!result) return <div className="h-96 glass animate-pulse" aria-label="Loading" />;
 
   const byId = new Map(result.pairs.map((p) => [p.id, p]));
   const d = result.detail;
@@ -108,7 +109,7 @@ export function ExploreView({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Explore</h1>
+          <h1 className="page-title">Explore</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Pick any two pairs to see how your list orders them and why. Before you answer, see what it would change: which
             rows move, and whether it clashes with anything you’ve said.
@@ -135,7 +136,7 @@ export function ExploreView({
               <SlotCard slot="b" label="That" pair={b ? byId.get(b) : undefined} names={names} onClear={() => setB(null)} />
             </div>
             {d ? <Detail d={d} onChoose={choose} busy={busy} /> : (
-              <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted">
+              <p className="glass border-dashed p-6 text-center text-sm text-muted">
                 Drag two pairs into “This” and “That”, or use the arrows next to each pair.
               </p>
             )}
@@ -158,13 +159,13 @@ function Picker({ pairs, selected, onPut }: { pairs: ExplorePair[]; selected: [s
   });
   return (
     <Card className="flex min-w-0 flex-col p-4 sm:p-4" data-testid="picker">
-      <h2 className="font-semibold">Pairs</h2>
+      <h2 className="small-title">Pairs</h2>
       <div className="relative mt-2">
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
-        <Input aria-label="Search pairs" placeholder="Search programs or cities" value={q} onChange={(e) => setQ(e.target.value)} className="pl-8" />
+        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
+        <Input aria-label="Search pairs" placeholder="Search programs or cities" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
       </div>
       <label className="mt-2 flex min-h-9 items-center gap-2 text-xs text-muted">
-        <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={offList} onChange={(e) => setOffList(e.target.checked)} />
+        <input type="checkbox" className="h-4 w-4 accent-[var(--action)]" checked={offList} onChange={(e) => setOffList(e.target.checked)} />
         Include pairs not on your list
       </label>
       <ul className="mt-1 flex max-h-[32rem] flex-col gap-1 overflow-y-auto pr-1">
@@ -185,19 +186,19 @@ function PickItem({ pair, chosen, onPut }: { pair: ExplorePair; chosen: boolean;
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform) }}
-      className={cn('flex items-center gap-1 rounded-lg border bg-surface px-1 py-1', chosen ? 'border-accent' : 'border-border', isDragging && 'relative z-20 shadow-lg')}
+      className={cn('glass-row flex items-center gap-1 rounded-[12px] px-1 py-1', chosen && 'border-action bg-action-soft', isDragging && 'relative z-20 border-action bg-surface shadow-glass')}
     >
-      <button {...attributes} {...listeners} className="flex min-h-9 min-w-7 cursor-grab touch-none items-center justify-center rounded-md text-muted hover:bg-surface-2" aria-label={`Drag: ${label}`}>
+      <button {...attributes} {...listeners} className="flex min-h-9 min-w-7 cursor-grab touch-none items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong" aria-label={`Drag: ${label}`}>
         <GripVertical className="h-4 w-4" aria-hidden />
       </button>
-      <span className="w-8 shrink-0 text-right text-xs tabular-nums text-muted">{pair.rank ? `#${pair.rank}` : '–'}</span>
+      <span className="w-8 shrink-0 text-right font-mono text-xs font-semibold tabular-nums text-plum-deep">{pair.rank ? `#${pair.rank}` : '–'}</span>
       <div className="min-w-0 flex-1" title={label}>
         {pair.sides.map((s, k) => (
           <p key={k} className="truncate text-xs font-medium">{s?.short ?? 'No Match'}</p>
         ))}
       </div>
-      <button onClick={() => onPut('a', pair.id)} className="min-h-9 rounded-md px-1.5 text-xs text-muted hover:bg-surface-2 hover:text-text" aria-label={`Put in This: ${label}`}>This</button>
-      <button onClick={() => onPut('b', pair.id)} className="min-h-9 rounded-md px-1.5 text-xs text-muted hover:bg-surface-2 hover:text-text" aria-label={`Put in That: ${label}`}>That</button>
+      <button onClick={() => onPut('a', pair.id)} className="min-h-9 rounded-full px-2 text-xs font-medium text-muted hover:bg-glass-strong hover:text-text" aria-label={`Put in This: ${label}`}>This</button>
+      <button onClick={() => onPut('b', pair.id)} className="min-h-9 rounded-full px-2 text-xs font-medium text-muted hover:bg-glass-strong hover:text-text" aria-label={`Put in That: ${label}`}>That</button>
     </li>
   );
 }
@@ -208,12 +209,12 @@ function SlotCard({ slot, label, pair, names, onClear }: { slot: Slot; label: st
     <div
       ref={setNodeRef}
       data-testid={`slot-${slot}`}
-      className={cn('flex min-h-40 flex-col gap-2 rounded-2xl border-2 border-dashed p-4', isOver ? 'border-accent bg-accent-soft' : pair ? 'border-border border-solid bg-surface' : 'border-border')}
+      className={cn('flex min-h-40 flex-col gap-2 rounded-[24px] p-4', isOver ? 'border-2 border-dashed border-action bg-action-soft' : pair ? 'glass glass-strong' : 'border-2 border-dashed border-border bg-glass/40')}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold tracking-wide text-muted uppercase">{label}{pair?.rank ? ` · #${pair.rank}` : pair ? ' · not on your list' : ''}</span>
+        <span className="eyebrow text-muted">{label}{pair?.rank ? ` · #${pair.rank}` : pair ? ' · not on your list' : ''}</span>
         {pair ? (
-          <button onClick={onClear} className="flex min-h-9 min-w-9 items-center justify-center rounded-md text-muted hover:bg-surface-2" aria-label={`Clear ${label}`}>
+          <button onClick={onClear} className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong" aria-label={`Clear ${label}`}>
             <X className="h-4 w-4" aria-hidden />
           </button>
         ) : null}
@@ -221,10 +222,13 @@ function SlotCard({ slot, label, pair, names, onClear }: { slot: Slot; label: st
       {pair ? (
         <>
           {pair.sides.map((s, k) => (
-            <div key={k} className={cn('border-l-4 pl-3', k === 0 ? 'border-partner-1' : 'border-partner-2')}>
-              <p className={cn('text-xs font-semibold', k === 0 ? 'text-partner-1' : 'text-partner-2')}>{names[k]}</p>
-              <p className="text-sm font-medium leading-snug" title={s?.name}>{s?.short ?? 'No Match'}</p>
-              {s?.place ? <p className="text-xs text-muted">{s.place}</p> : null}
+            <div key={k} className="flex items-start gap-2.5">
+              <Avatar name={names[k]} slot={k === 0 ? 1 : 2} size="sm" className="mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted">{names[k]}</p>
+                <p className="font-display text-[15.5px] leading-snug font-semibold" title={s?.name}>{s?.short ?? 'No Match'}</p>
+                {s?.place ? <p className="text-xs text-muted">{s.place}</p> : null}
+              </div>
             </div>
           ))}
           <BandBadge band={pair.band} bandLabel={pair.bandLabel} distanceMi={pair.distanceMi} />
@@ -243,7 +247,7 @@ function Detail({ d, onChoose, busy }: { d: ExploreDetail; onChoose: (impact: Im
   const modelSide = d.model.prefers === 'a' ? d.a : d.b;
   return (
     <div className="flex flex-col gap-4" data-testid="explore-detail">
-      <Card className="p-4 sm:p-4">
+      <Card tone="strong" className="p-4 sm:p-5">
         <p className="font-medium">
           {pairText(hi)} <span className="text-muted">({where(hi)})</span> is above {pairText(lo)} <span className="text-muted">({where(lo)})</span>.
         </p>
@@ -263,7 +267,7 @@ function Detail({ d, onChoose, busy }: { d: ExploreDetail; onChoose: (impact: Im
             <Info className="h-4 w-4 shrink-0" aria-hidden /> The model’s guess: {pairText(modelSide)} ({Math.round(d.model.p * 100)}%).
           </li>
         </ul>
-        {d.moot ? <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-xs">{d.moot}</p> : null}
+        {d.moot ? <p className="mt-3 rounded-[12px] bg-surface-2 px-3 py-2 text-xs">{d.moot}</p> : null}
       </Card>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -276,8 +280,8 @@ function Detail({ d, onChoose, busy }: { d: ExploreDetail; onChoose: (impact: Im
 
 function ImpactCard({ title, impact, over, under, onChoose, busy }: { title: string; impact: Impact; over: ExplorePair; under: ExplorePair; onChoose: (impact: Impact) => void; busy: boolean }) {
   return (
-    <Card className={cn('flex flex-col gap-2 p-4 sm:p-4', impact.conflicts.length && 'border-warn')} data-testid={impact.asNow ? 'impact-keep' : 'impact-flip'}>
-      <h3 className="font-semibold">{title}{impact.asNow ? <span className="ml-2 text-xs font-normal text-muted">as your list has it now</span> : null}</h3>
+    <Card className={cn('flex flex-col gap-2 p-4 sm:p-4', impact.conflicts.length && 'border-warn/60')} data-testid={impact.asNow ? 'impact-keep' : 'impact-flip'}>
+      <h3 className="small-title">{title}{impact.asNow ? <span className="ml-2 text-xs font-normal text-muted">as your list has it now</span> : null}</h3>
       <p className="text-sm">
         <span className="font-medium">{pairText(over)}</span> <span className="text-muted">above</span> {pairText(under)}
       </p>
@@ -286,14 +290,14 @@ function ImpactCard({ title, impact, over, under, onChoose, busy }: { title: str
         <ul className="flex flex-col gap-0.5 text-xs">
           {impact.moves.map((m) => (
             <li key={m.pairId} className="flex gap-2">
-              <span className="w-20 shrink-0 tabular-nums text-muted">{m.from ? `#${m.from}` : 'off'} → {m.to ? `#${m.to}` : 'off'}</span>
+              <span className="w-20 shrink-0 font-mono tabular-nums text-muted">{m.from ? `#${m.from}` : 'off'} → {m.to ? `#${m.to}` : 'off'}</span>
               <span className="min-w-0 truncate" title={m.label}>{m.label}</span>
             </li>
           ))}
         </ul>
       ) : null}
       {impact.conflicts.length ? (
-        <div className="rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn" role="note">
+        <div className="rounded-[12px] bg-warn-soft/85 px-3 py-2 text-xs text-warn" role="note">
           <p className="flex items-center gap-1.5 font-medium"><CircleAlert className="h-4 w-4" aria-hidden /> This would clash with what you’ve said:</p>
           <ul className="mt-1 list-disc pl-5">
             {impact.conflicts.map((c) => (

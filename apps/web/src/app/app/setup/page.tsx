@@ -2,8 +2,9 @@ import { DEFAULT_DISTANCE_BANDS } from '@pairwise/engine';
 import type { StoredSettings } from '@pairwise/db';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { buttonVariants } from '@/components/ui/button';
+import { AvatarPair } from '@/components/avatar';
 import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { displayName, requireContext } from '@/lib/context';
 import { matchYearOptions } from '@/lib/match-year';
@@ -43,22 +44,23 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome{ctx.profile.display_name ? `, ${ctx.profile.display_name}` : ''}</h1>
+        <h1 className="page-title">Welcome{ctx.profile.display_name ? `, ${ctx.profile.display_name}` : ''}</h1>
         <p className="mt-1 text-sm text-muted">A few details, then you’ll pick and rank your programs.</p>
       </div>
       {ended?.dissolved_at ? (
-        <p className="rounded-xl bg-warn-soft px-4 py-3 text-sm text-warn" role="status">
+        <p className="rounded-2xl border border-glass-border bg-warn-soft/85 px-4 py-3 text-sm text-warn" role="status">
           Your couple ended on {new Date(ended.dissolved_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}. Your own
           program list is saved with you and comes along when you start or join your next couple. The couple’s shared
           answers and versions are deleted after 30 days.
         </p>
       ) : null}
       {joined ? (
-        <p className="rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent" role="status">
+        <p className="rounded-2xl border border-glass-border bg-accent-soft/80 px-4 py-3 text-sm text-accent" role="status">
           You’ve joined {displayName(ctx.partner)}. You can each build your own list now.
         </p>
       ) : null}
 
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
       <Card>
         <CardHeader title="About you" />
         <ProfileForm displayName={ctx.profile.display_name ?? ''} specialty={ctx.profile.specialty} specialties={specialties} />
@@ -80,6 +82,13 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
             <StartCoupleForm years={matchYearOptions()} matchLabel={matchLabel} />
           ) : (
             <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-3">
+                <AvatarPair size="lg" names={ctx.role === 'b' ? [displayName(ctx.partner, 'Partner'), displayName(ctx.profile, 'You')] : [displayName(ctx.profile, 'You'), displayName(ctx.partner, 'Partner')]} />
+                <p className="font-display text-[15.5px] font-semibold">
+                  {displayName(ctx.profile, 'You')}
+                  {ctx.partner ? <> &amp; {displayName(ctx.partner)}</> : null}
+                </p>
+              </div>
               <p className="text-sm text-muted">
                 {ctx.couple.match_type === 'main' ? 'Main Residency Match' : ctx.couple.match_name} · {ctx.couple.match_year}
                 {ctx.partner ? <> · with <strong className="text-text">{displayName(ctx.partner)}</strong></> : null}
@@ -92,6 +101,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
           )}
         </Card>
       ) : null}
+      </div>
 
       {ctx.couple ? (
         <Card>

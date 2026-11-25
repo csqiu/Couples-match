@@ -22,21 +22,21 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   return (
     <main id="main" tabIndex={-1} className="mx-auto max-w-3xl py-10 outline-none sm:py-14">
       <Link href="/guides" className="text-sm text-muted hover:text-text">← All guides</Link>
-      <article className="mt-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{g.title}</h1>
-        <p className="mt-3 text-sm text-muted">
+      <article className="glass glass-strong mt-6 px-5 py-7 sm:px-10 sm:py-10">
+        <h1 className="page-title">{g.title}</h1>
+        <p className="mt-3 font-mono text-[13px] text-muted">
           {GUIDE_AUTHOR} · {date}
         </p>
         <div className="guide mt-8" dangerouslySetInnerHTML={{ __html: guideHtml(g.body) }} />
       </article>
-      <aside className="mt-14 rounded-2xl border border-border bg-surface p-6">
-        <h2 className="font-semibold">Build your couples list</h2>
+      <aside className="glass mt-10 p-6">
+        <h2 className="card-title">Build your couples list</h2>
         <p className="mt-1 text-sm text-muted">Rank your programs, answer a few questions together, and get a list ready for R3.</p>
         <Link href="/login" className={buttonVariants({ className: 'mt-4' })}>Get started</Link>
       </aside>
-      <nav aria-label="More guides" className="mt-10">
-        <h2 className="text-sm font-semibold text-muted">More guides</h2>
-        <ul className="mt-2 flex flex-col gap-1">
+      <nav aria-label="More guides" className="glass mt-6 p-6">
+        <h2 className="eyebrow text-muted">More guides</h2>
+        <ul className="mt-3 flex flex-col gap-1.5">
           {others.map((o) => (
             <li key={o.slug}>
               <Link href={`/guides/${o.slug}`} className="text-accent underline-offset-2 hover:underline">{o.title}</Link>

@@ -12,13 +12,13 @@ export function LeaveCouple({ partnerName, purgeDays }: { partnerName: string | 
   const router = useRouter();
   if (!confirming) {
     return (
-      <Button variant="secondary" className="self-start" onClick={() => setConfirming(true)}>
+      <Button variant="danger-soft" className="self-start" onClick={() => setConfirming(true)}>
         Leave this couple
       </Button>
     );
   }
   return (
-    <div className="flex flex-col gap-3 rounded-lg bg-warn-soft p-3" role="alert">
+    <div className="flex flex-col gap-3 rounded-2xl border border-glass-border bg-warn-soft/85 p-4" role="alert">
       <p className="font-medium">Leave the couple?</p>
       <ul className="list-disc pl-5 text-muted">
         <li>{partnerName ? `You and ${partnerName}` : 'You'} will no longer be able to edit the shared list.</li>

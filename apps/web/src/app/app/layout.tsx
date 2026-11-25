@@ -1,15 +1,14 @@
 import { CircleUser, History } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { BRAND } from '@/brand';
+import { AppShell } from '@/components/app-shell';
+import { HeaderLink } from '@/components/header-link';
 import { Live } from '@/components/live';
+import { Logo } from '@/components/logo';
 import { ProgressRail } from '@/components/progress-rail';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { displayName, requireContext } from '@/lib/context';
 import { createClient } from '@/lib/supabase/server';
-
-const headerIcon =
-  'inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text';
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const ctx = await requireContext();
@@ -33,31 +32,31 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:px-6">
+    <AppShell>
       <header className="flex items-center justify-between gap-3">
-        <Link href="/app" className="text-lg font-semibold">{BRAND.name}</Link>
+        <Logo href="/app" />
         <div className="flex items-center gap-1">
           {ctx.couple ? (
-            <Live coupleId={ctx.couple.id} me={{ userId: ctx.user.id, displayName: displayName(ctx.profile, 'Your partner') }} />
+            <Live coupleId={ctx.couple.id} partnerSlot={ctx.role === 'b' ? 1 : 2} me={{ userId: ctx.user.id, displayName: displayName(ctx.profile, 'Your partner') }} />
           ) : null}
           {ctx.profile.is_admin ? (
-            <Link href="/admin" className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm text-muted hover:bg-surface-2 hover:text-text">
+            <Link href="/admin" className="inline-flex min-h-11 items-center rounded-[14px] px-3 text-sm text-muted hover:bg-glass hover:text-text">
               Admin
             </Link>
           ) : null}
           {ctx.couple ? (
-            <Link href="/app/activity" className={headerIcon} aria-label="Activity" title="Activity">
+            <HeaderLink href="/app/activity" label="Activity">
               <History className="h-5 w-5" aria-hidden />
-            </Link>
+            </HeaderLink>
           ) : null}
           <ThemeToggle />
-          <Link href="/app/account" className={headerIcon} aria-label="Account" title="Account">
+          <HeaderLink href="/app/account" label="Account">
             <CircleUser className="h-5 w-5" aria-hidden />
-          </Link>
+          </HeaderLink>
         </div>
       </header>
       <ProgressRail done={done} locked={!setupDone} />
       <main id="main" tabIndex={-1} className="min-w-0 pb-12 outline-none">{children}</main>
-    </div>
+    </AppShell>
   );
 }

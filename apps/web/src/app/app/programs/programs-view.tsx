@@ -8,6 +8,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input, Select } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/cn';
 import { useToast } from '@/components/ui/toast';
 import { addProgram, removeProgram, restoreSavedList, searchPrograms } from './actions';
 import { AddProgramForm } from './add-program-form';
@@ -32,8 +33,10 @@ export function ProgramsView({
   partners,
   partnerName,
   savedCount = 0,
+  mySlot = 1,
 }: {
   savedCount?: number;
+  mySlot?: 1 | 2;
   mySpecialty: string;
   specialties: Array<{ code: string; name: string }>;
   initialResults: ProgramLite[];
@@ -106,7 +109,7 @@ export function ProgramsView({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">My programs</h1>
+          <h1 className="page-title">My programs</h1>
           <p className="mt-1 text-sm text-muted">Add every program you’d be willing to go to. You’ll order and tier them next.</p>
         </div>
         <Link href="/app/rank" className={buttonVariants({ variant: mine.length ? 'primary' : 'secondary' })}>
@@ -115,7 +118,7 @@ export function ProgramsView({
       </div>
 
       {savedCount > 0 && mine.length === 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-accent-soft px-4 py-3 text-sm" role="status">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-glass-border bg-accent-soft/80 px-4 py-3 text-sm" role="status">
           <span>
             You have a saved list of <strong>{savedCount} program{savedCount === 1 ? '' : 's'}</strong> from your last couple.
           </span>
@@ -169,11 +172,11 @@ export function ProgramsView({
                 ? `Showing ${results.length} of ${total} programs. Type a name or city, or pick a state, to narrow it down.`
                 : `${total} program${total === 1 ? '' : 's'}`}
           </p>
-          <ul ref={listRef} className="flex max-h-[60vh] flex-col divide-y divide-border overflow-y-auto [overflow-anchor:none]" data-testid="search-results">
+          <ul ref={listRef} className="flex max-h-[60vh] flex-col gap-1.5 overflow-y-auto [overflow-anchor:none]" data-testid="search-results">
             {results.map((p) => {
               const added = mineIds.has(p.id);
               return (
-                <li key={p.id} className="flex items-center gap-3 py-2.5">
+                <li key={p.id} className={cn('glass-row flex items-center gap-3 px-3.5 py-2.5', p.created_by_couple && 'border-dashed border-border')}>
                   <div className="min-w-0 flex-1">
                     <p className="line-clamp-2 text-sm font-medium" title={p.name}>{p.name}</p>
                     {p.created_by_couple ? <p className="text-xs text-warn">Added by you · not checked yet</p> : null}
@@ -210,12 +213,12 @@ export function ProgramsView({
 
         <div className="flex min-w-0 flex-col gap-3">
           <Card className="overflow-hidden p-0 sm:p-0">
-            <ProgramMap points={points} className="h-[320px] w-full lg:h-[420px]" />
+            <ProgramMap points={points} mySlot={mySlot} className="h-[320px] w-full lg:h-[420px]" />
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs text-muted">
               <span className="flex items-center gap-3">
-                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden /> Mine ({mine.length})</span>
+                <span className="flex items-center gap-1.5"><span className={cn('h-2.5 w-2.5 rounded-full', mySlot === 1 ? 'bg-partner-1' : 'bg-partner-2')} aria-hidden /> Mine ({mine.length})</span>
                 {partnerName ? (
-                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-tier-b" aria-hidden /> {partnerName} ({partners.length})</span>
+                  <span className="flex items-center gap-1.5"><span className={cn('h-2.5 w-2.5 rounded-full border-2', mySlot === 1 ? 'border-partner-2' : 'border-partner-1')} aria-hidden /> {partnerName} ({partners.length})</span>
                 ) : null}
               </span>
               {partnerName ? (
@@ -227,14 +230,14 @@ export function ProgramsView({
             </div>
           </Card>
           <Card className="p-4 sm:p-4">
-            <h2 className="mb-2 text-sm font-semibold">My list ({mine.length})</h2>
+            <h2 className="small-title mb-2">My list <span className="font-mono text-sm font-normal text-muted">({mine.length})</span></h2>
             {mine.length ? (
               <ul className="flex flex-wrap gap-2">
                 {mine.map((p) => (
                   <li key={p.id} className="max-w-full">
-                    <Badge tone="accent" className="max-w-full py-1 pr-1">
+                    <Badge tone="neutral" className="glass-row max-w-full py-1 pr-1 text-text">
                       <span className="truncate">{p.name}</span>
-                      <button className="rounded-full p-0.5 hover:bg-accent/10" aria-label={`Remove ${p.name}`} onClick={() => toggle(p)}>
+                      <button className="rounded-full p-0.5 hover:bg-text/10" aria-label={`Remove ${p.name}`} onClick={() => toggle(p)}>
                         <X className="h-3 w-3" aria-hidden />
                       </button>
                     </Badge>

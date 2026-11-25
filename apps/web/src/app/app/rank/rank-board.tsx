@@ -18,6 +18,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { isValidProgramCode } from '@pairwise/engine';
 import { ChevronDown, ChevronUp, GripVertical, Trash2 } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState, useTransition } from 'react';
+import { TierBadge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
@@ -170,7 +171,7 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
       }}
     >
       <p className="sr-only" aria-live="polite">{said}</p>
-      <div className="flex flex-col gap-4" data-testid="rank-board">
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-start" data-testid="rank-board">
         {TIERS.map((tier) => (
           <TierZone key={tier} tier={tier} count={board[tier].length}>
             <SortableContext items={board[tier].map((e) => e.programId)} strategy={verticalListSortingStrategy}>
@@ -216,18 +217,22 @@ function TierZone({ tier, count, children }: { tier: Tier; count: number; childr
     <section
       ref={setNodeRef}
       aria-labelledby={`tier-${tier}`}
-      className={cn('rounded-2xl border bg-surface p-3 sm:p-4', isOver ? 'border-accent' : 'border-border')}
+      className={cn(
+        'glass min-w-0 p-3 sm:p-4',
+        tier === 'A' ? 'bg-accent-soft/60' : tier === 'B' ? 'bg-partner-2-soft/55' : '',
+        isOver && 'ring-2 ring-action/35',
+      )}
     >
       <header className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 px-1">
-        <h2 id={`tier-${tier}`} className={cn('font-semibold', tier === 'A' ? 'text-tier-a' : tier === 'B' ? 'text-tier-b' : 'text-tier-c')}>
-          {TIER_COPY[tier].title} <span className="text-sm font-normal text-muted">({count})</span>
+        <h2 id={`tier-${tier}`} className="card-title flex items-center gap-2">
+          <TierBadge tier={tier} /> {TIER_COPY[tier].title} <span className="font-mono text-sm font-normal text-muted">({count})</span>
         </h2>
         <p className="text-sm text-muted">{TIER_COPY[tier].body}</p>
       </header>
       <ul className="flex min-h-14 flex-col gap-2" data-testid={`tier-${tier}`}>
         {children}
         {count === 0 ? (
-          <li className="flex min-h-14 items-center justify-center rounded-xl border border-dashed border-border text-xs text-muted">
+          <li className="flex min-h-14 items-center justify-center rounded-[16px] border border-dashed border-border text-xs text-muted">
             Drag programs here
           </li>
         ) : null}
@@ -258,7 +263,7 @@ function Row(props: {
             ref={setActivatorNodeRef}
             {...attributes}
             {...listeners}
-            className="flex min-h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted hover:bg-surface-2 active:cursor-grabbing"
+            className="flex min-h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong active:cursor-grabbing"
             aria-label={`Drag ${props.entry.name}`}
           >
             <GripVertical className="h-5 w-5" aria-hidden />
@@ -300,22 +305,22 @@ function RowCard({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center gap-x-2 gap-y-2 rounded-xl border border-border bg-bg px-2 py-2 sm:flex-nowrap',
-        overlay && 'shadow-lg',
+        'glass-row flex flex-wrap items-center gap-x-2 gap-y-2 px-2 py-2 sm:flex-nowrap lg:flex-wrap',
+        overlay && '-rotate-[1.2deg] border-action bg-surface shadow-glass',
         !entry.acceptable && 'opacity-60',
       )}
     >
       {handle ?? <span className="flex min-h-11 w-8 items-center justify-center text-muted"><GripVertical className="h-5 w-5" aria-hidden /></span>}
-      <span className="w-7 shrink-0 text-right text-sm font-semibold tabular-nums text-muted" aria-label={`Rank ${rank}`}>{rank}</span>
+      <span className="w-7 shrink-0 text-right font-mono text-[15px] font-semibold tabular-nums text-plum-deep" aria-label={`Rank ${rank}`}>{rank}</span>
       <div className="min-w-0 flex-1 basis-40">
         <p className={cn('truncate text-sm font-medium', !entry.acceptable && 'line-through')}>{entry.name}</p>
         <p className="truncate text-xs text-muted">{entry.place}{!entry.acceptable ? ' · not acceptable (left off your list)' : ''}</p>
       </div>
       {overlay ? null : (
-        <div className="flex w-full items-center justify-end gap-1 sm:w-auto">
+        <div className="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:flex-nowrap lg:w-full lg:flex-wrap">
           {entry.officialCode ? (
             <span
-              className="inline-flex min-h-11 w-28 items-center rounded-lg px-2 font-mono text-xs text-muted"
+              className="inline-flex min-h-11 w-28 min-w-0 items-center px-2 font-mono text-xs text-muted lg:order-last lg:w-full lg:basis-full"
               title="NRMP code from the official program directory"
             >
               <span className="sr-only">NRMP code </span>
@@ -343,7 +348,7 @@ function RowCard({
               aria-invalid={!!codeError}
               title={codeError ?? 'Type the program code from R3'}
               className={cn(
-                'min-h-11 w-28 rounded-lg border bg-surface px-2 font-mono text-xs uppercase placeholder:font-sans placeholder:normal-case',
+                'min-h-11 w-28 min-w-0 rounded-[12px] border bg-glass-strong px-2 font-mono lg:order-last lg:w-full lg:basis-full text-xs uppercase placeholder:font-sans placeholder:normal-case',
                 codeError ? 'border-danger' : 'border-border',
               )}
             />
@@ -353,20 +358,20 @@ function RowCard({
             aria-label={`Tier for ${entry.name}`}
             value={entry.tier}
             onChange={(e) => onTier?.(e.target.value as Tier)}
-            className="min-h-11 w-16 px-2"
+            className="min-h-11 w-16 shrink-0 bg-[right_8px_center] px-2.5 pr-7"
           >
             {TIERS.map((t) => <option key={t} value={t}>{t}</option>)}
           </Select>
           <span className="flex flex-col">
-            <button className="flex h-5.5 w-9 items-center justify-center rounded text-muted hover:bg-surface-2 disabled:opacity-30" disabled={isFirst} onClick={() => onNudge?.(-1)} aria-label={`Move ${entry.name} up`}>
+            <button className="flex h-5.5 w-9 items-center justify-center rounded-md text-muted hover:bg-glass-strong disabled:opacity-30" disabled={isFirst} onClick={() => onNudge?.(-1)} aria-label={`Move ${entry.name} up`}>
               <ChevronUp className="h-4 w-4" aria-hidden />
             </button>
-            <button className="flex h-5.5 w-9 items-center justify-center rounded text-muted hover:bg-surface-2 disabled:opacity-30" disabled={isLast} onClick={() => onNudge?.(1)} aria-label={`Move ${entry.name} down`}>
+            <button className="flex h-5.5 w-9 items-center justify-center rounded-md text-muted hover:bg-glass-strong disabled:opacity-30" disabled={isLast} onClick={() => onNudge?.(1)} aria-label={`Move ${entry.name} down`}>
               <ChevronDown className="h-4 w-4" aria-hidden />
             </button>
           </span>
           <Switch checked={entry.acceptable} onChange={(v) => onAcceptable?.(v)} label={`${entry.name} is acceptable`} />
-          <button className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-danger" onClick={onRemove} aria-label={`Remove ${entry.name}`}>
+          <button className="flex min-h-11 min-w-11 items-center justify-center rounded-[14px] text-muted hover:bg-glass-strong hover:text-danger" onClick={onRemove} aria-label={`Remove ${entry.name}`}>
             <Trash2 className="h-4 w-4" aria-hidden />
           </button>
         </div>

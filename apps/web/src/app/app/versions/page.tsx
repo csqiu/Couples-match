@@ -42,7 +42,7 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Versions</h1>
+          <h1 className="page-title">Versions</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Frozen snapshots of your list. Rename them, compare any two, print one, or restore one as your working list.
           </p>
@@ -51,7 +51,7 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
       </div>
 
       {list.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted">
+        <p className="glass border-dashed p-8 text-center text-sm text-muted">
           No versions yet. Save one from the final list.
         </p>
       ) : (
@@ -60,10 +60,10 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
             <li key={v.id}>
               <Card className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-4">
                 <div className="min-w-0">
-                  <p className="font-medium">{v.name}</p>
+                  <p className="small-title">{v.name}</p>
                   <p className="text-xs text-muted">
                     {(v.pairs as unknown as VersionRow[]).length} ranks · saved by {who(v.created_by)} ·{' '}
-                    {new Date(v.created_at).toLocaleString()}
+                    <span className="font-mono">{new Date(v.created_at).toLocaleString()}</span>
                     {v.note ? ` · ${v.note}` : ''}
                   </p>
                 </div>
@@ -79,7 +79,7 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
 
       {list.length ? (
         <Card>
-          <h2 className="mb-3 font-semibold">Compare</h2>
+          <h2 className="card-title mb-3">Compare</h2>
           <form className="flex flex-col gap-2 sm:flex-row sm:items-end" action="/app/versions">
             <label className="flex flex-1 flex-col gap-1 text-sm">
               Older
@@ -112,17 +112,19 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
                   <li
                     key={d.pairId + d.kind}
                     className={cn(
-                      'grid grid-cols-[4.5rem_1fr] items-center gap-3 rounded-lg border px-3 py-2 text-sm sm:grid-cols-[4.5rem_1fr_1fr_auto]',
-                      d.kind === 'same' ? 'border-transparent' : 'border-border',
-                      d.kind === 'removed' && 'text-muted line-through',
-                      (d.kind === 'up' || d.kind === 'down' || d.kind === 'added') && 'bg-accent-soft/60',
+                      'glass-row grid grid-cols-[4.5rem_1fr] items-center gap-3 px-3.5 py-2.5 text-sm sm:grid-cols-[4.5rem_1fr_1fr_auto]',
+                      d.kind === 'same' && 'border-transparent bg-transparent',
+                      d.kind === 'removed' && 'bg-warn-soft/70 text-muted line-through',
+                      d.kind === 'up' && 'bg-accent-soft/70',
+                      d.kind === 'down' && 'bg-danger-soft/80',
+                      d.kind === 'added' && 'bg-partner-2-soft/70',
                     )}
                     data-change={d.kind}
                   >
-                    <span className="flex items-center gap-1 tabular-nums">
+                    <span className="flex items-center gap-1 font-mono text-[13px] tabular-nums">
                       {d.kind === 'up' ? <ArrowUp className="h-3.5 w-3.5 text-accent" aria-label="moved up" /> : null}
-                      {d.kind === 'down' ? <ArrowDown className="h-3.5 w-3.5 text-warn" aria-label="moved down" /> : null}
-                      {d.kind === 'added' ? <Plus className="h-3.5 w-3.5 text-accent" aria-label="added" /> : null}
+                      {d.kind === 'down' ? <ArrowDown className="h-3.5 w-3.5 text-danger" aria-label="moved down" /> : null}
+                      {d.kind === 'added' ? <Plus className="h-3.5 w-3.5 text-plum-deep" aria-label="added" /> : null}
                       {d.kind === 'removed' ? <Minus className="h-3.5 w-3.5" aria-label="removed" /> : null}
                       {d.before ?? '–'}→{d.after ?? '–'}
                     </span>
