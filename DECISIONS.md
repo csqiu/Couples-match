@@ -886,3 +886,12 @@ option was taken. Newest phases are at the bottom.
        tagged with who picked which.
      - Explanations (final list, conflicts, Explore) use short names.
 
+129. **My programs: details cards, my own short names, infinite scroll.**
+     - Tapping a search result opens it into a card with everything we have on the program;
+       one program is open at a time across the page.
+     - "My list" shows short names as chips. A chip opens the program's card, where you can
+       set your own short name. It's stored on your rank row (`individual_ranks.short_name`,
+       migration 0011), so it never changes the shared catalog, shows on your side of every
+       pair for both partners, and comes along with a saved list. Blank = automatic name.
+     - Search loads 60 at a time (ordered by name, then id, so pages never overlap) and loads
+       the next page when you scroll to the end of the list.

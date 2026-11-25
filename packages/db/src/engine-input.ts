@@ -49,7 +49,7 @@ export const APP_ONLY_SETTINGS = ['privacy', 'includedPairs', 'noMatchUnlocked',
 export interface CoupleData {
   couple: Pick<CoupleRow, 'id' | 'partner_a' | 'partner_b' | 'match_type' | 'settings'>;
   programs: Array<Pick<ProgramRow, 'id' | 'name' | 'institution' | 'city' | 'state' | 'lat' | 'lon' | 'cbsa_code' | 'nrmp_code' | 'is_advanced'> & { short_name?: string | null }>;
-  ranks: Array<Pick<IndividualRankRow, 'user_id' | 'program_id' | 'rank' | 'tier' | 'acceptable' | 'note' | 'nrmp_code'>>;
+  ranks: Array<Pick<IndividualRankRow, 'user_id' | 'program_id' | 'rank' | 'tier' | 'acceptable' | 'note' | 'nrmp_code'> & { short_name?: string | null }>;
   comparisons: Array<Pick<ComparisonRow, 'id' | 'pair_left' | 'pair_right' | 'winner' | 'answered_by' | 'both_agreed' | 'locked' | 'seq'>>;
   pins: Array<Pick<PinRow, 'id' | 'higher_pair' | 'lower_pair' | 'source' | 'comparison_id'> & { moved_pair?: string | null }>;
   exclusions: Array<Pick<PairExclusionRow, 'program_a' | 'program_b' | 'reason'>>;
@@ -110,6 +110,7 @@ export function buildEngineInput(data: CoupleData): EngineInput {
             acceptable: r.acceptable,
             // The official code from the NRMP directory wins over one typed in by hand.
             nrmpCode: programs[r.program_id].nrmpCode ?? r.nrmp_code,
+            ...(r.short_name ? { shortName: r.short_name } : {}),
             ...(r.note ? { note: r.note } : {}),
           }));
 
