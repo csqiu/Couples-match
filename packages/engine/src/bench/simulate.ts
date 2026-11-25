@@ -8,7 +8,8 @@
  * flipped at random to model noise. We then measure how close the engine's list
  * gets to their true list.
  */
-import { buildCandidates } from '../candidates';
+import { buildCandidates, splitPairId } from '../candidates';
+import { mootWitnesses } from '../equivalence';
 import { withDefaults } from '../defaults';
 import { pairFeatures, dot, paramsToTheta } from '../features';
 import { buildConstraintGraph } from '../graph';
@@ -90,23 +91,19 @@ export function kendallTau(trueOrder: PairId[], position: Map<PairId, number>, k
 
 /**
  * Kendall's tau over the true top `k`, counting only the orderings that can change
- * where the couple matches: a pair of rows is left out when a swapped pair (see
- * isMootComparison) is above both in the true order.
+ * where the couple matches: a pair of rows is left out when a pair from their box (see
+ * mootWitnesses) is above both in the true order.
  */
 export function kendallTauRelevant(trueOrder: PairId[], position: Map<PairId, number>, k = 100): number {
   const truePos = new Map(trueOrder.map((id, i) => [id, i]));
   const items = trueOrder.slice(0, k);
-  const sides = (id: PairId) => id.split('|');
   let concordant = 0;
   let discordant = 0;
   for (let i = 0; i < items.length; i++) {
-    const [a1, b1] = sides(items[i]);
+    const x = splitPairId(items[i]);
     for (let j = i + 1; j < items.length; j++) {
-      const [a2, b2] = sides(items[j]);
-      if (a1 !== a2 && b1 !== b2) {
-        const above = [`${a1}|${b2}`, `${a2}|${b1}`].some((c) => (truePos.get(c) ?? Infinity) < i);
-        if (above) continue;
-      }
+      // i < j, so a witness above row i is above both.
+      if (mootWitnesses(x, splitPairId(items[j])).some((c) => (truePos.get(c) ?? Infinity) < i)) continue;
       const d = position.get(items[i])! - position.get(items[j])!;
       if (d < 0) concordant++;
       else if (d > 0) discordant++;

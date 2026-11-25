@@ -14,6 +14,7 @@ export * from './features';
 export * from './posterior';
 export * from './learning';
 export * from './questions';
+export * from './equivalence';
 
 import { buildCandidates } from './candidates';
 import { findConflicts, type Conflict } from './conflicts';

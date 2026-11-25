@@ -721,3 +721,26 @@ option was taken. Newest phases are at the bottom.
      - Programs a couple added by hand belong to that couple and are deleted with it, so
        they're left out.
      - One saved list per person: the latest couple to end wins. It's deleted with the account.
+117. **Which comparisons and rows can matter** (`packages/engine/src/equivalence.ts`). Model:
+     each partner has a set of reachable programs (No Match always is); the couple matches
+     on the first row with both sides reachable. Explained for users in the "How the
+     Couples Match Works" doc.
+     - **Moot comparisons use the whole box.** The order of rows X = (a1, b1) and
+       Y = (a2, b2) can't decide the match when some pair from
+       {a1, a2, No Match} × {b1, b2, No Match} is above both: if X and Y are reachable, so
+       is every pair in it. This adds the half-No-Match pairs to the two swapped pairs used
+       before, so rows sharing a program can now be moot too. It only matters with No
+       Match at the bottom turned off.
+     - **A pair with both partners at one program is never a witness.** (q, q) needs two
+       positions at q at once; q being reachable for each partner separately doesn't give
+       that. Before this, (q, q) above (q, s) and (p, q) made them moot, and the question
+       between them was skipped although its answer can decide the match.
+     - **Unreachable rows** are rows below (A, No Match), (No Match, B) or a copy of
+       themselves. They can never be the match but count toward the 300-rank limit and fees.
+       The final list's checklist flags them ("Every row can be your match"). With No Match
+       rows locked at the end they can't happen.
+     - Both rules are checked in `test/equivalence.test.ts` against brute force over every
+       reachable-program scenario of a small couple with shared programs.
+     - The bench's "relevant" τ uses the same rule; its numbers are unchanged, since the
+       simulated couples share no programs and keep No Match at the bottom. The README's
+       table was refreshed to the bench's current output (it had drifted before this change).

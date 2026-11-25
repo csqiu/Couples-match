@@ -83,8 +83,12 @@ identical:
 
 | | Before any questions | After 40 questions |
 |---|---|---|
-| Pairwise's question choice | 0.835 | **0.962** (lowest couple: 0.920) |
-| Random questions | 0.835 | 0.913 (lowest couple: 0.833) |
+| Pairwise's question choice | 0.835 | **0.943** (lowest couple: 0.897) |
+| Random questions | 0.835 | 0.926 (lowest couple: 0.859) |
+
+Counting only the orderings that can change where a couple matches (for the rest, the
+order never decides the match), the scores after 40 questions are 0.970 with Pairwise's questions (lowest 0.933)
+and 0.960 with random ones (lowest 0.908).
 
 Run it yourself with `pnpm --filter @pairwise/engine bench`.
 

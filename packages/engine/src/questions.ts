@@ -16,7 +16,7 @@ import {
   TRADEOFF_BOOST,
 } from './defaults';
 import { THETA_DIM, pairFeatures, type PairFeatures } from './features';
-import { pairId } from './candidates';
+import { mootWitnesses } from './equivalence';
 import { isHub, type Graph } from './graph';
 import { linearMoments, orderConfidence, posteriorMoments, predictiveApprox, type PosteriorMoments } from './posterior';
 import type { RankedList } from './rank';
@@ -185,17 +185,14 @@ function surelyAbove(ctx: Ctx, u: number, v: number): boolean {
 }
 
 /**
- * True when the order of u and v can never decide where the couple matches.
- * For (a1, b1) vs (a2, b2) with a1 ≠ a2 and b1 ≠ b2: if both pairs are reachable,
- * partner 1 can get a1 and partner 2 can get b2 (and likewise a2, b1), so the swapped
- * pairs are reachable too. If a swapped pair is above both, the Match stops there first.
- * Pairs that share a program have no swapped pair and are never moot.
+ * True when the order of u and v can never decide where the couple matches: some pair
+ * from their box (see mootWitnesses) is above both. If u and v are both reachable, that
+ * pair is too, and the Match stops there first. Witnesses are the swapped pairs
+ * (a1, b2) and (a2, b1) and the pairs with one partner at No Match; a pair that puts
+ * both partners at one program never counts, since it needs two positions at once.
  */
 export function isMootComparison(g: Graph, u: number, v: number, above: (c: number, x: number) => boolean): boolean {
-  const [a1, b1] = g.pairs[u].programs;
-  const [a2, b2] = g.pairs[v].programs;
-  if (a1 === a2 || b1 === b2) return false;
-  for (const id of [pairId(a1, b2), pairId(a2, b1)]) {
+  for (const id of mootWitnesses(g.pairs[u].programs, g.pairs[v].programs)) {
     const c = g.index.get(id);
     if (c !== undefined && above(c, u) && above(c, v)) return true;
   }

@@ -17,6 +17,7 @@ import {
   NRMP_RULES,
   proposeMove,
   runEngine,
+  unreachableRows,
   type Band,
   type EngineInput,
   type EngineResult,
@@ -147,11 +148,30 @@ export function checklistFor(rows: ListRow[], n: number, names: [string, string]
       label: 'No Match pairs are at the bottom',
       detail: noMatchAtBottom ? undefined : 'NRMP recommends ranking every pair where you both match first.',
     },
+    unreachableItem(top),
     { ok: !hasCycles, label: 'No unresolved conflicts', detail: hasCycles ? 'Resolve them on the Conflicts step.' : undefined },
     ...(rows.length > RANK_LIMIT
       ? [{ ok: false, label: `The list is within NRMP’s ${RANK_LIMIT}-rank limit`, detail: `${rows.length - RANK_LIMIT} rows are past #${RANK_LIMIT} and won’t be submitted. Take some off or shorten the list.` }]
       : []),
   ];
+}
+
+/**
+ * Rows that can never be the match: below (A, No Match), (No Match, B) or a copy of
+ * themselves, which always work first. Only possible once No Match rows are unlocked.
+ */
+function unreachableItem(top: ListRow[]): ChecklistItem {
+  const dead = unreachableRows(top.map((r) => [r.sides[0].id, r.sides[1].id] as const));
+  const label = 'Every row can be your match';
+  if (!dead.length) return { ok: true, label };
+  const name = (r: ListRow) => `#${r.rank} (${r.sides[0].short} + ${r.sides[1].short})`;
+  const shown = dead.slice(0, 3).map((d) => `${name(top[d.index])} can’t be reached, because ${name(top[d.blockedByIndex])} always works first`);
+  const more = dead.length > shown.length ? ` And ${dead.length - shown.length} more.` : '';
+  return {
+    ok: false,
+    label,
+    detail: `${shown.join('; ')}.${more} Take these rows off or move them higher: they change nothing where they are but count toward the ${RANK_LIMIT}-rank limit and fees.`,
+  };
 }
 
 export interface ListOptions {

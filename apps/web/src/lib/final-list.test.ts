@@ -1,3 +1,4 @@
+import { NO_MATCH } from '@pairwise/engine';
 import { describe, expect, it } from 'vitest';
 import { toCsv } from './csv-export';
 import { checkMove, checklistFor, computeFinalList, feesFor, RANK_LIMIT, type ListRow } from './final-list';
@@ -86,6 +87,17 @@ describe('final list', () => {
     expect(withPick.rows).toHaveLength(13);
     expect(withPick.rows.find((r) => r.pairId === pick)?.added).toBe(true);
     expect(withPick.available.some((p) => p.pairId === pick)).toBe(false);
+  });
+
+  it('the checklist flags rows that can never be the match', () => {
+    expect(checklistFor(list.rows, list.length, names, false).find((i) => i.label === 'Every row can be your match')?.ok).toBe(true);
+    // Move a (program, No Match) row above a both-match row with the same program for partner 1.
+    const nm = list.rows.find((r) => r.sides[1].id === NO_MATCH && r.sides[0].id !== NO_MATCH)!;
+    const victim = list.rows.find((r) => r.band !== 'no_match' && r.sides[0].id === nm.sides[0].id)!;
+    const rows = [nm, ...list.rows.filter((r) => r !== nm)].map((r, i) => ({ ...r, rank: i + 1 }));
+    const item = checklistFor(rows, rows.length, names, false).find((i) => i.label === 'Every row can be your match')!;
+    expect(item.ok).toBe(false);
+    expect(item.detail).toContain(`(${victim.sides[0].short} + ${victim.sides[1].short}) can’t be reached, because #1 (${nm.sides[0].short} + No Match) always works first`);
   });
 
   it('pairs added past the limit make the list longer than 300; only the first 300 count', () => {
