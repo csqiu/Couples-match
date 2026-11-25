@@ -37,6 +37,8 @@ async function setUp(db: Db) {
     [c.coupleId, `${IM[0]}|${PEDS[0]}`, `${IM[1]}|${PEDS[1]}`, c.b.id],
   );
   await db.query(`update couples set settings = '{"listLength": 40, "balance": 1.2}' where id = $1`, [c.coupleId]);
+  await db.as(c.a);
+  await db.query(`update individual_ranks set short_name = 'MGH IM' where couple_id = $1 and program_id = $2`, [c.coupleId, IM[0]]);
   return c;
 }
 
@@ -73,7 +75,10 @@ describe('Lists and numbered versions', () => {
       expect(await db.one('select active_list from couples where id = $1', [coupleId])).toEqual({ active_list: second });
       // Blank tiers: everything in Tier B, in today's order. Notes stay.
       expect(await ranksOf(db, coupleId, a.id)).toEqual(IM.map((id, i) => ({ program_id: id, rank: i + 1, tier: 'B' })));
-      expect(await db.one('select note from individual_ranks where couple_id = $1 and program_id = $2', [coupleId, IM[0]])).toEqual({ note: 'loved it' });
+      expect(await db.one('select note, short_name from individual_ranks where couple_id = $1 and program_id = $2', [coupleId, IM[0]])).toEqual({
+        note: 'loved it',
+        short_name: 'MGH IM',
+      });
       expect(await db.query('select id from comparisons where couple_id = $1', [coupleId])).toEqual([]);
       // List settings go; couple settings stay.
       expect(await db.one('select settings from couples where id = $1', [coupleId])).toEqual({ settings: { balance: 1.2 } });

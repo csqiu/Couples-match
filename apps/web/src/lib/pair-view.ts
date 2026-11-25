@@ -44,7 +44,8 @@ export function pairViewer(input: EngineInput): (pair: Pair) => PairView {
       return {
         id: ref,
         name: p.name,
-        short: shortProgramName(p.name, p.shortName),
+        // The partner's own short name for it, if they set one (both partners see it).
+        short: shortProgramName(p.name, e?.shortName ?? p.shortName),
         place: [p.city, p.state].filter(Boolean).join(', '),
         lat: p.lat,
         lon: p.lon,
@@ -90,8 +91,11 @@ export function linkSource(link: Pick<Link, 'reasons'>, names: [string, string])
 
 /**
  * Programs keyed by id with their short names as `name`, for the engine's sentence
- * builders: explanations read "MGH IM + BCH Peds", not two full hospital names.
+ * builders: explanations read "MGH IM + BCH Peds", not two full hospital names. A name a
+ * partner set for a program on their list wins (partner A's first, for a shared program).
  */
-export function shortNamed(programs: Record<string, ProgramInfo>): Record<string, ProgramInfo> {
-  return Object.fromEntries(Object.entries(programs).map(([id, p]) => [id, { ...p, name: shortProgramName(p.name, p.shortName) }]));
+export function shortNamed(programs: Record<string, ProgramInfo>, lists?: EngineInput['lists']): Record<string, ProgramInfo> {
+  const own = new Map<string, string>();
+  for (const list of [...(lists ?? [])].reverse()) for (const e of list) if (e.shortName) own.set(e.programId, e.shortName);
+  return Object.fromEntries(Object.entries(programs).map(([id, p]) => [id, { ...p, name: shortProgramName(p.name, own.get(id) ?? p.shortName) }]));
 }

@@ -886,26 +886,35 @@ option was taken. Newest phases are at the bottom.
        tagged with who picked which.
      - Explanations (final list, conflicts, Explore) use short names.
 
+129. **My programs: details cards, my own short names, infinite scroll.**
+     - Tapping a search result opens it into a card with everything we have on the program;
+       one program is open at a time across the page.
+     - "My list" shows short names as chips. A chip opens the program's card, where you can
+       set your own short name. It's stored on your rank row (`individual_ranks.short_name`,
+       migration 0011), so it never changes the shared catalog, shows on your side of every
+       pair for both partners, and comes along with a saved list. Blank = automatic name.
+     - Search loads 60 at a time (ordered by name, then id, so pages never overlap) and loads
+       the next page when you scroll to the end of the list.
 
 ## Dashboard, lists and numbered versions (November 2026)
 
-129. **Setup and Programs, then a dashboard.** `/app` is now the couple's home: every list,
+130. **Setup and Programs, then a dashboard.** `/app` is now the couple's home: every list,
      its saved versions, and "Start a new list". Setup and Programs are onboarding steps
      (their rail ends in "Dashboard"); inside a list the rail is just Rank, Compare,
      Conflicts and Final list, under a bar showing which list is open and its last save.
      The four step pages are unchanged.
 
-130. **A list is a fresh start; versions are numbered X.Y.** `rank_lists` holds List 1, 2, 3…
+131. **A list is a fresh start; versions are numbered X.Y.** `rank_lists` holds List 1, 2, 3…
      per couple; `list_versions` gained `list_id`, `minor` and `starred`. A trigger files every
      new version under the open list and gives it the next number, whatever the client sends,
      with the list row locked so two saves can't share a number. Existing couples got List 1,
-     holding their versions numbered in the order they were saved (migration 11).
+     holding their versions numbered in the order they were saved (migration 12).
      - Any number of versions can be starred. Stars, names and notes are the only things
        that change on a saved version.
      - The name is optional now ("Untitled"); the save button says what it will create
        ("Save as 3.2").
 
-131. **One open list per couple, shared by both partners.** The working tables (ranks,
+132. **One open list per couple, shared by both partners.** The working tables (ranks,
      answers, pins, exclusions, rule exceptions, and the list settings in `couples.settings`)
      always hold the open list, so the engine, row level security, realtime and every query
      stay as they were. `open_list()` parks the open list's state as JSON in
@@ -916,7 +925,7 @@ option was taken. Newest phases are at the bottom.
        first ("Jordan will be moved to List 1 too").
      - The program list is shared: a loaded list keeps exactly the programs each partner has
        now. Tiers, order and "acceptable" come from the list; programs added since go to
-       Tier B at the end of it. Notes and NRMP codes are about the program, so they're
+       Tier B at the end of it. Notes, NRMP codes and short names are about the program, so they're
        today's.
      - A new list starts from blank tiers (everything in Tier B, in today's order) or from a
        saved version's tiers. Answers, conflict choices and list settings start empty.
@@ -929,5 +938,5 @@ option was taken. Newest phases are at the bottom.
      - Known gap: `merge_programs` doesn't rewrite parked drafts, so a merged program comes
        back as "added since" (Tier B) the next time that list is opened.
 
-132. **Guides from the app header.** A "Guides" menu at the top right lists the published
+133. **Guides from the app header.** A "Guides" menu at the top right lists the published
      guides (`content/guides.ts`) and links to `/guides`.

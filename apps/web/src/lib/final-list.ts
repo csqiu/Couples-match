@@ -253,14 +253,15 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
   const { input, result } = run(data);
   const { list } = result;
   const stored = (data.couple.settings ?? {}) as StoredSettings;
-  const ctx = { programs: shortNamed(input.programs), partnerNames: opts.names };
+  const ctx = { programs: shortNamed(input.programs, input.lists), partnerNames: opts.names };
   const noMatchCode = NRMP_RULES.noMatchCode[opts.matchType];
   const codeOf = (k: 0 | 1, id: string) => input.lists[k].find((e) => e.programId === id)?.nrmpCode ?? '';
+  const shortOf = (k: 0 | 1, id: string) => input.lists[k].find((e) => e.programId === id)?.shortName;
 
   const side = (k: 0 | 1, id: string): ListSide => {
     if (id === NO_MATCH) return { id, name: 'No Match', short: 'No Match', place: '', code: noMatchCode };
     const p = input.programs[id];
-    return { id, name: p.name, short: shortProgramName(p.name, p.shortName), place: [p.city, p.state].filter(Boolean).join(', '), code: codeOf(k, id) ?? '' };
+    return { id, name: p.name, short: shortProgramName(p.name, shortOf(k, id) ?? p.shortName), place: [p.city, p.state].filter(Boolean).join(', '), code: codeOf(k, id) ?? '' };
   };
 
   const byId = new Map(result.pairs.map((p) => [p.id, p]));
@@ -382,6 +383,6 @@ export function checkMove(data: CoupleData, higher: string, lower: string, names
   const { input, result } = run(data);
   const res = proposeMove(result.list, higher, lower, moved);
   if (res.ok) return res;
-  const ctx = { programs: shortNamed(input.programs), partnerNames: names };
+  const ctx = { programs: shortNamed(input.programs, input.lists), partnerNames: names };
   return { ok: false, blocking: res.blocking.map((l) => ({ ...l, text: describeLink(ctx, l) })) };
 }

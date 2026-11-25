@@ -13,7 +13,7 @@
 -- The program list is shared by every list: when a list is loaded, each partner
 -- keeps exactly the programs they have now. Tiers, order and "acceptable" come
 -- from the list being loaded; programs added since go to Tier B at the end of it.
--- NRMP codes and notes are about the program, so they stay as they are now.
+-- NRMP codes, notes and short names are about the program, so they stay as they are now.
 
 create table public.rank_lists (
   id uuid primary key default gen_random_uuid(),
@@ -193,7 +193,7 @@ as $$
     'ranks', coalesce((
       select jsonb_agg(jsonb_build_object(
         'userId', r.user_id, 'programId', r.program_id, 'rank', r.rank, 'tier', r.tier,
-        'acceptable', r.acceptable, 'note', r.note, 'nrmpCode', r.nrmp_code) order by r.user_id, r.rank)
+        'acceptable', r.acceptable, 'note', r.note, 'nrmpCode', r.nrmp_code, 'shortName', r.short_name) order by r.user_id, r.rank)
       from public.individual_ranks r where r.couple_id = p_couple), '[]'::jsonb),
     'comparisons', coalesce((
       select jsonb_agg(jsonb_build_object(
@@ -234,15 +234,15 @@ begin
   delete from public.rule_exceptions where couple_id = p_couple;
   delete from public.individual_ranks where couple_id = p_couple;
 
-  insert into public.individual_ranks (couple_id, user_id, program_id, rank, tier, acceptable, note, nrmp_code)
+  insert into public.individual_ranks (couple_id, user_id, program_id, rank, tier, acceptable, note, nrmp_code, short_name)
   select p_couple, cur.user_id, cur.program_id,
          row_number() over (
            partition by cur.user_id
            order by coalesce(prev.tier, 'B'::public.tier), (prev.rank is null), coalesce(prev.rank, cur.rank)),
-         coalesce(prev.tier, 'B'::public.tier), coalesce(prev.acceptable, true), cur.note, cur.nrmp_code
+         coalesce(prev.tier, 'B'::public.tier), coalesce(prev.acceptable, true), cur.note, cur.nrmp_code, cur.short_name
   from (
     select (e->>'userId')::uuid as user_id, e->>'programId' as program_id, (e->>'rank')::int as rank,
-           e->>'note' as note, nullif(e->>'nrmpCode', '') as nrmp_code
+           e->>'note' as note, nullif(e->>'nrmpCode', '') as nrmp_code, nullif(btrim(e->>'shortName'), '') as short_name
     from jsonb_array_elements(coalesce(p_current->'ranks', '[]'::jsonb)) e
   ) cur
   left join (

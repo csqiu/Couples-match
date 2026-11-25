@@ -108,7 +108,7 @@ export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
   const deferred = (stored.deferredQuestions ?? []).filter((k) => !answeredKeys.has(k));
   const flaggedKeys = new Set(stored.flaggedQuestions ?? []);
   const splitKey = (k: string) => k.split('#') as [string, string];
-  const ctx = { programs: shortNamed(input.programs), partnerNames: opts.names };
+  const ctx = { programs: shortNamed(input.programs, input.lists), partnerNames: opts.names };
   const key = (a: string, b: string) => (a < b ? `${a}#${b}` : `${b}#${a}`);
 
   let question: QuestionView | null = null;

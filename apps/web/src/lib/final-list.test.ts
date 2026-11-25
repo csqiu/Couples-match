@@ -20,6 +20,17 @@ describe('final list', () => {
     expect(list.rows.find((r) => r.sides[1].id === 'NO_MATCH')?.sides[1].code).toBe('999999999');
   });
 
+  it('shows each partner\'s own short name on their side only', () => {
+    const d = couple();
+    d.ranks = d.ranks.map((r) => (r.program_id === 'seed-mgh-internal-medicine' ? { ...r, short_name: 'Mass Gen' } : r));
+    const rows = computeFinalList(d, opts).rows;
+    const mgh = rows.find((r) => r.sides[0].id === 'seed-mgh-internal-medicine')!;
+    expect(mgh.sides[0].short).toBe('Mass Gen');
+    expect(mgh.sides[0].name).toContain('Massachusetts General');
+    const other = rows.find((r) => r.sides[0].id === 'seed-jhh-internal-medicine')!;
+    expect(other.sides[0].short).not.toBe('Mass Gen');
+  });
+
   it('estimates fees for any length, with the tier warning near a boundary', () => {
     const rows: ListRow[] = Array.from({ length: 152 }, (_, i) => ({
       ...list.rows[0],
