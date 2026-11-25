@@ -5,10 +5,11 @@ import { CSS } from '@dnd-kit/utilities';
 import type { CoupleData, StoredSettings } from '@pairwise/db';
 import { useDroppable } from '@dnd-kit/core';
 import { NRMP_RULES, type MatchType } from '@pairwise/engine';
-import { CircleAlert, CircleCheck, Compass, Download, FlaskConical, GripVertical, History, Info, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, X } from 'lucide-react';
+import { CircleAlert, CircleCheck, Compass, Download, FlaskConical, GripVertical, History, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, X } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useId, useMemo, useRef, useState } from 'react';
-import { BAND_NAME, BAND_ROW, BandBadge } from '@/components/proximity';
+import { PairDetails, PairMedium, PairNames, ProgramChip } from '@/components/pair';
+import { BAND_ROW, BandBadge } from '@/components/proximity';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Field, Input } from '@/components/ui/field';
@@ -69,7 +70,6 @@ export function ListView({
   const dndId = useId();
 
   const lengthTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [openWhy, setOpenWhy] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<{ higher: string; lower: string; moved: 'higher' | 'lower'; include?: string; res: Extract<MoveResult, { ok: false }> } | null>(null);
   const [versionName, setVersionName] = useState('');
   const [versionNote, setVersionNote] = useState('');
@@ -225,12 +225,14 @@ export function ListView({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section aria-label="Ranked pairs" className={cn('glass min-w-0 p-2 sm:p-3', busy && 'opacity-70')}>
           <BandCounts rows={rows} />
-          <div className="mt-1 mb-2 hidden grid-cols-[2.5rem_1.5rem_1fr_1fr_auto] gap-3 px-3 font-mono text-[11px] font-medium tracking-[0.08em] text-muted uppercase sm:grid">
-            <span>#</span>
+          <div className="mt-1 mb-2 grid grid-cols-[2.25rem_1.5rem_minmax(0,1fr)_auto] gap-x-2 px-1.5 font-mono text-[11px] font-medium tracking-[0.08em] text-muted uppercase sm:grid-cols-[2.5rem_1.5rem_minmax(0,1fr)_11.5rem] sm:gap-x-3 sm:px-2">
+            <span className="text-right">#</span>
             <span />
-            <span>{names[0]}</span>
-            <span>{names[1]}</span>
-            <span>Distance</span>
+            <span className="grid grid-cols-1 sm:grid-cols-2 sm:gap-3">
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-partner-1" aria-hidden />{names[0]}<span className="sm:hidden"> / {names[1]}</span></span>
+              <span className="hidden items-center gap-1.5 sm:flex"><span className="h-2 w-2 rounded-full bg-partner-2" aria-hidden />{names[1]}</span>
+            </span>
+            <span className="text-right">Distance</span>
           </div>
           <SortableContext items={rows.map((r) => r.pairId)} strategy={verticalListSortingStrategy}>
             <ol className="flex flex-col gap-1.5" data-testid="final-list">
@@ -247,8 +249,8 @@ export function ListView({
                     row={r}
                     reach={sim ? sim.reach[r.rank - 1] ?? 'out' : undefined}
                     overLimit={r.rank > RANK_LIMIT}
-                    open={openWhy === r.pairId}
-                    onWhy={() => setOpenWhy(openWhy === r.pairId ? null : r.pairId)}
+                    names={names}
+                    total={rows.length}
                     onRemove={r.added ? () => void include(r.pairId, false) : undefined}
                   />
                 </Fragment>
@@ -372,9 +374,13 @@ export function ListView({
           {result.trades.length ? (
             <Card tone="strong" className="p-4 sm:p-4">
               <h2 className="small-title mb-2">What you’re trading</h2>
-              <ul className="flex list-disc flex-col gap-1.5 pl-5 text-xs text-muted">
+              <ul className="flex flex-col gap-2 text-[13px] leading-relaxed">
                 {result.trades.map((t) => (
-                  <li key={t}>{t}</li>
+                  <li key={`${t.rank}-${t.partner}`}>
+                    <span className="font-mono font-semibold text-plum-deep">#{t.rank}</span> {names[t.partner]} gets{' '}
+                    <ProgramChip side={t.got} slot={t.partner} /> ahead of <ProgramChip side={t.better} slot={t.partner} />{' '}
+                    <span className="text-muted">(first at #{t.betterRank})</span>, because {t.because}.
+                  </li>
                 ))}
               </ul>
             </Card>
@@ -422,15 +428,29 @@ export function ListView({
   );
 }
 
-function Row({ row, open, onWhy, overLimit, onRemove, reach }: { row: ListRow; open: boolean; onWhy: () => void; overLimit: boolean; onRemove?: () => void; reach?: RowReach }) {
+function Row({
+  row,
+  names,
+  total,
+  overLimit,
+  onRemove,
+  reach,
+}: {
+  row: ListRow;
+  names: [string, string];
+  total: number;
+  overLimit: boolean;
+  onRemove?: () => void;
+  reach?: RowReach;
+}) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: row.pairId, disabled: row.locked });
-  const name = BAND_NAME[row.band];
+  const label = `Rank ${row.rank}: ${names[0]} ${row.pair.sides[0]?.name ?? 'No Match'}; ${names[1]} ${row.pair.sides[1]?.name ?? 'No Match'}. Show details.`;
   return (
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        'rounded-[16px] border px-2 py-2',
+        'rounded-[16px] border px-1.5 py-1.5 sm:px-2',
         BAND_ROW[row.band],
         overLimit && 'opacity-45 grayscale',
         reach === 'out' && 'opacity-35 grayscale',
@@ -441,10 +461,8 @@ function Row({ row, open, onWhy, overLimit, onRemove, reach }: { row: ListRow; o
       data-over-limit={overLimit || undefined}
       data-reach={reach}
     >
-      {reach === 'match' ? (
-        <p className="mb-1 ml-[4.75rem] text-xs font-semibold text-accent">You match here</p>
-      ) : null}
-      <div className="grid grid-cols-[2.5rem_1.5rem_1fr] items-center gap-x-3 gap-y-1 sm:grid-cols-[2.5rem_1.5rem_1fr_1fr_auto]">
+      {reach === 'match' ? <p className="mb-1 ml-[4.25rem] text-xs font-semibold text-accent">You match here</p> : null}
+      <div className="grid grid-cols-[2.25rem_1.5rem_minmax(0,1fr)_auto] items-center gap-x-2 sm:grid-cols-[2.5rem_1.5rem_minmax(0,1fr)_11.5rem] sm:gap-x-3">
         <span className="text-right font-mono text-[15px] font-semibold tabular-nums text-plum-deep">
           {row.rank}
           {overLimit ? <span className="sr-only"> (past the {RANK_LIMIT}-rank limit, won’t be submitted)</span> : null}
@@ -465,25 +483,21 @@ function Row({ row, open, onWhy, overLimit, onRemove, reach }: { row: ListRow; o
             <GripVertical className="h-4 w-4" aria-hidden />
           </button>
         )}
-        {row.sides.map((s, k) => (
-          <div key={k} className={cn('min-w-0', k === 1 && 'col-start-3 sm:col-start-auto')}>
-            <p className={cn('truncate text-sm', name)} title={s.name}>{s.name}</p>
-            <p className="truncate text-xs text-muted">
-              {s.code ? <span className="font-mono">{s.code}</span> : <span className="text-warn">no code yet</span>}
-              {s.place ? ` · ${s.place}` : ''}
-            </p>
-          </div>
-        ))}
-        <div className="col-start-3 flex items-center gap-1 sm:col-start-auto">
-          <BandBadge band={row.band} bandLabel={row.bandLabel} distanceMi={row.distanceMi} />
-          <button
-            className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong hover:text-text"
-            onClick={onWhy}
-            aria-expanded={open}
-            aria-label={`Why is rank ${row.rank} here?`}
-          >
-            <Info className="h-4 w-4" aria-hidden />
-          </button>
+        <PairDetails
+          label={label}
+          trigger={<PairNames pair={row.pair} columns className="min-h-11 content-center py-1" />}
+        >
+          <PairMedium pair={row.pair} names={names} heading={`Rank ${row.rank} of ${total}`} why={row.why}>
+            <Link
+              href={`/app/explore?a=${encodeURIComponent(row.pairId)}`}
+              className={buttonVariants({ variant: 'secondary', size: 'sm', className: 'self-start' })}
+            >
+              <Compass className="h-4 w-4" aria-hidden /> Open in Explore
+            </Link>
+          </PairMedium>
+        </PairDetails>
+        <div className="flex items-center justify-end gap-1">
+          <BandBadge band={row.band} bandLabel={row.bandLabel} distanceMi={row.distanceMi} compact />
           {onRemove ? (
             <button
               className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong hover:text-text"
@@ -496,7 +510,6 @@ function Row({ row, open, onWhy, overLimit, onRemove, reach }: { row: ListRow; o
           ) : null}
         </div>
       </div>
-      {open ? <p className="mt-2 ml-[4.75rem] text-xs text-text">{row.why}</p> : null}
     </li>
   );
 }
@@ -586,11 +599,8 @@ function AvailableItem({ pair, names, onAdd }: { pair: AvailablePair; names: [st
       >
         <GripVertical className="h-4 w-4" aria-hidden />
       </button>
-      <div className="min-w-0 flex-1" title={label}>
-        <p className="truncate text-xs font-medium">{pair.sides[0].short}</p>
-        <p className="truncate text-xs font-medium">{pair.sides[1].short}</p>
-      </div>
-      <BandBadge band={pair.band} bandLabel={pair.bandLabel} distanceMi={pair.distanceMi} className="hidden xl:inline-flex" />
+      <PairNames pair={pair.pair} className="flex-1" />
+      <BandBadge band={pair.band} bandLabel={pair.bandLabel} distanceMi={pair.distanceMi} compact />
       <button
         onClick={onAdd}
         className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong hover:text-text"

@@ -339,6 +339,24 @@ The layout of each screen stays as it is, except for the changes noted below. Ma
 
 ---
 
+## 7a. Pair display: four sizes
+
+Every place the app shows a pair uses one of these (`components/pair.tsx`, data from `lib/pair-view.ts`).
+Same rules in all four: partner 1 sage, partner 2 plum, partner 1 always first or on top; short name
+first (`shortProgramName`), the full name one size up; distance is always the band chip; numbers mono.
+Partner colour on a pair means only "whose program"; tiers are shown as words ("Tier A") in the eyebrow,
+never as coloured squares in a pair.
+
+| Size | Component | Used in | Shows |
+|---|---|---|---|
+| Large | `PairLarge` | This or that, Conflicts (Still true?, You answered differently), Explore's slots | Optional mini-map; per partner: avatar, eyebrow "Name · #rank · Tier X", short name (display 18px), full name, city; dashed connector with the band chip; optional tag ("Ari picked this") and action |
+| Medium | `PairMedium` in `PairDetails` | Opens from a final-list row on hover (mouse), focus or tap | Rank of N, band chip, per partner a coloured bar with eyebrow, short and full name, city, NRMP code; "Why here" line |
+| Small | `PairNames`, `PairTile` | Final-list rows, Not on your list, Explore picker, conflict statements | Two short names in partner text colours (columns on desktop, stacked on phones); tile adds rank and band chip |
+| Inline | `ProgramChip`, `PairChip` | Sentences: What you're trading, flagged questions, Explore's explanations | A program as a chip on its partner's soft fill; a pair as two joined chips |
+
+Explanations built by the engine use short names (`shortNamed` in `lib/pair-view.ts`). Print and CSV keep
+full names and NRMP codes, since that is what goes into R3.
+
 ## 8. Motion
 
 Keep motion minimal: 150ms color/opacity/transform transitions on hover and press, and the existing drag animation. No animated blobs or page-load sequences. The existing `prefers-reduced-motion` block in `globals.css` stays.

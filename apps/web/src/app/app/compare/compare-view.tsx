@@ -4,79 +4,15 @@ import { questionKey } from '@pairwise/engine';
 import { Check, Clock, Compass, Flag, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
-import { Avatar } from '@/components/avatar';
-import { MiniMap } from '@/components/mini-map';
-import { BandBadge as ProximityBadge } from '@/components/proximity';
-import { TierBadge } from '@/components/ui/badge';
+import { PairChip, PairLarge } from '@/components/pair';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
-import type { FlaggedView, PairView, QuestionView } from '@/lib/analysis';
+import type { FlaggedView, QuestionView } from '@/lib/analysis';
 import { cn } from '@/lib/cn';
 import { useAnalysis } from '@/lib/use-analysis';
 import { answer, deferQuestion, setQuestionFlag, undoAnswer } from './actions';
 
 type LocalAnswer = { tempId: string; realId?: string; row: Pick<ComparisonRow, 'id' | 'pair_left' | 'pair_right' | 'winner' | 'answered_by' | 'both_agreed' | 'locked' | 'seq'> };
-
-export function BandBadge({ pair }: { pair: PairView }) {
-  return <ProximityBadge band={pair.band} bandLabel={pair.bandLabel} distanceMi={pair.distanceMi} />;
-}
-
-export function PairCard({
-  pair,
-  names,
-  hideTierOf,
-  action,
-  highlight,
-}: {
-  pair: PairView;
-  names: [string, string];
-  /** Index (0 = partner A, 1 = partner B) whose tier is private to me, if any. */
-  hideTierOf: 0 | 1 | null;
-  action?: React.ReactNode;
-  highlight?: boolean;
-}) {
-  const points = pair.sides.flatMap((s) => (s && s.lat != null && s.lon != null ? [{ lat: s.lat, lon: s.lon }] : []));
-  return (
-    <div className={cn('glass glass-strong flex flex-col overflow-hidden', highlight && 'ring-2 ring-action/40')}>
-      <MiniMap
-        points={points}
-        className="h-36 w-full bg-surface-2 sm:h-44"
-        label={`Map: ${pair.sides.map((s) => s?.place ?? 'No Match').join(' and ')}`}
-      />
-      <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
-        {pair.sides.map((side, k) => (
-          <div key={k} className="flex flex-col gap-2">
-            {k === 1 ? (
-              <div className="flex items-center gap-2 pl-3">
-                <span className="h-6 border-l-2 border-dashed border-border" aria-hidden />
-                <BandBadge pair={pair} />
-              </div>
-            ) : null}
-            <div className="flex items-start gap-3">
-              <Avatar name={names[k]} slot={k === 0 ? 1 : 2} className="mt-0.5" />
-              <div className="min-w-0">
-                <p className="eyebrow text-muted">{names[k]}</p>
-                {side ? (
-                  <>
-                    <p className="mt-1 flex items-center gap-2 font-display text-lg leading-snug font-semibold" title={side.name}>
-                      {side.tier && hideTierOf !== k ? <TierBadge tier={side.tier} /> : null}
-                      {side.short}
-                    </p>
-                    {side.short !== side.name ? <p className="text-xs leading-snug text-muted">{side.name}</p> : null}
-                    <p className="text-sm text-muted">{side.place}</p>
-                  </>
-                ) : (
-                  <p className="mt-1 font-display text-lg font-semibold text-warn">No Match</p>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-        {action ? <div className="mt-auto pt-2">{action}</div> : null}
-      </div>
-    </div>
-  );
-}
 
 export function CompareView({
   data,
@@ -305,11 +241,11 @@ function QuestionBlock({
         <p className="rounded-2xl border border-glass-border bg-glass-strong px-4 py-3 text-sm">You saved this one for later. Ready to answer it?</p>
       ) : null}
       <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
-        <PairCard pair={q.left} names={names} hideTierOf={hideTierOf} action={<ChoiceButton disabled={busy} onChoose={() => onChoose('left', flag)} />} />
+        <PairLarge pair={q.left} names={names} hideTierOf={hideTierOf} action={<ChoiceButton disabled={busy} onChoose={() => onChoose('left', flag)} />} />
         <div className="flex items-center justify-center">
           <span className="glass glass-strong flex h-[52px] w-[52px] items-center justify-center rounded-full font-display text-base font-semibold text-muted">or</span>
         </div>
-        <PairCard pair={q.right} names={names} hideTierOf={hideTierOf} action={<ChoiceButton disabled={busy} onChoose={() => onChoose('right', flag)} />} />
+        <PairLarge pair={q.right} names={names} hideTierOf={hideTierOf} action={<ChoiceButton disabled={busy} onChoose={() => onChoose('right', flag)} />} />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm">
@@ -331,14 +267,14 @@ function QuestionBlock({
   );
 }
 
-function pairText(p: PairView) {
-  return p.sides.map((s) => s?.short ?? 'No Match').join(' + ');
-}
-
 /** Questions flagged to discuss, with where each one stands. */
 function FlaggedList({ items, names, onUnflag }: { items: FlaggedView[]; names: [string, string]; onUnflag: (f: FlaggedView) => void }) {
   const status = (f: FlaggedView) =>
-    f.answer === 'left' ? `You chose ${pairText(f.left)}.` : f.answer === 'right' ? `You chose ${pairText(f.right)}.` : f.answer === 'tie' ? 'Too close to call.' : f.deferred ? 'Saved for later.' : 'Not answered yet.';
+    f.answer === 'left' || f.answer === 'right' ? (
+      <>
+        You chose <PairChip pair={f.answer === 'left' ? f.left : f.right} names={names} />.
+      </>
+    ) : f.answer === 'tie' ? 'Too close to call.' : f.deferred ? 'Saved for later.' : 'Not answered yet.';
   return (
     <section aria-labelledby="flagged-title" className="glass p-4 sm:p-5" data-testid="flagged">
       <h2 id="flagged-title" className="card-title flex items-center gap-2">
@@ -348,10 +284,10 @@ function FlaggedList({ items, names, onUnflag }: { items: FlaggedView[]; names: 
         {items.map((f) => (
           <li key={f.key} className="glass-row flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5">
             <div className="min-w-0 text-sm">
-              <p className="truncate" title={`${names[0]} + ${names[1]}`}>
-                {pairText(f.left)} <span className="text-muted">or</span> {pairText(f.right)}
+              <p className="flex flex-wrap items-center gap-1.5">
+                <PairChip pair={f.left} names={names} /> <span className="text-muted">or</span> <PairChip pair={f.right} names={names} />
               </p>
-              <p className="text-xs text-muted">{status(f)}</p>
+              <p className="mt-1 text-xs text-muted">{status(f)}</p>
             </div>
             <div className="flex gap-1">
               <Link href={`/app/explore?a=${encodeURIComponent(f.left.id)}&b=${encodeURIComponent(f.right.id)}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>

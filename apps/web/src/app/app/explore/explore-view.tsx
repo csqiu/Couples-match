@@ -5,8 +5,7 @@ import type { ComparisonRow, CoupleData } from '@pairwise/db';
 import { ArrowDownUp, CircleAlert, GripVertical, Info, Lock, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { useId, useMemo, useState, useTransition } from 'react';
-import { BandBadge } from '@/components/proximity';
-import { Avatar } from '@/components/avatar';
+import { PairChip, PairLarge, PairNames } from '@/components/pair';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/field';
@@ -135,7 +134,7 @@ export function ExploreView({
               </div>
               <SlotCard slot="b" label="That" pair={b ? byId.get(b) : undefined} names={names} onClear={() => setB(null)} />
             </div>
-            {d ? <Detail d={d} onChoose={choose} busy={busy} /> : (
+            {d ? <Detail d={d} names={names} onChoose={choose} busy={busy} /> : (
               <p className="glass border-dashed p-6 text-center text-sm text-muted">
                 Drag two pairs into “This” and “That”, or use the arrows next to each pair.
               </p>
@@ -192,11 +191,7 @@ function PickItem({ pair, chosen, onPut }: { pair: ExplorePair; chosen: boolean;
         <GripVertical className="h-4 w-4" aria-hidden />
       </button>
       <span className="w-8 shrink-0 text-right font-mono text-xs font-semibold tabular-nums text-plum-deep">{pair.rank ? `#${pair.rank}` : '–'}</span>
-      <div className="min-w-0 flex-1" title={label}>
-        {pair.sides.map((s, k) => (
-          <p key={k} className="truncate text-xs font-medium">{s?.short ?? 'No Match'}</p>
-        ))}
-      </div>
+      <PairNames pair={pair} className="flex-1" />
       <button onClick={() => onPut('a', pair.id)} className="min-h-9 rounded-full px-2 text-xs font-medium text-muted hover:bg-glass-strong hover:text-text" aria-label={`Put in This: ${label}`}>This</button>
       <button onClick={() => onPut('b', pair.id)} className="min-h-9 rounded-full px-2 text-xs font-medium text-muted hover:bg-glass-strong hover:text-text" aria-label={`Put in That: ${label}`}>That</button>
     </li>
@@ -220,19 +215,7 @@ function SlotCard({ slot, label, pair, names, onClear }: { slot: Slot; label: st
         ) : null}
       </div>
       {pair ? (
-        <>
-          {pair.sides.map((s, k) => (
-            <div key={k} className="flex items-start gap-2.5">
-              <Avatar name={names[k]} slot={k === 0 ? 1 : 2} size="sm" className="mt-0.5" />
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-muted">{names[k]}</p>
-                <p className="font-display text-[15.5px] leading-snug font-semibold" title={s?.name}>{s?.short ?? 'No Match'}</p>
-                {s?.place ? <p className="text-xs text-muted">{s.place}</p> : null}
-              </div>
-            </div>
-          ))}
-          <BandBadge band={pair.band} bandLabel={pair.bandLabel} distanceMi={pair.distanceMi} />
-        </>
+        <PairLarge pair={pair} names={names} map={false} className="border-0 bg-transparent shadow-none backdrop-blur-none [&>div]:p-0" />
       ) : (
         <p className="m-auto text-sm text-muted">Drop a pair here</p>
       )}
@@ -240,16 +223,17 @@ function SlotCard({ slot, label, pair, names, onClear }: { slot: Slot; label: st
   );
 }
 
-function Detail({ d, onChoose, busy }: { d: ExploreDetail; onChoose: (impact: Impact) => void; busy: boolean }) {
+function Detail({ d, names, onChoose, busy }: { d: ExploreDetail; names: [string, string]; onChoose: (impact: Impact) => void; busy: boolean }) {
   const [hi, lo] = d.higher === 'a' ? [d.a, d.b] : [d.b, d.a];
   const where = (p: ExplorePair) => (p.rank ? `#${p.rank}` : 'off the list');
-  const answered = d.answer ? (d.answer.winner === 'tie' ? 'You said these are too close to call.' : `You answered: ${pairText(d.answer.winner === 'a' ? d.a : d.b)}.`) : null;
+  const answered = d.answer ? (d.answer.winner === 'tie' ? 'You said these are too close to call.' : <>You answered <PairChip pair={d.answer.winner === 'a' ? d.a : d.b} names={names} />.</>) : null;
   const modelSide = d.model.prefers === 'a' ? d.a : d.b;
   return (
     <div className="flex flex-col gap-4" data-testid="explore-detail">
       <Card tone="strong" className="p-4 sm:p-5">
         <p className="font-medium">
-          {pairText(hi)} <span className="text-muted">({where(hi)})</span> is above {pairText(lo)} <span className="text-muted">({where(lo)})</span>.
+          <PairChip pair={hi} names={names} /> <span className="text-muted">({where(hi)})</span> is above <PairChip pair={lo} names={names} />{' '}
+          <span className="text-muted">({where(lo)})</span>.
         </p>
         <p className="mt-1 text-sm">{d.why}</p>
         <ul className="mt-3 flex flex-col gap-1.5 text-xs text-muted">
@@ -264,26 +248,26 @@ function Detail({ d, onChoose, busy }: { d: ExploreDetail; onChoose: (impact: Im
             </li>
           ) : null}
           <li className="flex gap-2">
-            <Info className="h-4 w-4 shrink-0" aria-hidden /> The model’s guess: {pairText(modelSide)} ({Math.round(d.model.p * 100)}%).
+            <Info className="h-4 w-4 shrink-0" aria-hidden /> <span>The model’s guess: <PairChip pair={modelSide} names={names} /> ({Math.round(d.model.p * 100)}%).</span>
           </li>
         </ul>
         {d.moot ? <p className="mt-3 rounded-[12px] bg-surface-2 px-3 py-2 text-xs">{d.moot}</p> : null}
       </Card>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <ImpactCard title="This above that" impact={d.aOverB} over={d.a} under={d.b} onChoose={onChoose} busy={busy} />
-        <ImpactCard title="That above this" impact={d.bOverA} over={d.b} under={d.a} onChoose={onChoose} busy={busy} />
+        <ImpactCard names={names} title="This above that" impact={d.aOverB} over={d.a} under={d.b} onChoose={onChoose} busy={busy} />
+        <ImpactCard names={names} title="That above this" impact={d.bOverA} over={d.b} under={d.a} onChoose={onChoose} busy={busy} />
       </div>
     </div>
   );
 }
 
-function ImpactCard({ title, impact, over, under, onChoose, busy }: { title: string; impact: Impact; over: ExplorePair; under: ExplorePair; onChoose: (impact: Impact) => void; busy: boolean }) {
+function ImpactCard({ names, title, impact, over, under, onChoose, busy }: { names: [string, string]; title: string; impact: Impact; over: ExplorePair; under: ExplorePair; onChoose: (impact: Impact) => void; busy: boolean }) {
   return (
     <Card className={cn('flex flex-col gap-2 p-4 sm:p-4', impact.conflicts.length && 'border-warn/60')} data-testid={impact.asNow ? 'impact-keep' : 'impact-flip'}>
       <h3 className="small-title">{title}{impact.asNow ? <span className="ml-2 text-xs font-normal text-muted">as your list has it now</span> : null}</h3>
       <p className="text-sm">
-        <span className="font-medium">{pairText(over)}</span> <span className="text-muted">above</span> {pairText(under)}
+        <PairChip pair={over} names={names} /> <span className="text-muted">above</span> <PairChip pair={under} names={names} />
       </p>
       <p className="text-xs text-muted">{impact.moved ? `Answering this way moves ${impact.moved} row${impact.moved === 1 ? '' : 's'}:` : 'Answering this way moves no rows.'}</p>
       {impact.moves.length ? (
