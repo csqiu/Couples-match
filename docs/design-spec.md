@@ -357,6 +357,15 @@ never as coloured squares in a pair.
 Explanations built by the engine use short names (`shortNamed` in `lib/pair-view.ts`). Print and CSV keep
 full names and NRMP codes, since that is what goes into R3.
 
+## 7b. Final list: relationship brackets
+
+Opening a row's details by click or tap (not hover), or dragging a row, draws up to two brackets in the list's left margin. They join the row to the nearest row that must stay above it and the nearest that must stay below it (`lib/list-ties.ts`, `app/app/list/brackets.tsx`).
+
+- **Which tie:** per side, a tie the row has crossed first, else the nearest one the couple set (answer, drag, conflict choice, Tier A rule), else the nearest automatic "better for both" rule. The No Match rule is left out.
+- **Style:** solid `--action` for ties the couple set; dashed `--muted` for the automatic rule; solid `--warn` once a dragged row crosses one. Lines are 1.5px on phones and 2px from `sm` up.
+- **Labels:** a pill at the middle of a bracket taller than about one row ("Your answer", "Tier A rule (Sam)", "Rule (auto)", "Crossing · …"). A far row scrolled out of sight becomes a pill at the window edge ("↑ #3 · 139 rows up · Your answer") that scrolls to it.
+- **In words:** the details card lists "What holds it here" (rank, pair, source, one-line reason). While dragging, crossing a tie is announced politely.
+
 ## 8. Motion
 
 Keep motion minimal: 150ms color/opacity/transform transitions on hover and press, and the existing drag animation. No animated blobs or page-load sequences. The existing `prefers-reduced-motion` block in `globals.css` stays.

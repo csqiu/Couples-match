@@ -1,5 +1,5 @@
 'use client';
-import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useDraggable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useDraggable, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { CoupleData, StoredSettings } from '@pairwise/db';
@@ -7,7 +7,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { NRMP_RULES, type MatchType } from '@pairwise/engine';
 import { ArrowDownUp, CircleAlert, CircleCheck, Crosshair, Download, FlaskConical, GripVertical, History, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, Undo2, X } from 'lucide-react';
 import Link from 'next/link';
-import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { PairDetails, PairMedium, PairNames, ProgramChip, WhyText } from '@/components/pair';
 import { BAND_ROW, BandBadge } from '@/components/proximity';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -19,8 +19,10 @@ import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/cn';
 import { toCsv } from '@/lib/csv-export';
 import { checklistFor, DEFAULT_LIST_ORDER, feesFor, RANK_LIMIT, type AvailablePair, type ListOrder, type ListRow, type MoveResult } from '@/lib/final-list';
+import { holdsFor, indexTies, type Holds } from '@/lib/list-ties';
 import { useEngine, useFinalList } from '@/lib/use-analysis';
 import { addDragPin, removePin, saveVersion, setIncluded, setListLength, setListOrder, setNoMatchUnlocked } from './actions';
+import { Brackets, HoldsText } from './brackets';
 import { allReachable, simulate, SimulatorPanel, type RowReach, type Scenario } from './simulator';
 
 function download(name: string, text: string) {
@@ -135,6 +137,40 @@ export function ListView({
   const sim = useMemo(() => (scenario ? simulate(simRows, scenario) : null), [simRows, scenario]);
   const checklist = useMemo(() => (result ? checklistFor(result.rows, n, names, result.hasCycles) : []), [result, n, names]);
 
+  // Relationship brackets: from the row whose details are open, or the row being dragged, to
+  // the nearest rows that must stay above and below it. While dragging they follow the row
+  // to where it would land, and turn amber once it crosses one.
+  const [picked, setPicked] = useState<string | null>(null);
+  const [drag, setDrag] = useState<{ id: string; over: string } | null>(null);
+  const listBox = useRef<HTMLDivElement>(null);
+  const ties = useMemo(() => (result ? indexTies(result.ties) : null), [result]);
+  const ids = useMemo(() => rows.map((r) => r.pairId), [rows]);
+  const projected = useMemo(() => {
+    if (!drag) return ids;
+    const from = ids.indexOf(drag.id);
+    const to = ids.indexOf(drag.over);
+    return from < 0 || to < 0 ? ids : arrayMove(ids, from, to);
+  }, [ids, drag]);
+  const focus = drag?.id ?? (picked && ids.includes(picked) ? picked : null);
+  const holds = useMemo<Holds>(() => (ties && focus ? holdsFor(ties, projected, focus) : { above: null, below: null }), [ties, projected, focus]);
+  const rankOf = useMemo(() => {
+    const pos = new Map(projected.map((id, i) => [id, i + 1]));
+    return (id: string) => pos.get(id) ?? 0;
+  }, [projected]);
+  const labelOf = useMemo(() => {
+    const byId = new Map(rows.map((r) => [r.pairId, `${r.sides[0].short} + ${r.sides[1].short}`]));
+    return (id: string) => byId.get(id) ?? '';
+  }, [rows]);
+  const crossing = drag ? (['above', 'below'] as const).map((k) => holds[k]).find((h) => h?.crossed) : undefined;
+  function onDragStart(e: DragStartEvent) {
+    const id = String(e.active.id);
+    if (!id.startsWith('avail:')) setDrag({ id, over: id });
+  }
+  function onDragOver(e: DragOverEvent) {
+    const over = e.over ? String(e.over.id) : null;
+    if (over && over !== 'list-end') setDrag((d) => (d && d.over !== over ? { ...d, over } : d));
+  }
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -209,6 +245,7 @@ export function ListView({
   }
 
   async function onDragEnd(e: DragEndEvent) {
+    setDrag(null);
     if (!result || !e.over || e.active.id === e.over.id) return;
     const activeId = String(e.active.id);
     const overId = String(e.over.id);
@@ -281,11 +318,11 @@ export function ListView({
         <SimulatorPanel programs={result.programs} names={names} rows={simRows} scenario={scenario} onChange={setScenario} onClose={() => setScenario(null)} />
       ) : null}
 
-      <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragCancel={() => setDrag(null)} onDragEnd={onDragEnd}>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section aria-label="Ranked pairs" className={cn('glass min-w-0 p-2 sm:p-3', busy && 'opacity-70')}>
           <BandCounts rows={rows} />
-          <div className="mt-1 mb-2 grid grid-cols-[2.25rem_1.5rem_minmax(0,1fr)_auto] gap-x-2 px-1.5 font-mono text-[11px] font-medium tracking-[0.08em] text-muted uppercase sm:grid-cols-[2.5rem_1.5rem_minmax(0,1fr)_11.5rem] sm:gap-x-3 sm:px-2">
+          <div className="mt-1 mb-2 ml-3 grid grid-cols-[2.25rem_1.5rem_minmax(0,1fr)_auto] gap-x-2 px-1.5 sm:ml-4 font-mono text-[11px] font-medium tracking-[0.08em] text-muted uppercase sm:grid-cols-[2.5rem_1.5rem_minmax(0,1fr)_11.5rem] sm:gap-x-3 sm:px-2">
             <span className="text-right">#</span>
             <span />
             <span className="grid grid-cols-1 sm:grid-cols-2 sm:gap-3">
@@ -294,7 +331,12 @@ export function ListView({
             </span>
             <span className="text-right">Distance</span>
           </div>
-          <SortableContext items={rows.map((r) => r.pairId)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            <div ref={listBox} className="relative pl-3 sm:pl-4">
+            <Brackets container={listBox} focus={focus} holds={holds} rankOf={rankOf} names={names} />
+            <p className="sr-only" aria-live="polite">
+              {crossing ? `Crossing rank ${rankOf(crossing.id)}, ${labelOf(crossing.id)}. Dropping here clashes with something you set.` : ''}
+            </p>
             <ol className="flex flex-col gap-1.5" data-testid="final-list">
               {rows.map((r) => (
                 <Fragment key={r.pairId}>
@@ -312,10 +354,14 @@ export function ListView({
                     names={names}
                     total={rows.length}
                     onRemove={r.added ? () => void includePair(r.pairId, false) : undefined}
+                    onPicked={(on) => setPicked((cur) => (on ? r.pairId : cur === r.pairId ? null : cur))}
+                    focused={r.pairId === focus && !drag}
+                    holds={r.pairId === focus && !drag ? <HoldsText holds={holds} rankOf={rankOf} labelOf={labelOf} names={names} /> : null}
                   />
                 </Fragment>
               ))}
             </ol>
+            </div>
           </SortableContext>
           <ListEnd />
         </section>
@@ -505,6 +551,9 @@ function Row({
   overLimit,
   onRemove,
   reach,
+  onPicked,
+  holds,
+  focused,
 }: {
   row: ListRow;
   names: [string, string];
@@ -512,6 +561,12 @@ function Row({
   overLimit: boolean;
   onRemove?: () => void;
   reach?: RowReach;
+  /** The details card was clicked open (true) or closed (false). */
+  onPicked?: (on: boolean) => void;
+  /** "What holds it here", while this row's brackets are shown. */
+  holds?: ReactNode;
+  /** Its brackets are showing. */
+  focused?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: row.pairId,
@@ -530,9 +585,11 @@ function Row({
         overLimit && 'opacity-45 grayscale',
         reach === 'out' && 'opacity-35 grayscale',
         reach === 'match' && 'ring-2 ring-action ring-offset-2 ring-offset-bg',
+        focused && 'bg-surface ring-2 ring-action/55',
         isDragging && 'relative z-10 border-action bg-surface opacity-90 shadow-glass',
       )}
       data-band={row.band}
+      data-pair-id={row.pairId}
       data-over-limit={overLimit || undefined}
       data-reach={reach}
     >
@@ -560,9 +617,11 @@ function Row({
         )}
         <PairDetails
           label={label}
+          onPinnedChange={onPicked}
           trigger={<PairNames pair={row.pair} columns className="min-h-11 content-center py-1" />}
         >
           <PairMedium pair={row.pair} names={names} heading={`Rank ${row.rank} of ${total}`} why={<WhyText parts={row.whyParts} names={names} fallback={row.why} />}>
+            {holds}
             <Link
               href={`/app/compare?mode=specific&a=${encodeURIComponent(row.pairId)}`}
               className={buttonVariants({ variant: 'secondary', size: 'sm', className: 'self-start' })}

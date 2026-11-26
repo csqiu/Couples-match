@@ -181,7 +181,20 @@ export function PairMedium({
  * A small pair that opens its medium card: on hover (with a pointer), on keyboard focus,
  * and on tap. Escape or a click outside closes it.
  */
-export function PairDetails({ label, trigger, children, className }: { label: string; trigger: ReactNode; children: ReactNode; className?: string }) {
+export function PairDetails({
+  label,
+  trigger,
+  children,
+  className,
+  onPinnedChange,
+}: {
+  label: string;
+  trigger: ReactNode;
+  children: ReactNode;
+  className?: string;
+  /** Called when the card is opened by a click (or tap), and when it closes again. Hover doesn't count. */
+  onPinnedChange?: (pinned: boolean) => void;
+}) {
   const [open, setOpen] = useState(false);
   const pinned = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -191,7 +204,9 @@ export function PairDetails({ label, trigger, children, className }: { label: st
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
-    const onDown = (e: PointerEvent) => root.current && !root.current.contains(e.target as Node) && close();
+    // A press outside closes it, except on controls that act on it (marked data-keep-details).
+    const onDown = (e: PointerEvent) =>
+      root.current && !root.current.contains(e.target as Node) && !(e.target as Element).closest?.('[data-keep-details]') && close();
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onDown);
     return () => {
@@ -201,6 +216,7 @@ export function PairDetails({ label, trigger, children, className }: { label: st
   }, [open]);
 
   function close() {
+    if (pinned.current) onPinnedChange?.(false);
     pinned.current = false;
     setOpen(false);
   }
@@ -219,8 +235,12 @@ export function PairDetails({ label, trigger, children, className }: { label: st
         aria-controls={id}
         aria-label={label}
         onClick={() => {
-          pinned.current = !open;
-          setOpen(!open);
+          // A click on a card that hover opened keeps it open; a second click closes it.
+          if (pinned.current) return close();
+          pinned.current = true;
+          if (timer.current) clearTimeout(timer.current);
+          setOpen(true);
+          onPinnedChange?.(true);
         }}
       >
         {trigger}
