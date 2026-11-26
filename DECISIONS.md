@@ -970,3 +970,35 @@ option was taken. Newest phases are at the bottom.
        works in dark mode. The sign-in page uses the same background.
      - Sign-in is email only (magic link). "Continue with Google" and its server action are
        removed; the page says the same link creates an account for new people.
+
+136. **A move that breaks a rule is kept, not refused** (bug log #20). Dragging a row against a rule
+     used to bounce it back, with a warning at the top of the page that was often off-screen.
+     Now the move is saved where it was dropped and a floating notice says what it clashes
+     with, offering **Undo move** or **Resolve on Conflicts** (the clash listed first there).
+     The clash is a circle on the Conflicts step like any other; dropping the rule keeps the row
+     where it is, dropping the move sends it back. While a clash is unresolved the list follows
+     the move: edges inside a circle are already skipped, and the drag replay now also holds a
+     row dragged down right under its target.
+137. **Explanations name pairs as chips** (bug log #21). "Why here", blocked-move notices and the
+     specific-comparison panel are built from parts (`WhyPart` in `lib/pair-view.ts`), so each
+     pair renders as the same coloured short-name chips used elsewhere, and the "(rule)" and
+     "(automatic)" tags are gone.
+138. **Conflict statements: distance only, and dots not letters** (bug log #22). The pair tiles
+     show just the miles, so the names have room; the A/B/C squares, which read like tiers, are
+     dots on a timeline; where each statement comes from sits under its two pairs.
+
+139. **Bug sweep, November 26** (bug log #23–#30).
+     - **Final list follows the server again** (#23). Changes made on the page still show at once,
+       but once no save is in flight a new server copy wins, so a partner's changes appear.
+       Moves saved here are dropped from the page's own copy once the server has them, or after
+       15 seconds if the server no longer does (undone or resolved elsewhere).
+     - **Rank numbers have no gaps** (#24). Adding and removing a program renumber the list 1..n
+       (one upsert, so the deferrable unique constraint holds); the 300 limit counts programs.
+     - **Removing a program can be undone** (#25): the row comes back with its tier, note, NRMP
+       code and short name, in its old place.
+     - **Dates in the viewer's time zone** (#26): `LocalTime` formats them in the browser.
+     - **Only the first 300 rows can be the outcome** in Try an outcome (#27).
+     - **NRMP code message** says 9 or 10 characters (#28).
+     - **Local Supabase runs Postgres 17** like production (#29); the CLI rejects 16.
+     - **`list_versions.pair_count`** (#30, migration 13): a generated column, so the dashboard
+       and Versions don't download every frozen list to count it.

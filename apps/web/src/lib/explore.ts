@@ -3,7 +3,7 @@
  * answering either way would do (rows that move, new conflicts). Pure, so it runs in
  * the Web Worker and in unit tests.
  */
-import { shortNamed } from './pair-view';
+import { shortNamed, whyFromReasons, type WhyPart } from './pair-view';
 import type { CoupleData } from '@pairwise/db';
 import {
   describeConflict,
@@ -45,6 +45,8 @@ export interface ExploreDetail {
   higher: 'a' | 'b';
   /** Why, in words. */
   why: string;
+  /** The same, as parts with pairs as chips. */
+  whyParts: WhyPart[];
   /** A rule, an answer or a drag fixes this order (it isn't just the score). */
   fixed: boolean;
   /** Set when their order can never change where the couple matches. */
@@ -134,6 +136,10 @@ export function explore(data: CoupleData, opts: ExploreOptions): ExploreResult {
       b: { ...view(pb), rank: rb },
       higher,
       why: describeExplanation(ctx, explainOrder(result.list, hi, lo)),
+      whyParts: whyFromReasons(explainOrder(result.list, hi, lo), (id) => {
+        const p = result.pairs.find((x) => x.id === id);
+        return p ? view(p) : null;
+      }, opts.names),
       fixed: shortestPath(g, g.index.get(hi)!, g.index.get(lo)!) !== null,
       moot,
       answer: c ? { winner: won === 'tie' ? 'tie' : won === pa.id ? 'a' : 'b', locked: !!c.locked } : null,

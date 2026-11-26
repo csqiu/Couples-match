@@ -259,7 +259,8 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await alex.waitForTimeout(1500);
   await shot(alex, '11-final-list');
 
-  // Drag rank 3 above rank 2 by keyboard: either allowed (saved as a pin) or blocked with reasons, then overridden.
+  // Drag rank 3 above rank 2 by keyboard. Either it's allowed (saved as a pin), or it clashes with a rule:
+  // it still stays where it was dropped, and a notice offers Undo or Resolve on Conflicts.
   const rowHandle = alex.getByRole('button', { name: 'Drag rank 3' });
   await rowHandle.focus();
   await alex.keyboard.press('Space');
@@ -267,13 +268,13 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await alex.keyboard.press('ArrowUp');
   await alex.waitForTimeout(300);
   await alex.keyboard.press('Space');
-  const blockedDialog = alex.getByRole('alertdialog');
+  const clash = alex.getByTestId('clash-notice');
   const moved = alex.getByText('Moved. Saved as your ordering.');
-  await expect(blockedDialog.or(moved).first()).toBeVisible();
-  if (await blockedDialog.isVisible()) {
-    await expect(blockedDialog).toContainText('because');
-    await alex.getByRole('button', { name: 'Override with an exception' }).click();
-    await expect(moved).toBeVisible();
+  await expect(clash.or(moved).first()).toBeVisible();
+  if (await clash.isVisible()) {
+    await expect(clash).toContainText('because');
+    await expect(clash.getByRole('button', { name: 'Undo move' })).toBeVisible();
+    await expect(clash.getByRole('link', { name: 'Resolve on Conflicts' })).toBeVisible();
   }
   await alex.getByLabel('Version name').fill('v2');
   await alex.getByRole('button', { name: 'Save as 1.2' }).click();

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowDown, ArrowUp, Minus, Plus } from 'lucide-react';
+import { LocalTime } from '@/components/local-time';
 import { BandBadge } from '@/components/proximity';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -23,7 +24,7 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
   const [{ data: versions }, { data: lists }] = await Promise.all([
     supabase
       .from('list_versions')
-      .select('id, list_id, minor, starred, name, note, created_at, created_by, engine_version, pairs')
+      .select('id, list_id, minor, starred, name, note, created_at, created_by, engine_version, pair_count')
       .eq('couple_id', ctx.couple.id)
       .order('created_at', { ascending: false }),
     supabase.from('rank_lists').select('id, number').eq('couple_id', ctx.couple.id),
@@ -41,7 +42,13 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
   if (a && b && a !== b) {
     const current = a === 'current' || b === 'current' ? (await serverFinalList(ctx)).snapshot.pairs : null;
     const found = (id: string) => all.find((v) => v.id === id);
-    const rowsOf = (id: string) => (id === 'current' ? current! : ((found(id)?.pairs ?? []) as unknown as VersionRow[]));
+    // Only the two versions being compared are downloaded in full (bug log #30).
+    const ids = [a, b].filter((id) => id !== 'current');
+    const { data: frozen } = ids.length
+      ? await supabase.from('list_versions').select('id, pairs').eq('couple_id', ctx.couple.id).in('id', ids)
+      : { data: [] };
+    const pairsOf = new Map((frozen ?? []).map((v) => [v.id, v.pairs as unknown as VersionRow[]]));
+    const rowsOf = (id: string) => (id === 'current' ? current! : (pairsOf.get(id) ?? []));
     const nameOf = (id: string) => (id === 'current' ? 'Current list' : found(id) ? `${found(id)!.label} · ${found(id)!.name}` : '?');
     diff = diffVersions(rowsOf(a), rowsOf(b));
     labels = [nameOf(a), nameOf(b)];
@@ -75,8 +82,8 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
                   <div className="min-w-0">
                   <p className="small-title">{v.name}</p>
                   <p className="text-xs text-muted">
-                    {(v.pairs as unknown as VersionRow[]).length} ranks · saved by {who(v.created_by)} ·{' '}
-                    <span className="font-mono">{new Date(v.created_at).toLocaleString()}</span>
+                    {v.pair_count ?? 0} ranks · saved by {who(v.created_by)} ·{' '}
+                    <LocalTime iso={v.created_at} time className="font-mono" />
                     {v.note ? ` · ${v.note}` : ''}
                   </p>
                   </div>

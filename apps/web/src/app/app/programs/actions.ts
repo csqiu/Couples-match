@@ -1,7 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { DUPLICATE_RADIUS_MI } from '@pairwise/data';
-import { haversineMi } from '@pairwise/engine';
+import { haversineMi, NRMP_RULES } from '@pairwise/engine';
 import { requireCouple } from '@/lib/context';
 import { geocode } from '@/lib/geocoder';
 import { searchFilters } from '@/lib/program-search';
@@ -27,21 +27,41 @@ export async function searchPrograms(query: string, specialty: string, state = '
   return { results: (data ?? []) as ProgramLite[], total: count ?? 0 };
 }
 
+/**
+ * Renumbers my list 1..n in its current order. Removing a program leaves a gap; without
+ * this, "highest rank + 1" would creep past 300 while fewer than 300 programs are listed.
+ * One upsert, so the deferrable unique constraint on rank is checked once.
+ */
+async function compactRanks(supabase: Awaited<ReturnType<typeof createClient>>, coupleId: string, userId: string) {
+  const { data: rows } = await supabase
+    .from('individual_ranks')
+    .select('program_id, rank, tier, acceptable')
+    .eq('couple_id', coupleId)
+    .eq('user_id', userId)
+    .order('rank');
+  const list = rows ?? [];
+  if (list.every((r, i) => r.rank === i + 1)) return list.length;
+  const { error } = await supabase.from('individual_ranks').upsert(
+    list.map((r, i) => ({ couple_id: coupleId, user_id: userId, program_id: r.program_id, rank: i + 1, tier: r.tier, acceptable: r.acceptable })),
+    { onConflict: 'couple_id,user_id,program_id' },
+  );
+  if (error) throw new Error(error.message);
+  return list.length;
+}
+
 export async function addProgram(programId: string): Promise<{ error?: string }> {
   const ctx = await requireCouple();
   const supabase = await createClient();
-  const { data: last } = await supabase
-    .from('individual_ranks')
-    .select('rank')
-    .eq('couple_id', ctx.couple.id)
-    .eq('user_id', ctx.user.id)
-    .order('rank', { ascending: false })
-    .limit(1);
-  const rank = (last?.[0]?.rank ?? 0) + 1;
-  if (rank > 300) return { error: 'You can rank at most 300 programs.' };
+  let count: number;
+  try {
+    count = await compactRanks(supabase, ctx.couple.id, ctx.user.id);
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  if (count >= NRMP_RULES.maxRanksPerPartner) return { error: `You can rank at most ${NRMP_RULES.maxRanksPerPartner} programs.` };
   const { error } = await supabase
     .from('individual_ranks')
-    .insert({ couple_id: ctx.couple.id, user_id: ctx.user.id, program_id: programId, rank, tier: 'B' });
+    .insert({ couple_id: ctx.couple.id, user_id: ctx.user.id, program_id: programId, rank: count + 1, tier: 'B' });
   if (error && !error.message.includes('duplicate')) return { error: error.message };
   revalidatePath('/app', 'layout');
   return {};
@@ -64,16 +84,60 @@ export async function saveShortName(programId: string, raw: string): Promise<{ e
   return {};
 }
 
-export async function removeProgram(programId: string): Promise<{ error?: string }> {
+/** A removed row, everything about it, so Undo can put it back exactly. */
+export interface RemovedRank {
+  program_id: string;
+  rank: number;
+  tier: 'A' | 'B' | 'C';
+  acceptable: boolean;
+  note: string | null;
+  nrmp_code: string | null;
+  short_name: string | null;
+}
+
+export async function removeProgram(programId: string): Promise<{ error?: string; removed?: RemovedRank }> {
   const ctx = await requireCouple();
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('individual_ranks')
     .delete()
     .eq('couple_id', ctx.couple.id)
     .eq('user_id', ctx.user.id)
-    .eq('program_id', programId);
+    .eq('program_id', programId)
+    .select('program_id, rank, tier, acceptable, note, nrmp_code, short_name');
   if (error) return { error: error.message };
+  try {
+    await compactRanks(supabase, ctx.couple.id, ctx.user.id);
+  } catch {
+    // The gap is harmless until the next add, which compacts again.
+  }
+  revalidatePath('/app', 'layout');
+  return { removed: (data?.[0] as RemovedRank | undefined) ?? undefined };
+}
+
+/** Undo a removal: the row comes back with its tier, note, code and short name, at its old place. */
+export async function restoreRemoved(row: RemovedRank): Promise<{ error?: string }> {
+  const ctx = await requireCouple();
+  const supabase = await createClient();
+  let count: number;
+  try {
+    count = await compactRanks(supabase, ctx.couple.id, ctx.user.id);
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  if (count >= NRMP_RULES.maxRanksPerPartner) return { error: `You can rank at most ${NRMP_RULES.maxRanksPerPartner} programs.` };
+  const { error } = await supabase.from('individual_ranks').insert({
+    couple_id: ctx.couple.id,
+    user_id: ctx.user.id,
+    program_id: row.program_id,
+    rank: count + 1,
+    tier: row.tier,
+    acceptable: row.acceptable,
+    note: row.note,
+    nrmp_code: row.nrmp_code,
+    short_name: row.short_name,
+  });
+  if (error && !error.message.includes('duplicate')) return { error: error.message };
   revalidatePath('/app', 'layout');
   return {};
 }

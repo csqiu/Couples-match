@@ -14,7 +14,7 @@ import { Avatar } from '@/components/avatar';
 import { MiniMap } from '@/components/mini-map';
 import { BandBadge } from '@/components/proximity';
 import { cn } from '@/lib/cn';
-import type { PairView, ProgramSide } from '@/lib/pair-view';
+import type { PairView, ProgramSide, WhyPart } from '@/lib/pair-view';
 
 type Slot = 0 | 1;
 
@@ -59,6 +59,36 @@ export function PairChip({ pair, names, className }: { pair: PairView; names?: [
   );
 }
 
+/**
+ * An explanation with its pairs as chips: "[MGB Plastics · NYU Derm] is above
+ * [Hopkins Plastics · Hopkins Derm] because of Cecil's Tier A rule."
+ */
+export function WhyText({ parts, names, fallback, className }: { parts: WhyPart[]; names?: [string, string]; fallback?: string; className?: string }) {
+  if (!parts.length) return fallback ? <span className={className}>{fallback}</span> : null;
+  return (
+    <span className={cn('leading-loose', className)}>
+      {parts.map((p, i) => (
+        <span key={i}>
+          {i ? ' ' : null}
+          {p.kind === 'text' ? (
+            p.text
+          ) : p.kind === 'mixed' ? (
+            p.bits.map((b, j) => (typeof b === 'string' ? <span key={j}>{b}</span> : <PairChip key={j} pair={b} names={names} />))
+          ) : p.kind === 'link' ? (
+            <>
+              <PairChip pair={p.higher} names={names} /> is above <PairChip pair={p.lower} names={names} /> because {p.because}.
+            </>
+          ) : (
+            <>
+              <PairChip pair={p.higher} names={names} /> fits your answers better than <PairChip pair={p.lower} names={names} />.
+            </>
+          )}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Small
 
@@ -81,7 +111,12 @@ export function PairTile({ pair, rank, className }: { pair: PairView; rank?: num
     <span className={cn('flex min-w-0 items-center gap-3 rounded-[14px] border border-border bg-surface px-3 py-2', className)}>
       {rank !== undefined ? <span className="font-mono text-[13px] font-semibold tabular-nums text-plum-deep">{rank ? `#${rank}` : '–'}</span> : null}
       <PairNames pair={pair} className="flex-1" />
-      <BandBadge band={pair.band} bandLabel={pair.bandLabel} distanceMi={pair.distanceMi} className="hidden sm:inline-flex" />
+      {/* Just the distance here: a band chip leaves the names no room (bug log #22). */}
+      {pair.distanceMi != null ? (
+        <span className="shrink-0 font-mono text-xs text-muted tabular-nums" title={pair.bandLabel}>
+          {Math.round(pair.distanceMi)} mi
+        </span>
+      ) : null}
     </span>
   );
 }

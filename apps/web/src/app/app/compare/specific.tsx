@@ -3,7 +3,7 @@ import type { ComparisonRow, CoupleData } from '@pairwise/db';
 import { ArrowDownUp, ArrowUp, CircleAlert, Flag, Info, Lock } from 'lucide-react';
 import { useMemo, useState, useTransition } from 'react';
 import { MiniMap } from '@/components/mini-map';
-import { PairChip } from '@/components/pair';
+import { PairChip , WhyText } from '@/components/pair';
 import { BandBadge } from '@/components/proximity';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
@@ -234,7 +234,7 @@ function Outcome({
         <PairChip pair={hi} names={names} /> <span className="text-muted">({where(hi)})</span> is above <PairChip pair={lo} names={names} />{' '}
         <span className="text-muted">({where(lo)})</span> on your list.
       </p>
-      <p className="text-sm">{d.why}</p>
+      <p className="text-sm"><WhyText parts={d.whyParts} names={names} fallback={d.why} /></p>
       <ul className="flex flex-col gap-1.5 text-xs text-muted">
         <li className="flex gap-2">
           {d.fixed ? <Lock className="h-4 w-4 shrink-0" aria-hidden /> : <Info className="h-4 w-4 shrink-0" aria-hidden />}

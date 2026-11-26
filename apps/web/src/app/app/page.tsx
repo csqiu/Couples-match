@@ -2,6 +2,7 @@ import { ArrowRight, Check } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { LocalTime } from '@/components/local-time';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
@@ -13,8 +14,6 @@ import { NewListDialog, OpenListButton, StarButton } from './dashboard-controls'
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
-const date = (iso: string, time = false) =>
-  new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', ...(time ? { hour: 'numeric', minute: '2-digit' } : {}) });
 
 /** Home after setup: every list (fresh start), its saved versions, and a way to start another. */
 export default async function Dashboard() {
@@ -30,7 +29,7 @@ export default async function Dashboard() {
     supabase.from('rank_lists').select('id, number, name, created_at, created_by, started_from, draft').eq('couple_id', coupleId).order('number', { ascending: false }),
     supabase
       .from('list_versions')
-      .select('id, list_id, minor, name, note, created_at, created_by, starred, pairs')
+      .select('id, list_id, minor, name, note, created_at, created_by, starred, pair_count')
       .eq('couple_id', coupleId)
       .order('minor', { ascending: false }),
   ]);
@@ -48,7 +47,7 @@ export default async function Dashboard() {
     answers: answers.count ?? 0,
     resolved: resolved.count ?? 0,
   };
-  const allVersions = (versions.data ?? []).map((v) => ({ ...v, pairCount: Array.isArray(v.pairs) ? v.pairs.length : 0 }));
+  const allVersions = (versions.data ?? []).map((v) => ({ ...v, pairCount: v.pair_count ?? 0 }));
   const numberOf = new Map((lists.data ?? []).map((l) => [l.id, l.number]));
   const labelOf = (v: { list_id: string; minor: number }) => versionLabel(numberOf.get(v.list_id) ?? 0, v.minor);
   const nextNumber = Math.max(0, ...(lists.data ?? []).map((l) => l.number)) + 1;
@@ -96,7 +95,7 @@ export default async function Dashboard() {
                   </div>
                   <h2 className="mt-2 font-display text-[22px] leading-tight font-semibold tracking-[-0.01em]">{l.name ?? `List ${l.number}`}</h2>
                   <p className="mt-1 text-[13.5px] text-muted">
-                    Started <span className="font-mono">{date(l.created_at)}</span> by {who(l.created_by)} · {l.from}
+                    Started <LocalTime iso={l.created_at} className="font-mono" /> by {who(l.created_by)} · {l.from}
                   </p>
                 </div>
                 {l.open ? (
@@ -154,7 +153,7 @@ export default async function Dashboard() {
                         <div className="flex min-w-0 flex-[1_1_14rem] flex-col">
                           <span className="font-medium">{v.name}</span>
                           <span className="text-[12.5px] text-muted">
-                            <span className="font-mono">{date(v.created_at, true)}</span> · saved by {who(v.created_by)} · <span className="font-mono">{v.pairCount}</span> pairs
+                            <LocalTime iso={v.created_at} time className="font-mono" /> · saved by {who(v.created_by)} · <span className="font-mono">{v.pairCount}</span> pairs
                             {v.note ? ` · ${v.note}` : ''}
                           </span>
                         </div>

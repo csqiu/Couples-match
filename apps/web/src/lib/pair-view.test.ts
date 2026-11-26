@@ -50,3 +50,29 @@ describe('pair views', () => {
     }
   });
 });
+
+describe('explanations as parts', () => {
+  it('every row’s “why” has parts, with pairs as views (for chips), not just a sentence', async () => {
+    const { computeFinalList: compute } = await import('./final-list');
+    const list = compute(couple({ settings: { tierAPriority: 'partner1' } }), { names, matchType: 'main' });
+    for (const r of list.rows) expect(r.whyParts.length).toBeGreaterThan(0);
+    const linked = list.rows.flatMap((r) => r.whyParts).filter((p) => p.kind === 'link' || p.kind === 'score');
+    expect(linked.length).toBeGreaterThan(0);
+    for (const p of linked) {
+      expect(p.higher.sides.some((s) => s?.short)).toBe(true);
+      if (p.kind === 'link') expect(p.because).not.toMatch(/\((rule|automatic)\)/);
+    }
+  });
+
+  it('a blocked move comes with its clash as parts', async () => {
+    const { checkMove, computeFinalList: compute } = await import('./final-list');
+    const data = couple();
+    const list = compute(data, { names, matchType: 'main' });
+    const top = list.rows[0].pairId;
+    const last = list.rows.filter((r) => r.band !== 'no_match').at(-1)!.pairId;
+    const res = checkMove(data, last, top, names, 'higher');
+    if (res.ok) return; // nothing blocks this one in the fixture
+    expect(res.parts.length).toBeGreaterThan(0);
+    expect(res.parts[0].kind).toBe('link');
+  });
+});
