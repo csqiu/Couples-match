@@ -4,7 +4,7 @@
  * runs in the Web Worker and in unit tests.
  */
 import { shortProgramName } from '@pairwise/data';
-import { BAND_LABEL, NO_MATCH, normalizeList, type Band, type EngineInput, type Link, type Pair, type ProgramInfo, type Tier } from '@pairwise/engine';
+import { BAND_LABEL, NO_MATCH, normalizeList, type Band, type EdgeReason, type EngineInput, type Link, type Pair, type ProgramInfo, type Reason, type Tier } from '@pairwise/engine';
 
 export interface ProgramSide {
   id: string;
@@ -98,4 +98,64 @@ export function shortNamed(programs: Record<string, ProgramInfo>, lists?: Engine
   const own = new Map<string, string>();
   for (const list of [...(lists ?? [])].reverse()) for (const e of list) if (e.shortName) own.set(e.programId, e.shortName);
   return Object.fromEntries(Object.entries(programs).map(([id, p]) => [id, { ...p, name: shortProgramName(p.name, own.get(id) ?? p.shortName) }]));
+}
+
+// ---------------------------------------------------------------------------
+// Explanations as parts, so pairs render as chips (components/pair.tsx, WhyText)
+
+export type WhyPart =
+  /** `higher` is above `lower` because … (a rule, an answer, a drag). */
+  | { kind: 'link'; higher: PairView; lower: PairView; because: string }
+  /** No rule orders them: `higher` simply fits the answers better. */
+  | { kind: 'score'; higher: PairView; lower: PairView }
+  | { kind: 'text'; text: string }
+  /** A sentence with pairs in it, e.g. "#3 (pair) is above both…". */
+  | { kind: 'mixed'; bits: Array<string | PairView> };
+
+/** The "because …" phrase for one reason, in plain words. */
+export function reasonPhrase(r: EdgeReason, names: [string, string]): string {
+  switch (r.kind) {
+    case 'dominance':
+      return 'you both like it at least as much, and it’s no farther apart';
+    case 'tier_a':
+      return `of ${names[r.partner]}’s Tier A rule`;
+    case 'no_match_bottom':
+      return 'pairs where you both match go above No Match';
+    case 'answer':
+      return 'you chose it in This or that';
+    case 'pin':
+      if (r.source === 'manual_drag') return 'you dragged it there';
+      if (r.source === 'comparison') return 'you chose it and locked it in';
+      return 'you decided it when resolving a conflict';
+  }
+}
+
+type ViewOf = (pairId: string) => PairView | null | undefined;
+
+/** Each "above" link as a part. A link whose pairs can't be shown becomes nothing. */
+export function whyFromLinks(links: Array<Pick<Link, 'from' | 'to' | 'reasons'>>, view: ViewOf, names: [string, string]): WhyPart[] {
+  return links.flatMap((l): WhyPart[] => {
+    const higher = view(l.from);
+    const lower = view(l.to);
+    if (!higher || !lower) return [];
+    const because = [...new Set(l.reasons.map((r) => reasonPhrase(r, names)))].join(', and ');
+    return [{ kind: 'link', higher, lower, because }];
+  });
+}
+
+/** The engine's explanation of an order (explainOrder) as parts. */
+export function whyFromReasons(reasons: Reason[], view: ViewOf, names: [string, string]): WhyPart[] {
+  return reasons.flatMap((r): WhyPart[] => {
+    switch (r.kind) {
+      case 'constraint':
+        return whyFromLinks(r.links, view, names);
+      case 'score': {
+        const higher = view(r.higher);
+        const lower = view(r.lower);
+        return higher && lower ? [{ kind: 'score', higher, lower }] : [];
+      }
+      case 'blocked_by':
+        return [...whyFromLinks(r.links, view, names), ...whyFromReasons(r.then, view, names)];
+    }
+  });
 }

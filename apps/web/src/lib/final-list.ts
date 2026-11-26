@@ -4,7 +4,7 @@
  * Web Worker and in unit tests.
  */
 import { shortProgramName } from '@pairwise/data';
-import { pairViewer, shortNamed, type PairView, type ProgramSide } from './pair-view';
+import { pairViewer, shortNamed, whyFromLinks, whyFromReasons, type PairView, type ProgramSide, type WhyPart } from './pair-view';
 import { buildEngineInput, type CoupleData, type StoredSettings } from '@pairwise/db';
 import {
   BAND_LABEL,
@@ -58,6 +58,8 @@ export interface ListRow {
   bandLabel: string;
   /** Plain-language reason this row is below the one above it. */
   why: string;
+  /** The same explanation as parts, so pairs show as chips (WhyText). */
+  whyParts: WhyPart[];
   /** A No Match row held at the end of the list (moves only once unlocked). */
   locked: boolean;
   /** The pair in the shared display shape (short names, tiers, ranks, codes). */
@@ -266,6 +268,10 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
 
   const byId = new Map(result.pairs.map((p) => [p.id, p]));
   const view = pairViewer(input);
+  const viewOf = (id: string) => {
+    const p = byId.get(id);
+    return p ? view(p) : null;
+  };
   const all = list.order.map((id) => byId.get(id)!);
   const matched = all.filter((p) => p.band !== 'no_match');
   const noMatch = all.filter((p) => p.band === 'no_match');
@@ -302,14 +308,30 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
     const locked = isLocked(pair);
     const prev = ordered[i - 1];
     let why: string;
-    if (i === 0) why = 'This is the top of your list.';
-    else if (locked) why = 'No Match rows stay at the end of the list, in this order. Unlock them to move them.';
+    let whyParts: WhyPart[];
+    if (i === 0) whyParts = [{ kind: 'text', text: (why = 'This is the top of your list.') }];
+    else if (locked) whyParts = [{ kind: 'text', text: (why = 'No Match rows stay at the end of the list, in this order. Unlock them to move them.') }];
     else if (tidy && enginePos.get(prev.id)! > enginePos.get(pair.id)!) {
       const w = witnessAbove(tidy, tidyPos, i - 1);
       why = `These two rows can go in either order without changing where you match${
         w ? `: #${tidyPos.get(w)! + 1} (${pairLabel(ctx, w)}) is above both, so whenever both are within reach, so is it` : ''
       }. They are shown in ${keyWords} to make the list easier to read.`;
-    } else why = describeExplanation(ctx, explainOrder(list, prev.id, pair.id));
+      const wv = w ? viewOf(w) : null;
+      whyParts = [
+        {
+          kind: 'mixed',
+          bits: [
+            'These two rows can go in either order without changing where you match',
+            ...(wv ? [`: #${tidyPos.get(w!)! + 1} `, wv, ' is above both, so whenever both are within reach, so is it'] : []),
+            `. They are shown in ${keyWords} to make the list easier to read.`,
+          ],
+        },
+      ];
+    } else {
+      const reasons = explainOrder(list, prev.id, pair.id);
+      why = describeExplanation(ctx, reasons);
+      whyParts = whyFromReasons(reasons, viewOf, opts.names);
+    }
     return {
       rank: i + 1,
       pairId: pair.id,
@@ -318,6 +340,7 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
       band: pair.band,
       bandLabel: BAND_LABEL[pair.band],
       why,
+      whyParts,
       locked,
       added: added.has(pair.id),
       pair: view(pair),
@@ -373,7 +396,7 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
 
 export type MoveResult =
   | { ok: true; pin: Pin }
-  | { ok: false; blocking: Array<Link & { text: string }> };
+  | { ok: false; blocking: Array<Link & { text: string }>; parts: WhyPart[] };
 
 /**
  * `higher` should sit directly above `lower`: a pin to save, or why it isn't allowed.
@@ -384,5 +407,11 @@ export function checkMove(data: CoupleData, higher: string, lower: string, names
   const res = proposeMove(result.list, higher, lower, moved);
   if (res.ok) return res;
   const ctx = { programs: shortNamed(input.programs, input.lists), partnerNames: names };
-  return { ok: false, blocking: res.blocking.map((l) => ({ ...l, text: describeLink(ctx, l) })) };
+  const view = pairViewer(input);
+  const byId = new Map(result.pairs.map((p) => [p.id, p]));
+  const viewOf = (id: string) => {
+    const p = byId.get(id);
+    return p ? view(p) : null;
+  };
+  return { ok: false, blocking: res.blocking.map((l) => ({ ...l, text: describeLink(ctx, l) })), parts: whyFromLinks(res.blocking, viewOf, names) };
 }

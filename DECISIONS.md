@@ -970,3 +970,19 @@ option was taken. Newest phases are at the bottom.
        works in dark mode. The sign-in page uses the same background.
      - Sign-in is email only (magic link). "Continue with Google" and its server action are
        removed; the page says the same link creates an account for new people.
+
+136. **A move that breaks a rule is kept, not refused** (bug log #20). Dragging a row against a rule
+     used to bounce it back, with a warning at the top of the page that was often off-screen.
+     Now the move is saved where it was dropped and a floating notice says what it clashes
+     with, offering **Undo move** or **Resolve on Conflicts** (the clash listed first there).
+     The clash is a circle on the Conflicts step like any other; dropping the rule keeps the row
+     where it is, dropping the move sends it back. While a clash is unresolved the list follows
+     the move: edges inside a circle are already skipped, and the drag replay now also holds a
+     row dragged down right under its target.
+137. **Explanations name pairs as chips** (bug log #21). "Why here", blocked-move notices and the
+     specific-comparison panel are built from parts (`WhyPart` in `lib/pair-view.ts`), so each
+     pair renders as the same coloured short-name chips used elsewhere, and the "(rule)" and
+     "(automatic)" tags are gone.
+138. **Conflict statements: distance only, and dots not letters** (bug log #22). The pair tiles
+     show just the miles, so the names have room; the A/B/C squares, which read like tiers, are
+     dots on a timeline; where each statement comes from sits under its two pairs.

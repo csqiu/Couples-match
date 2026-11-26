@@ -5,10 +5,10 @@ import { CSS } from '@dnd-kit/utilities';
 import type { CoupleData, StoredSettings } from '@pairwise/db';
 import { useDroppable } from '@dnd-kit/core';
 import { NRMP_RULES, type MatchType } from '@pairwise/engine';
-import { ArrowDownUp, CircleAlert, CircleCheck, Crosshair, Download, FlaskConical, GripVertical, History, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, X } from 'lucide-react';
+import { ArrowDownUp, CircleAlert, CircleCheck, Crosshair, Download, FlaskConical, GripVertical, History, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, Undo2, X } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useId, useMemo, useRef, useState } from 'react';
-import { PairDetails, PairMedium, PairNames, ProgramChip } from '@/components/pair';
+import { PairDetails, PairMedium, PairNames, ProgramChip, WhyText } from '@/components/pair';
 import { BAND_ROW, BandBadge } from '@/components/proximity';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,7 +19,6 @@ import { cn } from '@/lib/cn';
 import { toCsv } from '@/lib/csv-export';
 import { checklistFor, DEFAULT_LIST_ORDER, feesFor, RANK_LIMIT, type AvailablePair, type ListOrder, type ListRow, type MoveResult } from '@/lib/final-list';
 import { useEngine, useFinalList } from '@/lib/use-analysis';
-import { breakLink } from '../conflicts/actions';
 import { addDragPin, removePin, saveVersion, setIncluded, setListLength, setListOrder, setNoMatchUnlocked } from './actions';
 import { allReachable, simulate, SimulatorPanel, type RowReach, type Scenario } from './simulator';
 
@@ -73,7 +72,8 @@ export function ListView({
   const dndId = useId();
 
   const lengthTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [blocked, setBlocked] = useState<{ higher: string; lower: string; moved: 'higher' | 'lower'; include?: string; res: Extract<MoveResult, { ok: false }> } | null>(null);
+  /** A move that clashes with a rule: kept where it was dropped, with Undo or Resolve (bug log #20). */
+  const [clash, setClash] = useState<{ pinId: string; pairId: string; added: boolean; parts: Extract<MoveResult, { ok: false }>['parts'] } | null>(null);
   const [versionName, setVersionName] = useState('');
   const [versionNote, setVersionNote] = useState('');
   const [saving, setSaving] = useState(false);
@@ -93,11 +93,15 @@ export function ListView({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  async function savePin(higher: string, lower: string, moved: 'higher' | 'lower') {
+  async function savePin(higher: string, lower: string, moved: 'higher' | 'lower', quiet = false): Promise<string | null> {
     const res = await addDragPin(higher, lower, moved);
-    if (res.error || !res.id) return toast({ message: `Couldn’t save: ${res.error}` });
+    if (res.error || !res.id) {
+      toast({ message: `Couldn’t save: ${res.error}` });
+      return null;
+    }
     const id = res.id;
     setLocalPins((xs) => [...xs, { id, higher_pair: higher, lower_pair: lower, source: 'manual_drag', comparison_id: null, moved_pair: moved }]);
+    if (quiet) return id;
     toast({
       message: 'Moved. Saved as your ordering.',
       action: {
@@ -108,9 +112,26 @@ export function ListView({
         },
       },
     });
+    return id;
   }
 
-  async function include(pairId: string, on: boolean) {
+  /** The move goes against a rule: keep it where it was dropped and say so, with Undo and Resolve. */
+  async function keepClashing(higher: string, lower: string, moved: 'higher' | 'lower', res: Extract<MoveResult, { ok: false }>, include?: string) {
+    if (include) await includePair(include, true);
+    const pinId = await savePin(higher, lower, moved, true);
+    if (pinId) setClash({ pinId, pairId: moved === 'higher' ? higher : lower, added: !!include, parts: res.parts });
+  }
+
+  async function undoClash() {
+    const c = clash;
+    if (!c) return;
+    setClash(null);
+    setLocalPins((xs) => xs.filter((p) => p.id !== c.pinId));
+    await removePin(c.pinId);
+    if (c.added) await includePair(c.pairId, false);
+  }
+
+  async function includePair(pairId: string, on: boolean) {
     const ids = new Set(settings.includedPairs ?? []);
     if (on) ids.add(pairId);
     else ids.delete(pairId);
@@ -123,12 +144,12 @@ export function ListView({
   async function addAt(pairId: string, targetId: string | null) {
     const target = targetId ? rows.find((r) => r.pairId === targetId) : null;
     if (!target || target.locked) {
-      await include(pairId, true); // dropped at the end: it joins in its own place
+      await includePair(pairId, true); // dropped at the end: it joins in its own place
       return toast({ message: 'Added to your list.' });
     }
     const check = await call({ kind: 'move', data: merged, moving: pairId, target: target.pairId, names, moved: 'higher' });
-    if (!check.ok) return setBlocked({ higher: pairId, lower: target.pairId, moved: 'higher', include: pairId, res: check });
-    await include(pairId, true);
+    if (!check.ok) return keepClashing(pairId, target.pairId, 'higher', check, pairId);
+    await includePair(pairId, true);
     await savePin(pairId, target.pairId, 'higher');
   }
 
@@ -148,7 +169,7 @@ export function ListView({
     const moved = up ? 'higher' : 'lower';
     const check = await call({ kind: 'move', data: merged, moving: higher, target: lower, names, moved });
     if (check.ok) await savePin(higher, lower, moved);
-    else setBlocked({ higher, lower, moved, res: check });
+    else await keepClashing(higher, lower, moved, check);
   }
 
   if (!result) return <div className="glass h-96 animate-pulse" aria-label="Loading" />;
@@ -192,34 +213,6 @@ export function ListView({
         </div>
       </div>
 
-      {blocked ? (
-        <div role="alertdialog" aria-labelledby="blocked-title" className="rounded-[20px] border border-warn/50 bg-warn-soft/90 p-4">
-          <p id="blocked-title" className="font-medium text-warn">That move goes against something you set:</p>
-          <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm">
-            {blocked.res.blocking.map((l, i) => (
-              <li key={i}>{l.text}</li>
-            ))}
-          </ul>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              onClick={async () => {
-                const b = blocked;
-                setBlocked(null);
-                for (const link of b.res.blocking) {
-                  const r = await breakLink({ from: link.from, to: link.to, reasons: link.reasons });
-                  if (r.error) return toast({ message: `Couldn’t override: ${r.error}` });
-                }
-                if (b.include) await include(b.include, true);
-                await savePin(b.higher, b.lower, b.moved);
-              }}
-            >
-              Override with an exception
-            </Button>
-            <Button variant="secondary" onClick={() => setBlocked(null)}>Cancel</Button>
-          </div>
-        </div>
-      ) : null}
-
       {scenario ? (
         <SimulatorPanel programs={result.programs} names={names} rows={simRows} scenario={scenario} onChange={setScenario} onClose={() => setScenario(null)} />
       ) : null}
@@ -254,7 +247,7 @@ export function ListView({
                     overLimit={r.rank > RANK_LIMIT}
                     names={names}
                     total={rows.length}
-                    onRemove={r.added ? () => void include(r.pairId, false) : undefined}
+                    onRemove={r.added ? () => void includePair(r.pairId, false) : undefined}
                   />
                 </Fragment>
               ))}
@@ -331,7 +324,7 @@ export function ListView({
             </div>
           </Card>
 
-          <AvailablePanel pairs={result.available} names={names} onAdd={(id) => void include(id, true).then(() => toast({ message: 'Added to your list.' }))} />
+          <AvailablePanel pairs={result.available} names={names} onAdd={(id) => void includePair(id, true).then(() => toast({ message: 'Added to your list.' }))} />
 
           {fees ? (
             <Card className="p-4 sm:p-4" data-testid="fees">
@@ -417,6 +410,8 @@ export function ListView({
       </div>
       </DndContext>
 
+      <ClashNotice clash={clash} unresolved={result.hasCycles} names={names} onUndo={() => void undoClash()} onClose={() => setClash(null)} />
+
       {over > 0 ? (
         <div
           role="status"
@@ -490,7 +485,7 @@ function Row({
           label={label}
           trigger={<PairNames pair={row.pair} columns className="min-h-11 content-center py-1" />}
         >
-          <PairMedium pair={row.pair} names={names} heading={`Rank ${row.rank} of ${total}`} why={row.why}>
+          <PairMedium pair={row.pair} names={names} heading={`Rank ${row.rank} of ${total}`} why={<WhyText parts={row.whyParts} names={names} fallback={row.why} />}>
             <Link
               href={`/app/compare?mode=specific&a=${encodeURIComponent(row.pairId)}`}
               className={buttonVariants({ variant: 'secondary', size: 'sm', className: 'self-start' })}
@@ -612,5 +607,61 @@ function AvailableItem({ pair, names, onAdd }: { pair: AvailablePair; names: [st
         <Plus className="h-4 w-4" aria-hidden />
       </button>
     </li>
+  );
+}
+
+/**
+ * Floating notice for a move that clashes with a rule (bug log #20). The row stays where it
+ * was dropped; the couple can undo it, or resolve the clash on the Conflicts step. While any
+ * clash is unresolved, a smaller notice stays up.
+ */
+function ClashNotice({
+  clash,
+  unresolved,
+  names,
+  onUndo,
+  onClose,
+}: {
+  clash: { pinId: string; pairId: string; parts: Extract<MoveResult, { ok: false }>['parts'] } | null;
+  unresolved: boolean;
+  names: [string, string];
+  onUndo: () => void;
+  onClose: () => void;
+}) {
+  if (!clash && !unresolved) return null;
+  const href = clash ? `/app/conflicts?pair=${encodeURIComponent(clash.pairId)}` : '/app/conflicts';
+  return (
+    <div
+      role={clash ? 'alert' : 'status'}
+      data-testid="clash-notice"
+      className="fixed inset-x-4 bottom-16 z-30 rounded-[20px] border border-warn/60 bg-surface p-4 shadow-glass sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[420px]"
+    >
+      <div className="flex items-start gap-3">
+        <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-warn" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-warn">{clash ? 'Kept where you put it, but it clashes with something you set' : 'Your list has a conflict to resolve'}</p>
+          {clash ? (
+            <p className="mt-1 text-[13px]">
+              <WhyText parts={clash.parts} names={names} />
+            </p>
+          ) : (
+            <p className="mt-1 text-[13px] text-muted">Rows involved stay where you put them until you choose what gives way.</p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {clash ? (
+              <Button size="sm" variant="secondary" onClick={onUndo}>
+                <Undo2 className="h-4 w-4" aria-hidden /> Undo move
+              </Button>
+            ) : null}
+            <Link href={href} className={buttonVariants({ size: 'sm' })}>Resolve on Conflicts</Link>
+          </div>
+        </div>
+        {clash ? (
+          <button onClick={onClose} className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-surface-2" aria-label="Hide this notice">
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+        ) : null}
+      </div>
+    </div>
   );
 }

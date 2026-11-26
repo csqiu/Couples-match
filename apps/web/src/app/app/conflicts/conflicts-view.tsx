@@ -2,11 +2,13 @@
 import type { CoupleData } from '@pairwise/db';
 import { ArrowRight, CircleCheck, Link2Off } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 import type { ConflictView } from '@/lib/analysis';
+import { cn } from '@/lib/cn';
 import { useAnalysis } from '@/lib/use-analysis';
 import { PairLarge, PairTile, PickedTag } from '@/components/pair';
 import { breakLink, confirmAnswer, flipAnswer, removeAnswer, resolveDisagreement } from './actions';
@@ -34,6 +36,15 @@ export function ConflictsView({
 }) {
   const opts = useMemo(() => ({ me, names, answerMode }), [me, names, answerMode]);
   const { result, busy } = useAnalysis(data, opts);
+  // Arriving from a move that clashes (final list): that conflict first, and marked.
+  const focus = useSearchParams().get('pair');
+  const involves = (c: ConflictView) =>
+    !!focus && (c.links?.some((l) => l.from === focus || l.to === focus) || c.left?.id === focus || c.right?.id === focus);
+  const conflicts = useMemo(() => {
+    const list = result?.conflicts ?? [];
+    return [...list.filter(involves), ...list.filter((c) => !involves(c))];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, focus]);
   const [pending, setPending] = useState<string | null>(null);
   const toast = useToast();
   const hideTierOf = privateTiers ? (role === 'a' ? 1 : 0) : null;
@@ -76,7 +87,7 @@ export function ConflictsView({
         <Link href="/app/compare" className={buttonVariants({ variant: 'secondary' })}>Back to questions</Link>
       </div>
 
-      {result.conflicts.length === 0 ? (
+      {conflicts.length === 0 ? (
         <div className="glass flex flex-col items-center gap-3 p-10 text-center" role="status">
           <CircleCheck className="h-8 w-8 text-accent" aria-hidden />
           <p className="card-title">No conflicts</p>
@@ -84,9 +95,10 @@ export function ConflictsView({
         </div>
       ) : (
         <ul className="flex flex-col gap-4" data-testid="conflicts">
-          {result.conflicts.map((c) => (
+          {conflicts.map((c) => (
             <li key={c.id}>
-              <Card tone="strong" className={busy || pending === c.id ? 'opacity-60' : ''}>
+              <Card tone="strong" className={cn(busy || pending === c.id ? 'opacity-60' : '', involves(c) && 'ring-2 ring-warn/60')}>
+                {involves(c) ? <p className="eyebrow mb-2 text-warn">The move you just made</p> : null}
                 <h2 className="card-title mb-3">{TITLES[c.kind]}</h2>
                 {c.kind === 'cycle' ? (
                   <div className="flex flex-col">
@@ -94,33 +106,40 @@ export function ConflictsView({
                       Each line says one pair must be above the next. Together they loop back to the start, so one has to go.
                       Tap the one that’s least true for you; only that one is dropped.
                     </p>
-                    {c.links!.map((l, i) => (
-                      <div key={i} className="flex flex-col">
-                        {i ? <span className="ml-[22px] h-5 border-l-2 border-dashed border-border sm:ml-[29px]" aria-hidden /> : null}
-                        <button
-                          className="glass-row grid min-h-12 grid-cols-[26px_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3 py-3 text-left transition-colors duration-150 hover:border-action hover:bg-action-soft sm:px-4 lg:grid-cols-[26px_minmax(0,1fr)_72px_minmax(0,1fr)_minmax(0,200px)_20px]"
-                          disabled={!!pending}
-                          aria-label={`${String.fromCharCode(65 + i)}: ${l.text} Drop this one.`}
-                          onClick={() => run(c.id, () => breakLink({ from: l.from, to: l.to, reasons: l.reasons }), 'Dropped that link.')}
-                        >
-                          <span className="row-span-4 flex h-6 w-6 items-center justify-center self-start rounded-[8px] bg-surface-2 font-mono text-xs font-semibold text-muted lg:row-span-1 lg:self-center" aria-hidden>
-                            {String.fromCharCode(65 + i)}
+                    <ol className="flex flex-col">
+                      {c.links!.map((l, i) => (
+                        <li key={i} className="grid grid-cols-[14px_minmax(0,1fr)] gap-x-3">
+                          {/* A timeline: one dot per statement, joined by a dashed line (no letters, which read like tiers). */}
+                          <span className="flex flex-col items-center" aria-hidden>
+                            <span className="mt-6 h-2.5 w-2.5 shrink-0 rounded-full bg-muted" />
+                            <span className="w-0 flex-1 border-l-2 border-dashed border-border" />
                           </span>
-                          {l.fromPair ? <PairTile pair={l.fromPair} rank={l.fromRank} /> : <span className="text-sm">{l.text}</span>}
-                          <span className="flex items-center gap-1.5 text-muted lg:flex-col lg:gap-0.5" aria-hidden>
-                            <span className="eyebrow">above</span>
-                            <ArrowRight className="h-4 w-4 rotate-90 lg:rotate-0" />
-                          </span>
-                          {l.toPair ? <PairTile pair={l.toPair} rank={l.toRank} /> : null}
-                          <span className="flex flex-col gap-0.5">
-                            <span className="eyebrow text-muted">{l.source.label}</span>
-                            <span className="text-[13px] leading-snug">{l.source.detail}</span>
-                          </span>
-                          <Link2Off className="hidden h-4 w-4 text-muted lg:block" aria-hidden />
-                        </button>
-                      </div>
-                    ))}
-                    <p className="mt-2 ml-1 font-mono text-xs text-muted" aria-hidden>↺ and A is above B again: back to the start</p>
+                          <button
+                            className="glass-row mb-2 flex flex-col gap-2 px-3 py-3 text-left transition-colors duration-150 hover:border-action hover:bg-action-soft sm:px-4"
+                            disabled={!!pending}
+                            aria-label={`${l.text} Drop this one.`}
+                            onClick={() => run(c.id, () => breakLink({ from: l.from, to: l.to, reasons: l.reasons }), 'Dropped that link.')}
+                          >
+                            <span className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-3">
+                              {l.fromPair ? <PairTile pair={l.fromPair} rank={l.fromRank} /> : <span className="text-sm">{l.text}</span>}
+                              <span className="flex items-center gap-1.5 text-muted md:flex-col md:gap-0.5" aria-hidden>
+                                <span className="eyebrow">above</span>
+                                <ArrowRight className="h-4 w-4 rotate-90 md:rotate-0" />
+                              </span>
+                              {l.toPair ? <PairTile pair={l.toPair} rank={l.toRank} /> : null}
+                            </span>
+                            <span className="flex items-start gap-2 text-[13px] leading-snug">
+                              <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:gap-2">
+                                <span className="eyebrow shrink-0 text-muted sm:mt-[3px]">{l.source.label}</span>
+                                <span className="min-w-0">{l.source.detail}</span>
+                              </span>
+                              <Link2Off className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                    <p className="ml-[26px] font-mono text-xs text-muted" aria-hidden>↺ and the first is above the second again: back to the start</p>
                   </div>
                 ) : null}
 
