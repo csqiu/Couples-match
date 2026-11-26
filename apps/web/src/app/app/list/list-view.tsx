@@ -1,6 +1,6 @@
 'use client';
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useDraggable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { CoupleData, StoredSettings } from '@pairwise/db';
 import { useDroppable } from '@dnd-kit/core';
@@ -95,13 +95,37 @@ export function ListView({
 
   const lengthTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** A move that clashes with a rule: kept where it was dropped, with Undo or Resolve (bug log #20). */
-  const [clash, setClash] = useState<{ pinId: string; pairId: string; added: boolean; parts: Extract<MoveResult, { ok: false }>['parts'] } | null>(null);
+  const [clash, setClash] = useState<{ pinId: string; pairId: string; added: boolean; before?: string[]; parts: Extract<MoveResult, { ok: false }>['parts'] } | null>(null);
   const [versionName, setVersionName] = useState('');
   const [versionNote, setVersionNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [coffee, setCoffee] = useState(false); // the coffee button, floated after a CSV export
 
-  const rows = result?.rows ?? [];
+  /**
+   * The order shown while a move is being checked, saved and recalculated (bug log #20). Without
+   * it the dropped row animates back to where it was, then jumps when the new list arrives. It
+   * also holds the old order the moment Undo is pressed, so the row glides back at once.
+   */
+  const [shown, setShown] = useState<{ ids: string[]; settle: boolean } | null>(null);
+  const engineRows = result?.rows ?? [];
+  const rows = useMemo(() => {
+    if (!shown) return engineRows;
+    const byId = new Map(engineRows.map((r) => [r.pairId, r]));
+    const ordered = shown.ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
+    const rest = engineRows.filter((r) => !shown.ids.includes(r.pairId));
+    return [...ordered, ...rest].map((r, i) => (r.rank === i + 1 ? r : { ...r, rank: i + 1 }));
+  }, [engineRows, shown]);
+  // Once the saved change is in a freshly calculated list, that list takes over again.
+  const shownResult = useRef(result);
+  useEffect(() => {
+    if (shown?.settle && result !== shownResult.current && !busy) setShown(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, busy]);
+  /** Show `ids` now; let the next freshly calculated list replace it once `settle` is set. */
+  function showOrder(ids: string[], settle = false) {
+    shownResult.current = result;
+    setShown({ ids, settle });
+  }
   const n = result?.length ?? 0; // rows that count (first RANK_LIMIT)
   const over = Math.max(0, rows.length - RANK_LIMIT);
   const fees = useMemo(() => (result ? feesFor(result.rows, n) : null), [result, n]);
@@ -116,21 +140,26 @@ export function ListView({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  async function savePin(higher: string, lower: string, moved: 'higher' | 'lower', quiet = false): Promise<string | null> {
+  async function savePin(higher: string, lower: string, moved: 'higher' | 'lower', quiet = false, before?: string[]): Promise<string | null> {
     const res = await addDragPin(higher, lower, moved);
     if (res.error || !res.id) {
       toast({ message: `Couldn’t save: ${res.error}` });
+      setShown(null); // nothing saved: back to the list as it is
       return null;
     }
     const id = res.id;
     pinAddedAt.current.set(id, Date.now());
     setLocalPins((xs) => [...xs, { id, higher_pair: higher, lower_pair: lower, source: 'manual_drag', comparison_id: null, moved_pair: moved }]);
+    // The list will be recalculated with this move in it; let that copy take over when it lands.
+    setShown((cur) => (cur ? { ...cur, settle: true } : cur));
     if (quiet) return id;
     toast({
       message: 'Moved. Saved as your ordering.',
       action: {
         label: 'Undo',
         onClick: async () => {
+          // Glide back at once; the list recalculated without the move takes over when it lands.
+          if (before) showOrder(before, true);
           setLocalPins((xs) => xs.filter((p) => p.id !== id));
           await removePin(id);
         },
@@ -140,16 +169,18 @@ export function ListView({
   }
 
   /** The move goes against a rule: keep it where it was dropped and say so, with Undo and Resolve. */
-  async function keepClashing(higher: string, lower: string, moved: 'higher' | 'lower', res: Extract<MoveResult, { ok: false }>, include?: string) {
+  async function keepClashing(higher: string, lower: string, moved: 'higher' | 'lower', res: Extract<MoveResult, { ok: false }>, include?: string, before?: string[]) {
     if (include) await includePair(include, true);
-    const pinId = await savePin(higher, lower, moved, true);
-    if (pinId) setClash({ pinId, pairId: moved === 'higher' ? higher : lower, added: !!include, parts: res.parts });
+    const pinId = await savePin(higher, lower, moved, true, before);
+    if (pinId) setClash({ pinId, pairId: moved === 'higher' ? higher : lower, added: !!include, before, parts: res.parts });
   }
 
   async function undoClash() {
     const c = clash;
     if (!c) return;
     setClash(null);
+    // Glide back to where it came from right away, then let the recalculated list take over.
+    if (c.before) showOrder(c.before, true);
     setLocalPins((xs) => xs.filter((p) => p.id !== c.pinId));
     await removePin(c.pinId);
     if (c.added) await includePair(c.pairId, false);
@@ -191,9 +222,12 @@ export function ListView({
     const up = to < from;
     const [higher, lower] = up ? [activeId, overId] : [overId, activeId];
     const moved = up ? 'higher' : 'lower';
+    // The row stays where it was dropped while the move is checked and saved.
+    const before = rows.map((r) => r.pairId);
+    showOrder(arrayMove(before, from, to));
     const check = await call({ kind: 'move', data: merged, moving: higher, target: lower, names, moved });
-    if (check.ok) await savePin(higher, lower, moved);
-    else await keepClashing(higher, lower, moved, check);
+    if (check.ok) await savePin(higher, lower, moved, false, before);
+    else await keepClashing(higher, lower, moved, check, undefined, before);
   }
 
   if (!result) return <div className="glass h-96 animate-pulse" aria-label="Loading" />;
@@ -479,7 +513,12 @@ function Row({
   onRemove?: () => void;
   reach?: RowReach;
 }) {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: row.pairId, disabled: row.locked });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+    id: row.pairId,
+    disabled: row.locked,
+    // Animate every change of place (a drop, an Undo, a recalculated list), not only during a drag.
+    animateLayoutChanges: () => true,
+  });
   const label = `Rank ${row.rank}: ${names[0]} ${row.pair.sides[0]?.name ?? 'No Match'}; ${names[1]} ${row.pair.sides[1]?.name ?? 'No Match'}. Show details.`;
   return (
     <li
