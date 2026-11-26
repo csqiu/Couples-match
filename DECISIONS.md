@@ -1002,3 +1002,30 @@ option was taken. Newest phases are at the bottom.
      - **Local Supabase runs Postgres 17** like production (#29); the CLI rejects 16.
      - **`list_versions.pair_count`** (#30, migration 13): a generated column, so the dashboard
        and Versions don't download every frozen list to count it.
+
+140. **Theme warm-up** (`/warmup`, `lib/warmup.ts`, `lib/looks.ts`). A two-minute demo of the
+     engine that also picks how the app looks: rank 4 fonts (partner 1's list), rank 4 color
+     schemes (partner 2's), answer "this or that", and get all 16 looks in order. It runs the
+     real candidates, constraint graph, model fit, scoring and ranking. Every look is
+     "together", so the model learns one trade-off: font against colors.
+     - **Its own question picker.** With no distance, the engine's moot rule (MOOT_CONFIDENCE in the engine's defaults) leaves
+       nothing to ask, which is right for the Match: the best mutually available pair wins. A look
+       isn't matched, it's chosen, so the warm-up asks about the most uncertain neighbouring pair
+       the common-sense rule leaves open, at most 6 questions.
+     - **Looks are tokens only.** `[data-font]` / `[data-palette]` on `<html>` (or on any element,
+       for previews) swap the `--look-*` font variables and every color token, in light and dark.
+       Text pairs were checked at 4.5:1 on the worst-case glass. Sage & Plum stays the default.
+     - **Saved on the device** (localStorage), applied by an inline script before paint so there's
+       no flash, including on the landing page. Account › Appearance lists the 16 looks to switch
+       between. Not yet synced to the profile across devices.
+
+141. **Landing page: swirling background and floating panels** (`app/page.tsx`, globals.css
+     `.landing-swirl`, `.landing-float`). Four panels (the hero; built for couples; the logic
+     engine's four steps; the theme warm-up with all 16 looks) float in and out as you scroll,
+     using CSS scroll-driven animations (`animation-timeline: view()`), fading only at the screen
+     edges and never blurring, so a panel taller than the screen stays readable. Browsers without them,
+     and reduced motion, show the panels still. Behind them, four sage and plum color fields
+     swirl slowly on a fixed background, coloured from the look in use. The merging-lists
+     animation (`components/merge-backdrop.tsx`, `lib/merge-animation.ts`) is no longer shown
+     but is kept, with its tests, in case it comes back. The warm-up intro is now just its
+     heading, one paragraph and Start.

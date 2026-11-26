@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { safeNext } from '@/lib/safe-next';
 import { Logo } from '@/components/logo';
 import { Card } from '@/components/ui/card';
@@ -21,6 +22,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <p className="mt-1 mb-6 text-sm text-muted">No passwords: we email you a link. New here? The same link creates your account.</p>
         {error ? <p className="mb-4 text-sm text-danger" role="alert">That sign-in link didn’t work. Request a new one.</p> : null}
         <LoginForm next={next} email={email} devLogin={DEV_LOGIN_ENABLED} />
+        <p className="mt-5 text-xs text-muted">
+          By continuing, you agree to our <Link href="/terms" className="underline underline-offset-2">Terms of Use</Link> and{' '}
+          <Link href="/privacy" className="underline underline-offset-2">Privacy Policy</Link>.
+        </p>
       </Card>
     </main>
   );
