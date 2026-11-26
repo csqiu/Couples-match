@@ -4,6 +4,7 @@ import { BAND_LABEL, type MatchType } from '@pairwise/engine';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { PairChip, PairNames } from '@/components/pair';
 import { BAND_ICON, BandBadge } from '@/components/proximity';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -113,7 +114,7 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
           {selectedRow ? (
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3 text-sm" aria-live="polite">
               <span className="min-w-0">
-                <strong className="font-mono text-plum-deep">#{selectedRow.rank}</strong> {selectedRow.sides[0].name} + {selectedRow.sides[1].name}
+                <strong className="font-mono text-plum-deep">#{selectedRow.rank}</strong> <PairChip pair={selectedRow.pair} names={names} />
               </span>
               <BandBadge band={selectedRow.band} bandLabel={selectedRow.bandLabel} distanceMi={selectedRow.distanceMi} />
             </div>
@@ -140,15 +141,11 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
                     aria-pressed={l.rank === selected}
                     className={cn('flex w-full flex-col gap-1 px-4 py-2.5 text-left text-sm hover:bg-glass-strong', l.rank === selected && 'bg-action-soft ring-2 ring-action/25 ring-inset')}
                   >
-                    <span className="flex min-w-0 items-baseline gap-2">
+                    {/* The small pair, as on the final list: short names in partner colours, then the distance. */}
+                    <span className="flex min-w-0 items-center gap-2" title={`${names[0]}: ${row.sides[0].name}; ${names[1]}: ${row.sides[1].name}`}>
                       <span className="w-8 shrink-0 font-mono font-semibold tabular-nums text-plum-deep">#{l.rank}</span>
-                      <span className="min-w-0">
-                        <span className="block truncate">{row.sides[0].name}</span>
-                        <span className="block truncate text-muted">{row.sides[1].name}</span>
-                      </span>
-                    </span>
-                    <span className="pl-10">
-                      <BandBadge band={row.band} bandLabel={row.bandLabel} distanceMi={row.distanceMi} />
+                      <PairNames pair={row.pair} className="flex-1" />
+                      <BandBadge band={row.band} bandLabel={row.bandLabel} distanceMi={row.distanceMi} compact="always" />
                     </span>
                   </button>
                 </li>

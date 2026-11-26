@@ -6,6 +6,7 @@
 import { shortProgramName } from '@pairwise/data';
 import { pairViewer, shortNamed, whyFromLinks, whyFromReasons, type PairView, type ProgramSide, type WhyPart } from './pair-view';
 import { buildEngineInput, type CoupleData, type StoredSettings } from '@pairwise/db';
+import { betterSource, type ListTies, type TieSource } from './list-ties';
 import {
   BAND_LABEL,
   describeExplanation,
@@ -29,6 +30,8 @@ import {
   type Band,
   type EngineInput,
   type EngineResult,
+  type EdgeReason,
+  type Graph,
   type Link,
   type MatchType,
   type Pair,
@@ -133,6 +136,8 @@ export interface FinalList {
   tidied: number;
   /** Each partner's programs in their own order. */
   programs: [ProgramOption[], ProgramOption[]];
+  /** What must stay above or below each row (the brackets beside a selected row). */
+  ties: ListTies;
 }
 
 export interface PartnerFee {
@@ -391,7 +396,51 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
     order,
     tidied,
     programs,
+    ties: tiesOf(list.graph, new Set(rows.filter((r) => !r.locked).map((r) => r.pairId))),
   };
+}
+
+function tieSource(r: EdgeReason): TieSource | null {
+  switch (r.kind) {
+    case 'pin':
+      return r.source === 'manual_drag' ? 'drag' : r.source === 'comparison' ? 'answer' : 'choice';
+    case 'answer':
+      return 'answer';
+    case 'tier_a':
+      return r.partner === 0 ? 'tier0' : 'tier1';
+    case 'dominance':
+      return 'auto';
+    case 'no_match_bottom':
+      return null; // obvious, and No Match rows are usually locked at the end anyway
+  }
+}
+
+/** The constraint graph's direct ties between rows on the list (`shown`), hubs kept as groups. */
+function tiesOf(g: Graph, shown: Set<string>): ListTies {
+  const links: ListTies['links'] = [];
+  const id = (u: number) => g.pairs[u].id;
+  for (let u = 0; u < g.n; u++) {
+    if (!shown.has(id(u))) continue;
+    for (const v of g.out[u]) {
+      if (v >= g.n || !shown.has(id(v))) continue;
+      let best: TieSource | null = null;
+      for (const r of g.reasons.get(u * g.size + v) ?? []) {
+        const s = tieSource(r);
+        if (s) best = best ? betterSource(best, s) : s;
+      }
+      if (best) links.push({ higher: id(u), lower: id(v), source: best });
+    }
+  }
+  const groups: ListTies['groups'] = [];
+  g.hubs.forEach((hub, i) => {
+    const s = tieSource(hub.reason);
+    if (!s) return;
+    const h = g.n + i;
+    const tops = g.in[h].map(id).filter((x) => shown.has(x));
+    const bottoms = g.out[h].map(id).filter((x) => shown.has(x));
+    if (tops.length && bottoms.length) groups.push({ source: s, tops, bottoms });
+  });
+  return { links, groups };
 }
 
 export type MoveResult =

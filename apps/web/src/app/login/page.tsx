@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Logo } from '@/components/logo';
-import { MergeBackdrop } from '@/components/merge-backdrop';
 import { Card } from '@/components/ui/card';
 import { getContext } from '@/lib/context';
 import { DEV_LOGIN_ENABLED } from '@/lib/env';
@@ -13,9 +12,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { next = '/app', email, error } = await searchParams;
   if (await getContext()) redirect(next.startsWith('/') ? next : '/app');
   return (
-    <>
-    <MergeBackdrop />
-    <main id="main" tabIndex={-1} className="relative z-10 mx-auto flex max-w-md flex-col gap-6 px-4 py-12 outline-none">
+    <main id="main" tabIndex={-1} className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12 outline-none">
       <Logo className="self-center" />
       <Card tone="strong" className="p-6 sm:p-[30px]">
         <h1 className="font-display text-[28px] leading-tight font-semibold tracking-[-0.02em]">Sign in</h1>
@@ -24,6 +21,5 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <LoginForm next={next} email={email} devLogin={DEV_LOGIN_ENABLED} />
       </Card>
     </main>
-    </>
   );
 }
