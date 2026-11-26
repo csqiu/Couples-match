@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { displayName, requireCouple } from '@/lib/context';
 import { createClient } from '@/lib/supabase/server';
 import { ProgramsView } from './programs-view';
-import { PROGRAM_COLUMNS, SEARCH_LIMIT, type ProgramLite } from './types';
+import { PROGRAM_COLUMNS, SEARCH_LIMIT, type MyProgram, type ProgramLite } from './types';
 
 export const metadata: Metadata = { title: 'My programs' };
 
@@ -13,11 +13,11 @@ export default async function ProgramsPage() {
   const partnerId = ctx.role === 'a' ? ctx.couple.partner_b : ctx.couple.partner_a;
 
   const [{ data: ranks }, { data: specialties }] = await Promise.all([
-    supabase.from('individual_ranks').select(`user_id, rank, program:programs(${PROGRAM_COLUMNS})`).eq('couple_id', ctx.couple.id).order('rank'),
+    supabase.from('individual_ranks').select(`user_id, rank, short_name, program:programs(${PROGRAM_COLUMNS})`).eq('couple_id', ctx.couple.id).order('rank'),
     supabase.from('specialties').select('code, name').eq('match_type', ctx.couple.match_type).eq('match_name', ctx.couple.match_name).order('name'),
   ]);
-  const rows = (ranks ?? []) as unknown as Array<{ user_id: string; rank: number; program: ProgramLite }>;
-  const mine = rows.filter((r) => r.user_id === ctx.user.id).map((r) => r.program);
+  const rows = (ranks ?? []) as unknown as Array<{ user_id: string; rank: number; short_name: string | null; program: ProgramLite }>;
+  const mine: MyProgram[] = rows.filter((r) => r.user_id === ctx.user.id).map((r) => ({ ...r.program, my_short: r.short_name }));
   const partners = rows.filter((r) => r.user_id === partnerId).map((r) => r.program);
 
   // Show my specialty's programs first.
@@ -26,6 +26,7 @@ export default async function ProgramsPage() {
     .select(PROGRAM_COLUMNS, { count: 'exact' })
     .eq('specialty_code', ctx.profile.specialty!)
     .order('name')
+    .order('id')
     .limit(SEARCH_LIMIT);
 
   // A list saved when an earlier couple ended, offered back while this list is empty (bug log #1).
@@ -37,6 +38,7 @@ export default async function ProgramsPage() {
   return (
     <ProgramsView
       savedCount={savedCount}
+      mySlot={ctx.role === 'b' ? 2 : 1}
       mySpecialty={ctx.profile.specialty!}
       specialties={specialties ?? []}
       initialResults={(initial ?? []) as ProgramLite[]}

@@ -166,6 +166,12 @@ export function rankPairs(g: Graph, scores: Map<PairId, ScoreSummary>, opts: Ran
           }
         }
       }
+    } else {
+      // Dragged down: right under the target. The pin edge already does this, except while the
+      // drag clashes with a rule (an unresolved cycle, whose edges are skipped): the row then
+      // still sits where it was dropped until the couple resolves the clash.
+      const under = key[d.higher] - 0.5;
+      if (key[d.lower] > under) key[d.lower] = under;
     }
     order = kahn(g, key, skip);
   }

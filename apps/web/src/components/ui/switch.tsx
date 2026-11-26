@@ -22,11 +22,11 @@ export function Switch({
       onClick={() => onChange(!checked)}
       className="inline-flex min-h-11 min-w-11 items-center justify-center"
     >
-      <span className={cn('relative h-6 w-10 rounded-full transition-colors', checked ? 'bg-accent' : 'bg-border')}>
+      <span className={cn('relative h-[26px] w-11 rounded-full transition-colors duration-150', checked ? 'bg-action' : 'bg-border')}>
         <span
           className={cn(
-            'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform',
-            checked && 'translate-x-4',
+            'absolute top-[3px] left-[3px] h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)] transition-transform duration-150',
+            checked && 'translate-x-[18px]',
           )}
         />
       </span>

@@ -14,9 +14,9 @@ const css = (name: string) => getComputedStyle(document.documentElement).getProp
 /** Line style per band, so the bands differ by more than color. */
 export const BAND_LINE: Record<MapBand, { width: number; dash?: number[] }> = {
   together: { width: 4 },
-  commutable: { width: 3 },
-  drivable: { width: 2.5, dash: [3, 2] },
-  apart: { width: 2, dash: [1, 2] },
+  commutable: { width: 3, dash: [2, 1.5] },
+  drivable: { width: 2.5, dash: [4, 2] },
+  apart: { width: 2.5, dash: [0.5, 1.8] },
 };
 
 /** Every pair in the list as a line between the two programs. */
@@ -91,9 +91,9 @@ export function PairMap({
           paint: {
             'circle-radius': 4.5,
             // Partner A filled, partner B as a ring.
-            'circle-color': ['case', ['==', ['get', 'kind'], 'a'], css('--accent'), css('--surface')],
+            'circle-color': ['case', ['==', ['get', 'kind'], 'a'], css('--partner-1'), css('--surface')],
             'circle-stroke-width': 2,
-            'circle-stroke-color': ['case', ['==', ['get', 'kind'], 'a'], css('--surface'), css('--tier-b')],
+            'circle-stroke-color': ['case', ['==', ['get', 'kind'], 'a'], css('--surface'), css('--partner-2')],
           },
         });
         const layers = [...MAP_BANDS.map((b) => `line-${b}`), 'ends'];

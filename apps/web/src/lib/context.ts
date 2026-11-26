@@ -1,5 +1,5 @@
 import 'server-only';
-import type { CoupleRow, InviteRow, ProfileRow, SpecialtyRow } from '@pairwise/db';
+import type { CoupleRow, InviteRow, ProfileRow, RankListRow, SpecialtyRow } from '@pairwise/db';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { createClient } from './supabase/server';
@@ -12,6 +12,8 @@ export interface AppContext {
   role: 'a' | 'b' | null;
   partner: ProfileRow | null;
   openInvite: Pick<InviteRow, 'id' | 'email' | 'expires_at' | 'created_at'> | null;
+  /** The couple's open list (both partners work in the same one). */
+  list: Pick<RankListRow, 'id' | 'number' | 'name'> | null;
 }
 
 /** Everything the signed-in pages need about "me", my couple and my partner. Cached per request. */
@@ -31,7 +33,7 @@ export const getContext = cache(async (): Promise<AppContext | null> => {
   const role = couple ? (couple.partner_a === user.id ? 'a' : 'b') : null;
   const partnerId = couple ? (role === 'a' ? couple.partner_b : couple.partner_a) : null;
 
-  const [{ data: specialty }, { data: partner }, { data: invites }] = await Promise.all([
+  const [{ data: specialty }, { data: partner }, { data: invites }, { data: list }] = await Promise.all([
     profile.specialty
       ? supabase.from('specialties').select('*').eq('code', profile.specialty).single()
       : Promise.resolve({ data: null }),
@@ -47,6 +49,9 @@ export const getContext = cache(async (): Promise<AppContext | null> => {
           .order('created_at', { ascending: false })
           .limit(1)
       : Promise.resolve({ data: [] }),
+    couple?.active_list
+      ? supabase.from('rank_lists').select('id, number, name').eq('id', couple.active_list).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   return {
@@ -57,6 +62,7 @@ export const getContext = cache(async (): Promise<AppContext | null> => {
     role,
     partner: partner ?? null,
     openInvite: invites?.[0] ?? null,
+    list: list ?? null,
   };
 });
 

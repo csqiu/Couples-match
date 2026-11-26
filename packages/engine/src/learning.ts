@@ -13,13 +13,18 @@
  *     0 ≤ pen(commutable) ≤ pen(drivable) ≤ pen(apart),
  *     v_NM below every Tier C value.
  *   z = 0 maps exactly to DEFAULT_PARAMS, so the prior is centered on the defaults.
+ * - With a layout (see features.ts), each program also has a latent that sets the
+ *   gap before it within its tier. Gaps are positive and rescaled to fill the tier's
+ *   span, so a partner's own order and the tiers always hold; only the spacing is
+ *   learned. Its offset in θ is how far the learned spacing moves the program from
+ *   even spacing, so the score stays linear in θ.
  */
 import { effectiveComparisons } from './conflicts';
 import { BT_BETA, DEFAULT_PARAMS, DEFAULT_SETTINGS, MH_STEP_SD, MH_STEPS, PARTICLE_COUNT, PRIOR_LOG_SD } from './defaults';
 import { THETA_DIM, dot, pairFeatures, paramsToTheta, thetaToParams } from './features';
 export { posteriorMoments, type PosteriorMoments } from './posterior';
 import { createRng, type Rng } from './rng';
-import type { Comparison, CoupleSettings, ModelParams, Pair, PairId, Posterior } from './types';
+import type { Comparison, CoupleSettings, ModelLayout, ModelParams, Pair, PairId, Posterior } from './types';
 
 export const LATENT_DIM = 12;
 
@@ -36,8 +41,13 @@ function centers(d: ModelParams = DEFAULT_PARAMS) {
 }
 const C0 = centers();
 
-/** Maps a latent vector to θ (see features.ts for the layout). */
-export function latentToTheta(z: ArrayLike<number>, out = new Float64Array(THETA_DIM)): Float64Array {
+/** Latent dimension for a layout: the 12 shared parameters plus one per program. */
+export function latentDim(layout?: ModelLayout): number {
+  return layout?.dim ?? LATENT_DIM;
+}
+
+/** Maps a latent vector to θ (see features.ts for the layout). Latent i ↔ θ i for program offsets. */
+export function latentToTheta(z: ArrayLike<number>, layout?: ModelLayout, out = new Float64Array(layout?.dim ?? THETA_DIM)): Float64Array {
   const sd = PRIOR_LOG_SD;
   let minC = Infinity;
   for (const k of [0, 1] as const) {
@@ -59,24 +69,52 @@ export function latentToTheta(z: ArrayLike<number>, out = new Float64Array(THETA
   out[9] = pd;
   out[10] = pa;
   out[11] = minC - C0.nmGap * Math.exp(sd.nm * z[11]);
+  if (layout) {
+    for (const k of [0, 1] as const) {
+      const s = out[k * 4 + 3];
+      for (const group of layout.tiers[k]) {
+        const m = group.length;
+        const first = layout.index[k].get(group[0])!;
+        out[first] = 0;
+        if (m < 2) continue;
+        // Gap before program j (j ≥ 1), from that program's latent; cumulative share of the span.
+        let total = 0;
+        for (let j = 1; j < m; j++) total += Math.exp(sd.spacing * z[layout.index[k].get(group[j])!]);
+        let cum = 0;
+        for (let j = 1; j < m; j++) {
+          const i = layout.index[k].get(group[j])!;
+          cum += Math.exp(sd.spacing * z[i]);
+          // Even spacing puts program j at frac j/(m−1) below the top of the tier.
+          out[i] = s * (j / (m - 1) - cum / total);
+        }
+      }
+    }
+  }
   return out;
 }
 
-export function latentToParams(z: ArrayLike<number>): ModelParams {
-  return thetaToParams(latentToTheta(z));
+export function latentToParams(z: ArrayLike<number>, layout?: ModelLayout): ModelParams {
+  return thetaToParams(latentToTheta(z, layout), layout);
 }
 
-/** Prior sample: `count` particles with equal weights. Deterministic given the seed. */
-export function priorPosterior(seed = 1, count = PARTICLE_COUNT): Posterior {
+/**
+ * Prior sample: `count` particles with equal weights. Deterministic given the seed.
+ * With a layout, the spacing latents come from a separate stream, so the shared
+ * parameters are the same draws as without one.
+ */
+export function priorPosterior(seed = 1, count = PARTICLE_COUNT, layout?: ModelLayout): Posterior {
   const rng = createRng(seed);
+  const extra = createRng(seed ^ 0x2c1b3c6d);
+  const dim = latentDim(layout);
   const latents: number[][] = [];
   const particles: ModelParams[] = [];
   for (let i = 0; i < count; i++) {
     const z = Array.from({ length: LATENT_DIM }, () => rng.normal());
+    for (let d = LATENT_DIM; d < dim; d++) z.push(extra.normal());
     latents.push(z);
-    particles.push(latentToParams(z));
+    particles.push(latentToParams(z, layout));
   }
-  return { particles, weights: new Array(count).fill(1 / count), latents };
+  return { particles, weights: new Array(count).fill(1 / count), latents, ...(layout ? { layout } : {}) };
 }
 
 // ---------------------------------------------------------------------------
@@ -86,6 +124,8 @@ export interface Observation {
   comparisonId: string;
   /** φ(winner) − φ(loser), or φ(left) − φ(right) for a tie. */
   dphi: Float64Array;
+  /** Indices where dphi is non-zero (it is sparse once programs have offsets). */
+  nz: Int32Array;
   dbonus: number;
   tie: boolean;
 }
@@ -95,9 +135,11 @@ export interface FitContext {
   settings?: CoupleSettings;
   /** Seed for resampling and Metropolis moves. */
   seed?: number;
+  /** Per-program offsets; fitModel takes it from the prior. */
+  layout?: ModelLayout;
 }
 
-function featureLookup(pairs: Pair[], settings: CoupleSettings) {
+function featureLookup(pairs: Pair[], settings: CoupleSettings, layout?: ModelLayout) {
   const byId = new Map(pairs.map((p) => [p.id, p]));
   const cache = new Map<PairId, ReturnType<typeof pairFeatures>>();
   return (id: PairId) => {
@@ -105,7 +147,7 @@ function featureLookup(pairs: Pair[], settings: CoupleSettings) {
     if (!f) {
       const p = byId.get(id);
       if (!p) return null;
-      f = pairFeatures(p, settings);
+      f = pairFeatures(p, settings, layout);
       cache.set(id, f);
     }
     return f;
@@ -118,7 +160,7 @@ function featureLookup(pairs: Pair[], settings: CoupleSettings) {
  */
 export function toObservations(comparisons: Comparison[], ctx: FitContext): Observation[] {
   const settings = ctx.settings ?? DEFAULT_SETTINGS;
-  const features = featureLookup(ctx.pairs, settings);
+  const features = featureLookup(ctx.pairs, settings, ctx.layout);
   const { counted } = effectiveComparisons(comparisons);
   const order = new Map(comparisons.map((c, i) => [c, i]));
   counted.sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0) || order.get(a)! - order.get(b)!);
@@ -128,9 +170,10 @@ export function toObservations(comparisons: Comparison[], ctx: FitContext): Obse
     const fw = features(w);
     const fl = features(l);
     if (!fw || !fl) continue;
-    const dphi = new Float64Array(THETA_DIM);
-    for (let i = 0; i < THETA_DIM; i++) dphi[i] = fw.phi[i] - fl.phi[i];
-    obs.push({ comparisonId: c.id, dphi, dbonus: fw.bonus - fl.bonus, tie: c.winner === 'tie' });
+    const dphi = new Float64Array(fw.phi.length);
+    const nz: number[] = [];
+    for (let i = 0; i < dphi.length; i++) if ((dphi[i] = fw.phi[i] - fl.phi[i]) !== 0) nz.push(i);
+    obs.push({ comparisonId: c.id, dphi, nz: Int32Array.from(nz), dbonus: fw.bonus - fl.bonus, tie: c.winner === 'tie' });
   }
   return obs;
 }
@@ -141,13 +184,15 @@ function logSigmoid(x: number): number {
 
 /** Log-likelihood of one observation. A tie is most likely when the scores are equal. */
 export function obsLogLik(theta: ArrayLike<number>, o: Observation, beta = BT_BETA): number {
-  const x = beta * (dot(theta, o.dphi) + o.dbonus);
+  let d = o.dbonus;
+  for (let j = 0; j < o.nz.length; j++) d += theta[o.nz[j]] * o.dphi[o.nz[j]];
+  const x = beta * d;
   return o.tie ? Math.log(4) + logSigmoid(x) + logSigmoid(-x) : logSigmoid(x);
 }
 
 function logPosterior(z: ArrayLike<number>, theta: Float64Array, obs: Observation[], upto: number): number {
   let lp = 0;
-  for (let i = 0; i < LATENT_DIM; i++) lp -= 0.5 * z[i] * z[i];
+  for (let i = 0; i < z.length; i++) lp -= 0.5 * z[i] * z[i];
   for (let t = 0; t <= upto; t++) lp += obsLogLik(theta, obs[t]);
   return lp;
 }
@@ -182,13 +227,14 @@ export function fitModel(
   ctx: FitContext,
   stats?: Partial<FitStats>,
 ): Posterior {
-  const obs = toObservations(comparisons, ctx);
+  const layout = prior.layout;
+  const obs = toObservations(comparisons, { ...ctx, layout });
   if (!obs.length) return prior;
   const rng = createRng((ctx.seed ?? 1) * 2654435761 + obs.length);
   const n = prior.particles.length;
 
   let latents: Float64Array[] | null = prior.latents ? prior.latents.map((z) => Float64Array.from(z)) : null;
-  let thetas: Float64Array[] = latents ? latents.map((z) => latentToTheta(z)) : prior.particles.map(paramsToTheta);
+  let thetas: Float64Array[] = latents ? latents.map((z) => latentToTheta(z, layout)) : prior.particles.map((p) => paramsToTheta(p, layout));
   const total = prior.weights.reduce((a, b) => a + b, 0) || 1;
   const logw = Float64Array.from(prior.weights, (w) => Math.log(w / total));
   const w = new Float64Array(n);
@@ -224,14 +270,17 @@ export function fitModel(
 
     // … and move (only possible when we know each particle's latent position).
     if (!latents) continue;
-    const prop = new Float64Array(LATENT_DIM);
-    const propTheta = new Float64Array(THETA_DIM);
+    const dim = latents[0].length;
+    // Random-walk steps shrink with the dimension so acceptance stays reasonable.
+    const step = MH_STEP_SD * Math.sqrt(LATENT_DIM / dim);
+    const prop = new Float64Array(dim);
+    const propTheta = new Float64Array(layout?.dim ?? THETA_DIM);
     for (let i = 0; i < n; i++) {
       const z = latents[i];
       let cur = logPosterior(z, thetas[i], obs, t);
-      for (let step = 0; step < MH_STEPS; step++) {
-        for (let d = 0; d < LATENT_DIM; d++) prop[d] = z[d] + MH_STEP_SD * rng.normal();
-        latentToTheta(prop, propTheta);
+      for (let s = 0; s < MH_STEPS; s++) {
+        for (let d = 0; d < dim; d++) prop[d] = z[d] + step * rng.normal();
+        latentToTheta(prop, layout, propTheta);
         const next = logPosterior(prop, propTheta, obs, t);
         proposed++;
         if (Math.log(rng.next()) < next - cur) {
@@ -251,8 +300,9 @@ export function fitModel(
     stats.ess = ess;
   }
   return {
-    particles: thetas.map(thetaToParams),
+    particles: thetas.map((t) => thetaToParams(t, layout)),
     weights: Array.from(w),
     ...(latents ? { latents: latents.map((z) => Array.from(z)) } : {}),
+    ...(layout ? { layout } : {}),
   };
 }

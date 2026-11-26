@@ -1,6 +1,5 @@
 import type { Band } from '@pairwise/engine';
 import { Car, CarFront, Heart, Plane, TriangleAlert } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/cn';
 
 /**
@@ -10,11 +9,20 @@ import { cn } from '@/lib/cn';
 export const BAND_ICON = { together: Heart, commutable: CarFront, drivable: Car, apart: Plane, no_match: TriangleAlert } as const;
 
 export const BAND_ROW: Record<Band, string> = {
-  together: 'bg-accent-soft border-transparent',
-  commutable: 'bg-accent-soft/50 border-transparent',
-  drivable: 'bg-surface border-border',
-  apart: 'bg-surface border-border text-muted',
-  no_match: 'bg-surface border-dashed border-warn',
+  together: 'bg-accent-soft/70 border-glass-border',
+  commutable: 'bg-accent-soft/35 border-glass-border',
+  drivable: 'bg-glass-row border-glass-border',
+  apart: 'bg-glass-row border-glass-border text-muted',
+  no_match: 'border-[1.5px] border-dashed border-warn bg-glass/35',
+};
+
+/** Band chip colors: text in the band color on a 12% fill; No Match is an amber outline. */
+const BAND_CHIP: Record<Band, string> = {
+  together: 'bg-band-together/12 text-band-together',
+  commutable: 'bg-band-commutable/12 text-band-commutable',
+  drivable: 'bg-band-drivable/12 text-band-drivable',
+  apart: 'bg-band-apart/12 text-band-apart',
+  no_match: 'text-warn ring-[1.5px] ring-inset ring-warn',
 };
 
 export const BAND_NAME: Record<Band, string> = {
@@ -25,14 +33,23 @@ export const BAND_NAME: Record<Band, string> = {
   no_match: 'font-normal',
 };
 
-export function BandBadge({ band, bandLabel, distanceMi, className }: { band: Band; bandLabel: string; distanceMi: number | null; className?: string }) {
+/**
+ * `compact`: on phones, the icon and miles only. `compact="always"`: icon and miles at every
+ * width (narrow side panels). The label stays for screen readers either way.
+ */
+export function BandBadge({ band, bandLabel, distanceMi, className, compact }: { band: Band; bandLabel: string; distanceMi: number | null; className?: string; compact?: boolean | 'always' }) {
   const Icon = BAND_ICON[band];
-  const tone = band === 'together' || band === 'commutable' ? 'accent' : band === 'no_match' ? 'warn' : 'neutral';
+  const short = compact && distanceMi != null;
   return (
-    <Badge tone={tone} className={cn('shrink-0', className)}>
+    <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs leading-none font-semibold whitespace-nowrap', BAND_CHIP[band], className)}>
       <Icon className="h-3.5 w-3.5" aria-hidden />
-      {bandLabel}
-      {distanceMi != null ? ` · ${Math.round(distanceMi)} mi` : ''}
-    </Badge>
+      {short ? <span className={compact === 'always' ? 'sr-only' : 'sr-only sm:not-sr-only'}>{bandLabel}</span> : bandLabel}
+      {distanceMi != null ? (
+        <span className="font-mono font-medium tabular-nums">
+          {short ? compact === 'always' ? null : <span className="hidden sm:inline"> · </span> : ' · '}
+          {`${Math.round(distanceMi)} mi`}
+        </span>
+      ) : null}
+    </span>
   );
 }

@@ -18,21 +18,20 @@ import {
   rankPairs,
   runEngine,
   scorePairs,
+  shortestPath,
   violatedEdges,
   type EngineInput,
+  type Pair,
   type TierARuleMode,
-  type TierAPriority,
 } from '../src/index';
 import { METROS, emptyInput, list, program, randomInput, randomParams, rng } from './helpers';
 
 const MODES: TierARuleMode[] = ['hard', 'strong', 'off'];
-const PRIORITIES: TierAPriority[] = [null, 'partner1', 'partner2', 'case_by_case'];
 
 function randomCase(seed: number) {
   const r = rng(seed * 7919);
   const input = randomInput(seed, r.int(3, 14), r.int(3, 14), {
     tierARule: [r.pick(MODES), r.pick(MODES)],
-    tierAPriority: r.pick(PRIORITIES),
     noMatchAtBottom: r.next() > 0.3,
     balance: r.range(0.2, 1.8),
   });
@@ -98,68 +97,59 @@ describe('2. No Match at bottom', () => {
   });
 });
 
-describe('3. Tier A hard rule', () => {
-  const tierAHolds = (input: EngineInput, k: 0 | 1, seed: number) => {
-    const { pairs, list } = rank(input, defaultPosterior(randomParams(seed)));
-    const o = 1 - k;
-    const tops = pairs.filter((p) => p.tier[k] === 'A' && p.programs[o] !== NO_MATCH);
-    const bottoms = pairs.filter((p) => p.tier[k] !== 'A');
-    const worstTop = Math.max(...tops.map((p) => list.position.get(p.id)!));
-    const bestBottom = Math.min(...bottoms.map((p) => list.position.get(p.id)!));
-    expect(tops.length).toBeGreaterThan(0);
-    expect(worstTop).toBeLessThan(bestBottom);
-  };
+describe('3. Tier A rule', () => {
+  const top = (p: Pair, k: 0 | 1) => p.tier[k] === 'A' && p.programs[1 - k] !== NO_MATCH;
+  const bottom = (p: Pair, k: 0 | 1) => p.tier[k] !== 'A';
 
-  it('holds for a partner with Tier A when the other partner has none', () => {
-    for (let seed = 1; seed <= 60; seed++) {
-      const input = randomInput(seed, 10, 10, { tierARule: ['hard', 'hard'] });
-      input.lists[0][0].tier = 'A';
-      input.lists[0][0].acceptable = true;
-      for (const e of input.lists[1]) if (e.tier === 'A') e.tier = 'B';
-      tierAHolds(input, 0, seed);
+  it("holds, except against the other partner's clashing Tier A rule", () => {
+    let checked = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const input = randomInput(seed, 8, 8, { tierARule: ['hard', 'hard'] });
+      const { pairs, list } = rank(input, defaultPosterior(randomParams(seed)));
+      if (list.hasCycles) continue;
+      for (const k of [0, 1] as const) {
+        const o = (1 - k) as 0 | 1;
+        for (const x of pairs) {
+          if (!top(x, k)) continue;
+          for (const y of pairs) {
+            if (!bottom(y, k) || (bottom(x, o) && top(y, o))) continue; // a clash: left to the score
+            expect(list.position.get(x.id)!, `seed ${seed}: ${x.id} above ${y.id}`).toBeLessThan(list.position.get(y.id)!);
+            checked++;
+          }
+        }
+      }
     }
-  });
-
-  it('holds for the partner given priority when both have Tier A programs', () => {
-    for (let seed = 1; seed <= 60; seed++) {
-      const input = randomInput(seed, 10, 10, { tierARule: ['hard', 'hard'], tierAPriority: 'partner2' });
-      input.lists[1][0].tier = 'A';
-      input.lists[1][0].acceptable = true;
-      tierAHolds(input, 1, seed);
-    }
+    expect(checked).toBeGreaterThan(500);
   });
 });
 
-describe('4. Tier A collision detected', () => {
-  const collisionInput = (priority: TierAPriority) => {
-    const input = emptyInput({ tierARule: ['hard', 'hard'], tierAPriority: priority });
+describe('4. Tier rules that clash are left to this-or-that', () => {
+  // Partner 1's Tier A is in Boston, partner 2's in San Francisco; only one can have it.
+  const clash = () => {
+    const input = emptyInput({ tierARule: ['hard', 'hard'] });
     input.programs = {
-      a1: program('a1', METROS[0]), // Boston, partner 1's Tier A
-      a2: program('a2', METROS[5]), // San Francisco
-      b1: program('b1', METROS[5]), // San Francisco, partner 2's Tier A
-      b2: program('b2', METROS[0]), // Boston
+      a1: program('a1', METROS[0]),
+      a2: program('a2', METROS[5]),
+      b1: program('b1', METROS[5]),
+      b2: program('b2', METROS[0]),
     };
     input.lists = [list([['a1', 'A'], ['a2', 'B']]), list([['b1', 'A'], ['b2', 'B']])];
     return input;
   };
 
-  it('returns exactly one collision conflict when no priority is set', () => {
-    const { conflicts } = runEngine(collisionInput(null));
-    expect(conflicts.filter((c) => c.kind === 'tier_a_collision')).toHaveLength(1);
-    expect(conflicts).toHaveLength(1);
-  });
-
-  it.each(['partner1', 'partner2', 'case_by_case'] as const)('disappears once priority = %s', (p) => {
-    const { conflicts, list } = runEngine(collisionInput(p));
+  it('no conflict and no rule between the two; an answer decides', () => {
+    const { conflicts, list, graph } = runEngine(clash());
     expect(conflicts).toHaveLength(0);
     expect(violatedEdges(list)).toHaveLength(0);
-  });
-
-  it('priority decides who gets Tier A when only one can', () => {
-    const p1 = runEngine(collisionInput('partner1')).list;
-    expect(p1.position.get('a1|b2')!).toBeLessThan(p1.position.get('a2|b1')!);
-    const p2 = runEngine(collisionInput('partner2')).list;
-    expect(p2.position.get('a2|b1')!).toBeLessThan(p2.position.get('a1|b2')!);
+    expect(shortestPath(graph, graph.index.get('a1|b2')!, graph.index.get('a2|b1')!)).toBeNull();
+    expect(shortestPath(graph, graph.index.get('a2|b1')!, graph.index.get('a1|b2')!)).toBeNull();
+    for (const [won, lost] of [['a1|b2', 'a2|b1'], ['a2|b1', 'a1|b2']]) {
+      const input = clash();
+      input.comparisons = [{ id: 'c', left: won, right: lost, winner: 'left', seq: 1 }];
+      const r = runEngine(input);
+      expect(r.list.position.get(won)!).toBeLessThan(r.list.position.get(lost)!);
+      expect(r.conflicts.filter((c) => c.kind === 'cycle')).toHaveLength(0);
+    }
   });
 });
 

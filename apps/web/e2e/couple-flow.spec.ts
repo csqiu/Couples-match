@@ -215,6 +215,9 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await sam.goto('/app/conflicts');
   await expect(sam.getByRole('heading', { name: 'You answered differently' })).toBeVisible();
   await expect(sam.getByText(/Sam \(you\) picked the second pair/)).toBeVisible();
+  // Each card says who picked it, in that partner's colour.
+  await expect(sam.getByText('Alex picked this')).toBeVisible();
+  await expect(sam.getByText('Sam picked this')).toBeVisible();
   await sam.getByRole('button', { name: 'We choose this pair' }).first().click();
   await expect(sam.getByText('No conflicts')).toBeVisible();
 
@@ -224,8 +227,12 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await expect(finalList.getByRole('listitem').first()).toBeVisible();
   expect(await finalList.getByRole('listitem').count()).toBeGreaterThan(5);
   await expect(finalList.getByRole('listitem').first()).toHaveAttribute('data-band', /together|commutable|drivable|apart/);
-  await alex.getByRole('button', { name: 'Why is rank 2 here?' }).click();
-  await expect(finalList.getByRole('listitem').nth(1).locator('p.mt-2')).toHaveText(/./);
+  // A row opens its details card (full names, codes, why it's there) on tap.
+  await finalList.getByRole('button', { name: /^Rank 2: .*Show details\.$/ }).click();
+  const details = alex.getByRole('dialog', { name: /^Rank 2:/ });
+  await expect(details).toContainText('Why here:');
+  await alex.keyboard.press('Escape');
+  await expect(details).toBeHidden();
   await expect(alex.getByTestId('fees')).toContainText('Alex: $');
   await expect(alex.getByTestId('checklist')).toContainText('No Match pairs are at the bottom');
 
@@ -247,12 +254,13 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   expect(csv.trim().split('\n')).toHaveLength(n + 1);
 
   await alex.getByLabel('Version name').fill('v1');
-  await alex.getByRole('button', { name: 'Save version' }).click();
-  await expect(alex.getByText('Saved “v1”.')).toBeVisible();
+  await alex.getByRole('button', { name: 'Save as 1.1' }).click();
+  await expect(alex.getByText('Saved as 1.1.')).toBeVisible();
   await alex.waitForTimeout(1500);
   await shot(alex, '11-final-list');
 
-  // Drag rank 3 above rank 2 by keyboard: either allowed (saved as a pin) or blocked with reasons, then overridden.
+  // Drag rank 3 above rank 2 by keyboard. Either it's allowed (saved as a pin), or it clashes with a rule:
+  // it still stays where it was dropped, and a notice offers Undo or Resolve on Conflicts.
   const rowHandle = alex.getByRole('button', { name: 'Drag rank 3' });
   await rowHandle.focus();
   await alex.keyboard.press('Space');
@@ -260,26 +268,26 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await alex.keyboard.press('ArrowUp');
   await alex.waitForTimeout(300);
   await alex.keyboard.press('Space');
-  const blockedDialog = alex.getByRole('alertdialog');
+  const clash = alex.getByTestId('clash-notice');
   const moved = alex.getByText('Moved. Saved as your ordering.');
-  await expect(blockedDialog.or(moved).first()).toBeVisible();
-  if (await blockedDialog.isVisible()) {
-    await expect(blockedDialog).toContainText('because');
-    await alex.getByRole('button', { name: 'Override with an exception' }).click();
-    await expect(moved).toBeVisible();
+  await expect(clash.or(moved).first()).toBeVisible();
+  if (await clash.isVisible()) {
+    await expect(clash).toContainText('because');
+    await expect(clash.getByRole('button', { name: 'Undo move' })).toBeVisible();
+    await expect(clash.getByRole('link', { name: 'Resolve on Conflicts' })).toBeVisible();
   }
   await alex.getByLabel('Version name').fill('v2');
-  await alex.getByRole('button', { name: 'Save version' }).click();
-  await expect(alex.getByText('Saved “v2”.')).toBeVisible();
+  await alex.getByRole('button', { name: 'Save as 1.2' }).click();
+  await expect(alex.getByText('Saved as 1.2.')).toBeVisible();
 
   await alex.goto('/app/versions');
   await expect(alex.getByTestId('versions').getByRole('listitem')).toHaveCount(2);
   // Versions freeze exactly the ranks shown, even though the slider saves after a pause.
   await expect(alex.getByTestId('versions').getByRole('listitem').filter({ hasText: 'v1' })).toContainText(`${n} ranks`);
-  await alex.getByLabel('Older').selectOption({ label: 'v1' });
-  await alex.getByLabel('Newer').selectOption({ label: 'v2' });
+  await alex.getByLabel('Older').selectOption({ label: '1.1 · v1' });
+  await alex.getByLabel('Newer').selectOption({ label: '1.2 · v2' });
   await alex.getByRole('button', { name: 'Compare' }).click();
-  await expect(alex.getByTestId('diff')).toContainText('v1 → v2: 2 moved, 0 added, 0 removed');
+  await expect(alex.getByTestId('diff')).toContainText('1.1 · v1 → 1.2 · v2: 2 moved, 0 added, 0 removed');
   await shot(alex, '12-versions-diff');
 
   await alex.getByRole('button', { name: 'Restore v1' }).click();
@@ -288,6 +296,21 @@ test('two partners: setup, invite, accept, choose programs, rank and tier, compa
   await alex.reload();
   await expect(alex.getByTestId('versions').getByRole('listitem')).toHaveCount(3); // the current list was saved first
   await expect(alex.getByTestId('versions').getByText('Before restoring “v1”')).toBeVisible();
+
+  // The dashboard: star a version, start List 2 from blank tiers, then go back to List 1.
+  await alex.goto('/app');
+  const list1 = alex.getByTestId('list-1');
+  await list1.getByRole('button', { name: 'Star version 1.1' }).click();
+  await expect(list1.getByRole('button', { name: 'Unstar version 1.1' })).toBeVisible();
+  await alex.getByTestId('start-list').click();
+  await alex.getByRole('dialog').getByLabel('Name (optional)').fill('Fresh start');
+  await alex.getByRole('button', { name: 'Start List 2' }).click();
+  await expect(alex).toHaveURL(/\/app\/rank/);
+  await expect(alex.getByTestId('open-list')).toContainText('List 2');
+  await alex.goto('/app');
+  await alex.getByTestId('list-1').getByRole('button', { name: 'Open List 1' }).click();
+  await alex.getByRole('group', { name: 'Open List 1' }).getByRole('button', { name: 'Open List 1' }).click();
+  await expect(alex.getByTestId('open-list')).toContainText('List 1');
 
   expect(browserErrors).toEqual([]);
 

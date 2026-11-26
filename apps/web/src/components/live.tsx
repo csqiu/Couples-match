@@ -2,6 +2,7 @@
 import { subscribeToCouple, type Activity, type PresenceState } from '@pairwise/db';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { Avatar } from '@/components/avatar';
 import { browserClient } from '@/lib/supabase/client';
 
 const ACTIVITY_BY_PATH: Array<[string, Activity]> = [
@@ -23,7 +24,7 @@ const LABEL: Record<Activity, string> = {
  * Keeps the page in sync with the partner: refreshes server data when the
  * couple's rows change, and shows what the partner is doing right now.
  */
-export function Live({ coupleId, me }: { coupleId: string; me: { userId: string; displayName: string } }) {
+export function Live({ coupleId, me, partnerSlot }: { coupleId: string; me: { userId: string; displayName: string }; partnerSlot: 1 | 2 }) {
   const router = useRouter();
   const pathname = usePathname();
   const [others, setOthers] = useState<PresenceState[]>([]);
@@ -63,9 +64,12 @@ export function Live({ coupleId, me }: { coupleId: string; me: { userId: string;
   const partner = others[0];
   if (!partner) return null;
   return (
-    <p className="flex items-center gap-2 text-xs text-muted" aria-live="polite">
-      <span className="h-2 w-2 rounded-full bg-accent" aria-hidden />
-      {partner.displayName} {LABEL[partner.activity] ?? 'is here'}
+    <p className="glass flex min-h-9 items-center gap-2 rounded-full py-1 pr-3 pl-1 text-xs text-muted" title={`${partner.displayName} ${LABEL[partner.activity] ?? 'is here'}`} aria-live="polite">
+      <Avatar name={partner.displayName} slot={partnerSlot} size="sm" className="h-6 w-6" />
+      <span className="sr-only whitespace-nowrap sm:not-sr-only">
+        <span className="font-medium text-text">{partner.displayName}</span> {LABEL[partner.activity] ?? 'is here'}
+      </span>
+      <span className="h-2 w-2 rounded-full bg-band-together shadow-[0_0_0_3px_color-mix(in_srgb,var(--band-together)_18%,transparent)]" aria-hidden />
     </p>
   );
 }

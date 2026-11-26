@@ -25,7 +25,7 @@ export default async function RankPage() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Rank and tier</h1>
+          <h1 className="page-title">Rank and tier</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Order your programs from most to least preferred, and sort them into tiers. Drag the handle, or use the arrows and
             tier menu. Changes save automatically.
@@ -44,8 +44,8 @@ export default async function RankPage() {
           </div>
         </>
       ) : (
-        <div className="rounded-2xl border border-dashed border-border p-10 text-center">
-          <p className="font-medium">Your list is empty</p>
+        <div className="glass p-10 text-center">
+          <p className="card-title">Your list is empty</p>
           <p className="mt-1 text-sm text-muted">Add the programs you’d be willing to go to first.</p>
           <Link href="/app/programs" className={buttonVariants({ className: 'mt-4' })}>Choose programs</Link>
         </div>

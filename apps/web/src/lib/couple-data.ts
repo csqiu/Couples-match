@@ -17,7 +17,7 @@ export async function loadCoupleBundle(ctx: AppContext & { couple: NonNullable<A
   const supabase = await createClient();
   const id = ctx.couple.id;
   const [ranks, comparisons, pins, exclusions, exceptions] = await Promise.all([
-    supabase.from('individual_ranks').select('user_id, program_id, rank, tier, acceptable, note, nrmp_code').eq('couple_id', id),
+    supabase.from('individual_ranks').select('user_id, program_id, rank, tier, acceptable, note, nrmp_code, short_name').eq('couple_id', id),
     supabase.from('comparisons').select('id, pair_left, pair_right, winner, answered_by, both_agreed, locked, seq').eq('couple_id', id).order('seq'),
     supabase.from('pins').select('id, higher_pair, lower_pair, source, comparison_id, moved_pair').eq('couple_id', id).order('created_at').order('id'),
     supabase.from('pair_exclusions').select('program_a, program_b, reason').eq('couple_id', id),

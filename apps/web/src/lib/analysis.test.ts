@@ -26,13 +26,10 @@ describe('analyze', () => {
     expect(r.confidence).toBeLessThanOrEqual(1);
   });
 
-  it('asks Tier A priority once when both partners have Tier A programs', () => {
+  it('never asks who gets Tier A priority: clashing tier rules are left to this or that', () => {
     const r = analyze(couple(), opts());
-    const collision = r.conflicts.filter((c) => c.kind === 'tier_a_collision');
-    expect(collision).toHaveLength(1);
-    expect(collision[0].text).toMatch(/Alex, Sam, or decide case by case/);
-    expect(collision[0].left && collision[0].right).toBeTruthy();
-    expect(analyze(couple({ settings: { tierAPriority: 'partner1' } }), opts()).conflicts).toHaveLength(0);
+    expect(r.conflicts).toHaveLength(0);
+    expect(r.question).not.toBeNull();
   });
 
   it('separate answering: I get my partner’s pending question, and different answers become a disagreement', () => {
@@ -67,4 +64,25 @@ describe('analyze', () => {
     expect(cycle.links).toHaveLength(2);
     for (const l of cycle.links!) expect(l.text).toMatch(/is over .* because you dragged it there/);
   });
+
+  it('come back to this later: a deferred question waits until nothing else is left, then returns', () => {
+    const base = { tierAPriority: 'case_by_case' as const };
+    const first = analyze(couple({ settings: base }), opts()).question!;
+    const key = [first.left.id, first.right.id].sort().join('#');
+    const later = analyze(couple({ settings: { ...base, deferredQuestions: [key] } }), opts());
+    expect(later.deferred).toBe(1);
+    const next = later.question!;
+    expect([next.left.id, next.right.id].sort().join('#')).not.toBe(key);
+  });
+
+  it('flagged questions are listed with where they stand, and the question shows its flag', () => {
+    const base = { tierAPriority: 'case_by_case' as const };
+    const q = analyze(couple({ settings: base }), opts()).question!;
+    const key = [q.left.id, q.right.id].sort().join('#');
+    const r = analyze(couple({ settings: { ...base, flaggedQuestions: [key] } }), opts());
+    expect(r.flagged).toHaveLength(1);
+    expect(r.flagged[0].answer).toBeNull();
+    expect(r.question?.flagged).toBe(true);
+  });
 });
+

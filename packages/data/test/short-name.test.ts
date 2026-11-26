@@ -5,6 +5,8 @@ describe('shortProgramName', () => {
   it.each([
     ['Johns Hopkins Hosp — Plastic Surgery - Integrated', 'Hopkins Plastics'],
     ['MGB-Massachusetts Gen Hosp — Orthopaedic Surgery', 'MGH Ortho'],
+    ['Mass General Brigham — Plastic Surgery - Integrated', 'MGB Plastics'],
+    ['Massachusetts General Brigham — Dermatology', 'MGB Derm'],
     ['UC San Francisco — Internal Medicine (Fresno)', 'UCSF IM Fresno'],
     ['Univ of Alabama Hospital-Birmingham — Anesthesiology (track 2)', 'UAB Anesthesia #2'],
     ['Ohio State University Med Ctr — Internal Medicine/Psychiatry', 'Ohio State IM/Psych'],

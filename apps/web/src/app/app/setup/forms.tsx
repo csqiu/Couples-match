@@ -85,7 +85,7 @@ export function InviteForm({ openInvite }: { openInvite: { id: string; email: st
   return (
     <div className="flex flex-col gap-4">
       {openInvite ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface-2 px-4 py-3 text-sm">
           <span>
             Waiting for <strong>{openInvite.email}</strong> · expires {new Date(openInvite.expires_at).toLocaleDateString()}
           </span>
@@ -147,26 +147,26 @@ export function SettingsForm({
   return (
     <form action={action} className="flex flex-col gap-6">
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-sm font-medium">What your partner sees</legend>
+        <legend className="mb-1 text-[13px] font-semibold">What your partner sees</legend>
         <Radio name="privacy" value="shared" checked={values.privacy === 'shared'} onChange={set('privacy')} title="Everything" body="You both see each other’s programs and tiers." />
         <Radio name="privacy" value="private_tiers" checked={values.privacy === 'private_tiers'} onChange={set('privacy')} title="Private tiers" body="Your tiers still shape the list, but your partner doesn’t see them." />
       </fieldset>
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-sm font-medium">Answering “this or that”</legend>
+        <legend className="mb-1 text-[13px] font-semibold">Answering “this or that”</legend>
         <Radio name="answerMode" value="together" checked={values.answerMode === 'together'} onChange={set('answerMode')} title="Together" body="You answer each question as a couple." />
         <Radio name="answerMode" value="separately" checked={values.answerMode === 'separately'} onChange={set('answerMode')} title="Separately" body="You each answer; disagreements go to a discussion queue." />
       </fieldset>
       <fieldset>
-        <legend className="mb-3 text-sm font-medium">How far is “close”? (miles)</legend>
+        <legend className="mb-3 text-[13px] font-semibold">How far is “close”? (miles)</legend>
         <div className="grid grid-cols-3 gap-3">
           <Field label="Together" htmlFor="togetherMi" hint="or same metro">
-            <Input id="togetherMi" name="togetherMi" type="number" min={1} inputMode="numeric" value={values.togetherMi} onChange={set('togetherMi')} />
+            <Input className="font-mono tabular-nums" id="togetherMi" name="togetherMi" type="number" min={1} inputMode="numeric" value={values.togetherMi} onChange={set('togetherMi')} />
           </Field>
           <Field label="Commutable" htmlFor="commutableMi">
-            <Input id="commutableMi" name="commutableMi" type="number" min={1} inputMode="numeric" value={values.commutableMi} onChange={set('commutableMi')} />
+            <Input className="font-mono tabular-nums" id="commutableMi" name="commutableMi" type="number" min={1} inputMode="numeric" value={values.commutableMi} onChange={set('commutableMi')} />
           </Field>
           <Field label="Drivable" htmlFor="drivableMi" hint="beyond = Apart">
-            <Input id="drivableMi" name="drivableMi" type="number" min={1} inputMode="numeric" value={values.drivableMi} onChange={set('drivableMi')} />
+            <Input className="font-mono tabular-nums" id="drivableMi" name="drivableMi" type="number" min={1} inputMode="numeric" value={values.drivableMi} onChange={set('drivableMi')} />
           </Field>
         </div>
       </fieldset>
@@ -180,8 +180,15 @@ export function SettingsForm({
 
 function Radio({ name, value, checked, onChange, title, body }: { name: string; value: string; checked: boolean; onChange: (e: { target: { value: string } }) => void; title: string; body: string }) {
   return (
-    <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-border p-3 has-[:checked]:border-accent has-[:checked]:bg-accent-soft">
-      <input type="radio" name={name} value={value} checked={checked} onChange={onChange} className="mt-1 accent-[var(--accent)]" />
+    <label className="relative flex min-h-11 cursor-pointer items-start gap-3 rounded-2xl border border-border bg-glass-row p-3.5 pl-11 transition-colors duration-150 has-[:checked]:border-action has-[:checked]:bg-action-soft/80">
+      <input
+        type="radio"
+        name={name}
+        value={value}
+        checked={checked}
+        onChange={onChange}
+        className="absolute top-4 left-4 h-[18px] w-[18px] appearance-none rounded-full border-[1.5px] border-border bg-surface checked:border-action checked:shadow-[inset_0_0_0_5px_var(--action)]"
+      />
       <span>
         <span className="block text-sm font-medium">{title}</span>
         <span className="block text-xs text-muted">{body}</span>

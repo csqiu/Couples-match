@@ -41,6 +41,8 @@ export interface RankEntry {
   acceptable: boolean;
   nrmpCode?: string | null;
   note?: string;
+  /** This partner's own short name for the program, if they set one. */
+  shortName?: string;
 }
 
 export type Band = 'together' | 'commutable' | 'drivable' | 'apart' | 'no_match';
@@ -68,7 +70,8 @@ export interface CoupleSettings {
   matchType: MatchType;
   distanceBands: DistanceBands;
   tierARule: [TierARuleMode, TierARuleMode];
-  tierAPriority: TierAPriority;
+  /** No longer used: when tier rules clash, the score and answers decide (DECISIONS.md #125). */
+  tierAPriority?: TierAPriority;
   noMatchAtBottom: boolean;
   /** w in the spec, 0..2. 1 = equal weight. Shown to users only as a balance slider. */
   balance: number;
@@ -161,12 +164,32 @@ export interface ModelParams {
   s: [number, number];
   pen: { commutable: number; drivable: number; apart: number };
   vNM: number;
+  /**
+   * Per-program adjustment to each partner's value, by program id. It moves a program
+   * between its neighbours without changing the partner's own order or leaving its tier,
+   * so the steps within a tier don't have to be even. Missing = 0.
+   */
+  offsets?: [Record<string, number>, Record<string, number>];
+}
+
+/**
+ * Where each program's offset sits in θ (after the 12 shared parameters). Built
+ * from the candidate pairs; a posterior without one has no per-program offsets.
+ */
+export interface ModelLayout {
+  dim: number;
+  /** θ index of each partner's program offsets. */
+  index: [Map<string, number>, Map<string, number>];
+  /** Each partner's programs in order, grouped by tier (only tiers with programs). */
+  tiers: [string[][], string[][]];
 }
 
 /** Weighted particle approximation of the posterior over ModelParams. */
 export interface Posterior {
   particles: ModelParams[];
   weights: number[];
+  /** Per-program offsets in θ; absent = the 12 shared parameters only. */
+  layout?: ModelLayout;
   /** Each particle's position in the latent space (see learning.ts); enables Metropolis moves. */
   latents?: number[][];
 }
@@ -180,7 +203,9 @@ export type EdgeReason =
   | { kind: 'dominance' }
   | { kind: 'tier_a'; partner: PartnerIndex }
   | { kind: 'no_match_bottom' }
-  | { kind: 'pin'; source: PinSource; pinId?: string; comparisonId?: string };
+  | { kind: 'pin'; source: PinSource; pinId?: string; comparisonId?: string }
+  /** The couple answered this comparison. Every answer that counts holds in the list. */
+  | { kind: 'answer'; comparisonId: string };
 
 export interface Link {
   from: PairId;

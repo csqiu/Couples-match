@@ -14,6 +14,9 @@ export * from './features';
 export * from './posterior';
 export * from './learning';
 export * from './questions';
+export * from './equivalence';
+export * from './answers';
+export * from './tidy';
 
 import { buildCandidates } from './candidates';
 import { findConflicts, type Conflict } from './conflicts';
@@ -39,6 +42,8 @@ export interface EngineResult {
 export function runEngine(input: EngineInput, posterior?: Posterior): EngineResult {
   const pairs = buildCandidates(input);
   const graph = buildConstraintGraph(pairs, input);
+  // Per-program values (buildLayout) are available but off: in the benchmark they did not
+  // beat the shared model within 40 answers (DECISIONS.md #119).
   posterior ??= fitModel(priorPosterior(input.seed), input.comparisons, { pairs, settings: input.settings, seed: input.seed });
   const scores = scorePairs(pairs, posterior, input.settings);
   const conflicts = findConflicts(graph, posterior, input.comparisons);

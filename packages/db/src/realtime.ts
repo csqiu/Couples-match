@@ -18,6 +18,7 @@ export const COUPLE_TABLES = [
   'pair_exclusions',
   'rule_exceptions',
   'list_versions',
+  'rank_lists',
   'audit_events',
 ] as const;
 export type CoupleTable = (typeof COUPLE_TABLES)[number];

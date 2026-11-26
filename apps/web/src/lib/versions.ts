@@ -1,5 +1,6 @@
 /** Saved versions: the frozen row format and the side-by-side diff. Pure. */
 import type { Band } from '@pairwise/engine';
+import { shortProgramName } from '@pairwise/data';
 import type { ListRow } from './final-list';
 
 /** One row as frozen in list_versions.pairs. */
@@ -57,4 +58,27 @@ export function diffVersions(older: VersionRow[], newer: VersionRow[]): DiffRow[
 export function diffSummary(rows: DiffRow[]) {
   const count = (k: DiffKind) => rows.filter((r) => r.kind === k).length;
   return { moved: count('up') + count('down'), added: count('added'), removed: count('removed'), same: count('same') };
+}
+
+/**
+ * A frozen version as list rows, for the checklist and fee estimate (feesFor, checklistFor
+ * read only ids, names, codes, bands and ranks). The rest of a ListRow isn't frozen.
+ */
+export function versionAsListRows(rows: VersionRow[]): ListRow[] {
+  const side = (s: VersionRow['a']) => ({ id: s.id, name: s.name, short: shortProgramName(s.name), place: '', code: s.code });
+  return rows.map(
+    (r) =>
+      ({
+        rank: r.rank,
+        pairId: r.pairId,
+        sides: [side(r.a), side(r.b)],
+        distanceMi: r.distanceMi,
+        band: r.band,
+        bandLabel: r.bandLabel,
+        why: '',
+        whyParts: [],
+        locked: false,
+        added: false,
+      }) as unknown as ListRow,
+  );
 }

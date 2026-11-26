@@ -228,7 +228,7 @@ describe('Row level security', () => {
       expect(callable('anon')).toEqual(['invite_preview']);
       expect(callable('auth')).toEqual([
         'accept_invite', 'create_invite', 'delete_my_account', 'import_programs', 'invite_preview', 'is_active_member',
-        'is_admin', 'is_couple_member', 'leave_couple', 'merge_programs', 'program_duplicates', 'restore_saved_rank_list', 'restore_version', 'revoke_invite',
+        'is_admin', 'is_couple_member', 'leave_couple', 'merge_programs', 'open_list', 'program_duplicates', 'restore_saved_rank_list', 'restore_version', 'revoke_invite', 'start_list',
       ]);
       // Every security-definer function pins its search_path.
       const unpinned = await db.query(`
@@ -460,7 +460,7 @@ describe('Realtime', () => {
         "select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by tablename",
       );
       expect(rows.map((r) => r.tablename)).toEqual([
-        'audit_events', 'comparisons', 'couples', 'individual_ranks', 'list_versions', 'pair_exclusions', 'pins', 'rule_exceptions',
+        'audit_events', 'comparisons', 'couples', 'individual_ranks', 'list_versions', 'pair_exclusions', 'pins', 'rank_lists', 'rule_exceptions',
       ]);
       const identity = await db.query<{ relname: string; relreplident: string }>(
         "select relname, relreplident from pg_class where relname = any($1) and relkind = 'r'",

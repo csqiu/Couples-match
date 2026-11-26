@@ -37,7 +37,7 @@ option was taken. Newest phases are at the bottom.
 7. **`scorePairs` takes the couple's settings** as an optional third argument. The pair
    score depends on the balance slider `w` and on strong-mode bonuses, and neither is
    part of the posterior.
-8. **Pins come only from the `pins` input.** Locked comparisons don't create edges by
+8. **Pins come only from the `pins` input** (but see #118: every counted answer is now also an edge). Locked comparisons don't create edges by
    themselves; the app writes a pin when "I'm certain" is on (spec 5.6). This avoids
    counting the same assertion twice.
 9. **Disagreements.** A question is a disagreement when two different people's latest
@@ -721,3 +721,311 @@ option was taken. Newest phases are at the bottom.
      - Programs a couple added by hand belong to that couple and are deleted with it, so
        they're left out.
      - One saved list per person: the latest couple to end wins. It's deleted with the account.
+117. **Which comparisons and rows can matter** (`packages/engine/src/equivalence.ts`). Model:
+     each partner has a set of reachable programs (No Match always is); the couple matches
+     on the first row with both sides reachable. Explained for users in the "How the
+     Couples Match Works" doc.
+     - **Moot comparisons use the whole box.** The order of rows X = (a1, b1) and
+       Y = (a2, b2) can't decide the match when some pair from
+       {a1, a2, No Match} × {b1, b2, No Match} is above both: if X and Y are reachable, so
+       is every pair in it. This adds the half-No-Match pairs to the two swapped pairs used
+       before, so rows sharing a program can now be moot too. It only matters with No
+       Match at the bottom turned off.
+     - **A pair with both partners at one program is never a witness.** (q, q) needs two
+       positions at q at once; q being reachable for each partner separately doesn't give
+       that. Before this, (q, q) above (q, s) and (p, q) made them moot, and the question
+       between them was skipped although its answer can decide the match.
+     - **Unreachable rows** are rows below (A, No Match), (No Match, B) or a copy of
+       themselves. They can never be the match but count toward the 300-rank limit and fees.
+       The final list's checklist flags them ("Every row can be your match"). With No Match
+       rows locked at the end they can't happen.
+     - Both rules are checked in `test/equivalence.test.ts` against brute force over every
+       reachable-program scenario of a small couple with shared programs.
+     - The bench's "relevant" τ uses the same rule; its numbers are unchanged, since the
+       simulated couples share no programs and keep No Match at the bottom. The README's
+       table was refreshed to the bench's current output (it had drifted before this change).
+118. **Every answer holds in the list.** Before this, answers were only evidence for the
+     12-parameter model, which could overrule them: a couple's direct answer could be
+     contradicted by the final list unless they marked it "I'm certain".
+     - Each answer that counts (`effectiveComparisons`: the agreed one, else the latest;
+       ties and disagreements don't) is an edge with reason `answer`
+       (`packages/engine/src/answers.ts`, step 4 of `buildConstraintGraph`).
+     - Answers that go in a circle, with each other or with the automatic rules, show up as
+       a cycle on the Conflicts step. Breaking an answer's link creates a rule exception: the
+       order goes back to the score, and the answer stays as evidence for the model.
+     - "Still true?" (surprising answers) is unchanged. A strong preference still saves a
+       pin and locks the answer, so it is never asked about again.
+119. **Per-program values: built, measured, left off.** The model spaces programs evenly
+     within a tier, so it cannot learn that #1 is far ahead of #2 while #5 to #10 are close.
+     - `buildLayout` (`features.ts`) adds one offset per program per partner to θ. Each
+       program's latent sets the gap before it within its tier; gaps are i.i.d. log-normal
+       (`PRIOR_LOG_SD.spacing`) and rescaled to fill the tier, so a partner's own order and
+       the tiers always hold. The offset is how far the learned spacing moves a program
+       from even spacing, so the score stays linear in θ. Spacing latents use a separate
+       random stream; random-walk steps shrink with the dimension.
+     - **Measured, it does not help.** Bench, 12 couples, 40 answers, τ over the top 100
+       (`--truth even|uneven`, `--model shared|per-program`):
+
+       | Model | Even true spacing | Uneven true spacing (log-sd 0.8) |
+       |---|---|---|
+       | Shared parameters (the app) | 0.940 | 0.925 |
+       | Per-program, prior log-sd 0.8 | 0.926 | 0.924 |
+       | Per-program, prior log-sd 0.4 | 0.927 | 0.911 |
+       | Per-program, prior log-sd 0.2 | 0.937 | 0.914 |
+
+       Forty answers cannot pin down ~30 extra numbers, and the extra uncertainty costs more
+       than the flexibility gains. So `runEngine` does not pass a layout; the code stays,
+       tested, for the bench and for a later version where the couple marks big gaps
+       themselves.
+     - The bench rebuilds the graph after each answer, as the app does (#118). Its default
+       is even true spacing and the shared model, which is what the README table reports.
+120. **The final list is shown in a readable, outcome-equivalent order** (`tidyOrder`,
+     `packages/engine/src/tidy.ts`). Two neighbouring rows may trade places when a row of
+     their box is above both (#117): whenever both are reachable, that row is too. The pass
+     bubble-sorts by a reading key using only such swaps, so the shown list matches exactly
+     like the engine's order (brute-force tested over every scenario).
+     - Keys: a partner's order first (the default is partner 1's), or both ranks together.
+       "Engine order" turns it off. Stored as `settings.listOrder` (app-only).
+     - Never swapped: rows a rule, an answer or a drag orders (so every "why" still reads
+       right), and locked No Match rows.
+     - A swapped row's "why" says the two can go in either order, and names the row above
+       both. Exports, print and versions use the shown order.
+121. **"Try an outcome" on the final list.** The couple ticks the programs each of them
+     could get into (F₁, F₂), and for programs on both lists whether there is room for both.
+     The list dims rows out of reach, rings the row they would match on (`matchOutcome`), and
+     says where each would have matched applying separately. Only rows up to the NRMP limit
+     count. Nothing is saved.
+122. **Explore** (`/app/explore`, `apps/web/src/lib/explore.ts`). Drag (or send) any two pairs
+     into "This" and "That". It shows their ranks, which is higher and why, whether a rule or
+     answer fixes it, whether their order is moot, the answer so far and the model's guess.
+     For each way round it previews what answering would do, by re-running the list with
+     that answer added: rows that move (biggest first) and conflicts it would create. The
+     answer is saved like a This or that answer (strong preference optional).
+123. **Come back to this later, and flags** (This or that). Both are kept in the couple's
+     settings as question keys (`deferredQuestions`, `flaggedQuestions`, app-only), so both
+     partners see them. A deferred question is skipped (`QuestionOptions.skip`) until no
+     other question is left, then asked again, labelled as saved for later; answering it
+     clears it. The flag box applies to whatever is done next (answer or later); flagged
+     questions are listed under the question with where they stand, a link to Explore, and
+     Unflag.
+124. **No "strong preference" answer.** Every answer is already a rule (#118), so a stronger
+     kind of answer had nothing left to add, and the two buttons suggested that a plain answer
+     could be overruled. This or that and Explore now save every answer the same way (not
+     locked, no pin). "Still true?" → "Yes" still locks an answer so it isn't asked again;
+     older strong answers keep their pins.
+125. **Tier C rule; tier clashes go to "this or that"; wider B–C gap.**
+     - Tier meanings: A, almost no distance makes you drop to B; B, most programs, and only
+       rarely would you drop to C to be together; C, you'd rather be long distance than
+       match here.
+     - **Tier C rule** (`settings.tierCRule`, per partner, on by default): a pair that gives
+       you A or B, with your partner matched at any distance, goes above every pair that
+       gives you C. C pairs still go above No Match pairs ("rather apart", not "rather
+       unmatched"). B's "a few cases" are the exceptions the couple accepts in Conflicts
+       when an answer says otherwise.
+     - **Clashes.** When the two partners' tier rules point opposite ways for two pairs (one
+       pair gives partner 1 a better tier, the other gives partner 2 one), neither rule orders
+       them: the score and the couple's answers do. This replaces the Tier A priority
+       question (`tierAPriority` is ignored; the `tier_a_collision` conflict is gone).
+       `isTierClash` questions get a 1.5× boost so they are asked early.
+     - **Prior:** base values A 1.4, B 1.0, C 0.3 (was 1.0, 0.6, 0.3), so the bottom of B is
+       worth about the top of C plus being apart. `TIER_A_STRONG_BONUS` 3.0 → 4.0 to stay
+       above the widest gap.
+     - **Bench** (12 couples, 40 answers): τ over the true top 100 0.873 (was 0.940), but
+       relevant τ 0.993 (was 0.969). The raw number fell because the rules push C pairs out
+       of the top 100 and what's left is mostly moot; against the same hidden couple, the
+       engine with the C rule scores 0.873 / 0.993 and without it 0.789 / 0.941. The
+       learning test now checks relevant τ ≥ 0.9 per couple.
+     - There is no screen to turn the tier rules off; the README no longer says there is.
+126. **The Tier C rule is removed** (the wider B–C gap and "clashes go to this or that"
+     from #125 stay). Tested against simulated couples who do and don't follow it, as τ on
+     the orderings that can change the match (12 couples, 40 answers):
+
+     | Couple's real preferences | Rule on | Rule off |
+     |---|---|---|
+     | Never drop to C to be together | 0.993 | 0.941 |
+     | Sometimes drop to C to be together | 0.873 (worst 0.500) | 0.981 |
+     | Same, only 2 Tier C programs each: follow / don't | 0.983 / 0.952 | 0.979 / 0.979 |
+
+     The rule helps a little when true and hurts a lot when not, and "this or that" never
+     asks about pairs a rule already orders, so a wrong rule is never questioned. With few
+     Tier C programs (the advice: use A and C sparingly) its gain is near zero. The wider
+     B–C gap in the prior keeps C below B unless an answer says otherwise.
+     - Tier clashes are now only Tier A against Tier A (`isTierClash`), left to the score
+       and answers, with the 1.5× question boost.
+     - Bench now: τ 0.955 (lowest 0.892), relevant τ 0.982 (lowest 0.945); was 0.940 /
+       0.969 before #125.
+     - The "list confidence rises" test now averages four couples and builds the list with
+       the answers as rules, as the app does: one couple can start confident and stay flat.
+
+127. **Visual design: Sage & Plum, frosted glass, technical type** (docs/design-spec.md).
+     Look only; copy, routes and behavior unchanged.
+     - Fonts via `next/font` (Space Grotesk, IBM Plex Sans, IBM Plex Mono); numbers in lists
+       are mono. Tokens per the spec in light and dark; controls use the ink `--action`, and
+       sage/plum mean partner 1/partner 2 (avatars, map pins, presence) and tiers.
+     - `.glass`, `.glass-strong`, `.glass-row` live in `@layer components` so utilities
+       (hover fills, card tones) can override them; they go solid without
+       `backdrop-filter`, with reduced transparency, and on print routes (`app/print/layout.tsx`).
+     - The app shell is `max-w-6xl` on the final list and map, `max-w-5xl` elsewhere
+       (`components/app-shell.tsx`).
+     - Rank tiers stay stacked as full-width rows (three columns were tried and dropped:
+       too cramped for the row controls).
+     - Not done from the spec: tier squares on final-list rows (rows don't carry tiers, and
+       private tiers would need care); the Strong-preference button and Tier-A priority card
+       (those features were removed, #124, #126).
+
+128. **One way to show a pair, in four sizes** (bug log #17–#19; docs/design-spec.md §7a). Nine
+     separate pair layouts built from three data shapes had drifted apart. Now one shape
+     (`lib/pair-view.ts`: short and full name, place, tier, each partner's own rank, NRMP code,
+     band) feeds four components (`components/pair.tsx`): large cards, a medium details card,
+     small rows and inline chips.
+     - Final list rows show short names only (codes and full names moved to the details card,
+       which opens on hover, focus or tap and replaces the "Why is this here?" toggle). No tier
+       marks on rows: colour on a row means only whose program it is.
+     - Conflicts: each statement in a circle is a row of two small pair tiles with where it comes
+       from ("Your answer", "Rule", "You moved it"); Still true? and disagreements use large cards
+       tagged with who picked which.
+     - Explanations (final list, conflicts, Explore) use short names.
+
+129. **My programs: details cards, my own short names, infinite scroll.**
+     - Tapping a search result opens it into a card with everything we have on the program;
+       one program is open at a time across the page.
+     - "My list" shows short names as chips. A chip opens the program's card, where you can
+       set your own short name. It's stored on your rank row (`individual_ranks.short_name`,
+       migration 0011), so it never changes the shared catalog, shows on your side of every
+       pair for both partners, and comes along with a saved list. Blank = automatic name.
+     - Search loads 60 at a time (ordered by name, then id, so pages never overlap) and loads
+       the next page when you scroll to the end of the list.
+
+## Dashboard, lists and numbered versions (November 2026)
+
+130. **Setup and Programs, then a dashboard.** `/app` is now the couple's home: every list,
+     its saved versions, and "Start a new list". Setup and Programs are onboarding steps
+     (their rail ends in "Dashboard"); inside a list the rail is just Rank, Compare,
+     Conflicts and Final list, under a bar showing which list is open and its last save.
+     The four step pages are unchanged.
+
+131. **A list is a fresh start; versions are numbered X.Y.** `rank_lists` holds List 1, 2, 3…
+     per couple; `list_versions` gained `list_id`, `minor` and `starred`. A trigger files every
+     new version under the open list and gives it the next number, whatever the client sends,
+     with the list row locked so two saves can't share a number. Existing couples got List 1,
+     holding their versions numbered in the order they were saved (migration 12).
+     - Any number of versions can be starred. Stars, names and notes are the only things
+       that change on a saved version.
+     - The name is optional now ("Untitled"); the save button says what it will create
+       ("Save as 3.2").
+
+132. **One open list per couple, shared by both partners.** The working tables (ranks,
+     answers, pins, exclusions, rule exceptions, and the list settings in `couples.settings`)
+     always hold the open list, so the engine, row level security, realtime and every query
+     stay as they were. `open_list()` parks the open list's state as JSON in
+     `rank_lists.draft` and loads the other's; `start_list()` parks it and starts List N+1.
+     - Considered: a `list_id` on every working table, so partners could be in different
+       lists at once. Much larger (every query, `merge_programs`, the distance view, restore),
+       so not done. The cost: opening a list moves the partner too, so the dashboard asks
+       first ("Jordan will be moved to List 1 too").
+     - The program list is shared: a loaded list keeps exactly the programs each partner has
+       now. Tiers, order and "acceptable" come from the list; programs added since go to
+       Tier B at the end of it. Notes, NRMP codes and short names are about the program, so they're
+       today's.
+     - A new list starts from blank tiers (everything in Tier B, in today's order) or from a
+       saved version's tiers. Answers, conflict choices and list settings start empty.
+     - List settings: `listLength`, `includedPairs`, `noMatchUnlocked`, `listOrder`,
+       `deferredQuestions`, `flaggedQuestions`. Everything else in `couples.settings` belongs
+       to the couple.
+     - Opening and starting lists set `pairwise.quiet` for their transaction, so the activity
+       feed shows "opened List 1" rather than every row deleted and re-added.
+     - A version restores only inside its own list (`version_in_other_list`).
+     - Known gap: `merge_programs` doesn't rewrite parked drafts, so a merged program comes
+       back as "added since" (Tier B) the next time that list is opened.
+
+133. **Guides from the app header.** A "Guides" link at the top right goes straight to the
+     list of guides (`/guides`). A dropdown of the guides was tried first and dropped: one
+     click to the list is simpler.
+
+134. **Explore merges into This or that as "Make a specific comparison".** Choosing a
+     specific comparison is just asking a this-or-that question of your own, so it lives on
+     the Compare page (`?mode=specific`, optionally `&a=` and `&b=` pair ids).
+     - Two cards, This and That, each with a map and a plate per partner. A plate opens that
+       partner's rank list: numbered, shaded by tier (hidden when their tiers are private to
+       me), a search box past 15 programs, No Match last.
+     - With all four picked, the engine's explore result (unchanged, `lib/explore.ts`) says
+       which pair the list puts higher (bold frame) and why, and what swapping would do:
+       rows moved, or the conflicts it would create. Keep this order, Swap order and Too
+       close to call each save a normal answer; "Flag to discuss together" rides along.
+     - The final list's "Explore" button and each row's "Open in Explore" now go here (the
+       row's pair fills "This"); flagged questions link here with both pairs. `/app/explore`
+       redirects, so old links still work.
+
+135. **A simpler front door, and email-only sign-in.**
+     - The landing page is one panel ("The smart way to couples match." and the line under it,
+       from `brand.ts`) over an animated background; the feature cards, "How it works" and the
+       preview cards are gone.
+     - The background (`components/merge-backdrop.tsx`, timing and layout in
+       `lib/merge-animation.ts`): two short lists (sage and plum) fill in, link, slide together
+       into one list of two-tone pairs, multiply and shuffle, about 9.5 s a loop. It is laid out
+       in real pixels from the screen size: on wide screens the lists start at both edges and
+       meet right of centre (the panel sits on the left); on phones it plays below the panel.
+       Behind it, a sage-to-plum wash with four slowly drifting glows. With reduced motion
+       the glows stay put and the lists hold one still frame. Colors are theme tokens, so it
+       works in dark mode. The sign-in page uses the same background.
+     - Sign-in is email only (magic link). "Continue with Google" and its server action are
+       removed; the page says the same link creates an account for new people.
+
+136. **A move that breaks a rule is kept, not refused** (bug log #20). Dragging a row against a rule
+     used to bounce it back, with a warning at the top of the page that was often off-screen.
+     Now the move is saved where it was dropped and a floating notice says what it clashes
+     with, offering **Undo move** or **Resolve on Conflicts** (the clash listed first there).
+     The clash is a circle on the Conflicts step like any other; dropping the rule keeps the row
+     where it is, dropping the move sends it back. While a clash is unresolved the list follows
+     the move: edges inside a circle are already skipped, and the drag replay now also holds a
+     row dragged down right under its target.
+137. **Explanations name pairs as chips** (bug log #21). "Why here", blocked-move notices and the
+     specific-comparison panel are built from parts (`WhyPart` in `lib/pair-view.ts`), so each
+     pair renders as the same coloured short-name chips used elsewhere, and the "(rule)" and
+     "(automatic)" tags are gone.
+138. **Conflict statements: distance only, and dots not letters** (bug log #22). The pair tiles
+     show just the miles, so the names have room; the A/B/C squares, which read like tiers, are
+     dots on a timeline; where each statement comes from sits under its two pairs.
+
+139. **Bug sweep, November 26** (bug log #23–#30).
+     - **Final list follows the server again** (#23). Changes made on the page still show at once,
+       but once no save is in flight a new server copy wins, so a partner's changes appear.
+       Moves saved here are dropped from the page's own copy once the server has them, or after
+       15 seconds if the server no longer does (undone or resolved elsewhere).
+     - **Rank numbers have no gaps** (#24). Adding and removing a program renumber the list 1..n
+       (one upsert, so the deferrable unique constraint holds); the 300 limit counts programs.
+     - **Removing a program can be undone** (#25): the row comes back with its tier, note, NRMP
+       code and short name, in its old place.
+     - **Dates in the viewer's time zone** (#26): `LocalTime` formats them in the browser.
+     - **Only the first 300 rows can be the outcome** in Try an outcome (#27).
+     - **NRMP code message** says 9 or 10 characters (#28).
+     - **Local Supabase runs Postgres 17** like production (#29); the CLI rejects 16.
+     - **`list_versions.pair_count`** (#30, migration 13): a generated column, so the dashboard
+       and Versions don't download every frozen list to count it.
+
+140. **Theme warm-up** (`/warmup`, `lib/warmup.ts`, `lib/looks.ts`). A two-minute demo of the
+     engine that also picks how the app looks: rank 4 fonts (partner 1's list), rank 4 color
+     schemes (partner 2's), answer "this or that", and get all 16 looks in order. It runs the
+     real candidates, constraint graph, model fit, scoring and ranking. Every look is
+     "together", so the model learns one trade-off: font against colors.
+     - **Its own question picker.** With no distance, the engine's moot rule (MOOT_CONFIDENCE in the engine's defaults) leaves
+       nothing to ask, which is right for the Match: the best mutually available pair wins. A look
+       isn't matched, it's chosen, so the warm-up asks about the most uncertain neighbouring pair
+       the common-sense rule leaves open, at most 6 questions.
+     - **Looks are tokens only.** `[data-font]` / `[data-palette]` on `<html>` (or on any element,
+       for previews) swap the `--look-*` font variables and every color token, in light and dark.
+       Text pairs were checked at 4.5:1 on the worst-case glass. Sage & Plum stays the default.
+     - **Saved on the device** (localStorage), applied by an inline script before paint so there's
+       no flash, including on the landing page. Account › Appearance lists the 16 looks to switch
+       between. Not yet synced to the profile across devices.
+
+141. **Landing page: swirling background and floating panels** (`app/page.tsx`, globals.css
+     `.landing-swirl`, `.landing-float`). Four panels (the hero; built for couples; the logic
+     engine's four steps; the theme warm-up with all 16 looks) float in and out as you scroll,
+     using CSS scroll-driven animations (`animation-timeline: view()`), fading only at the screen
+     edges and never blurring, so a panel taller than the screen stays readable. Browsers without them,
+     and reduced motion, show the panels still. Behind them, four sage and plum color fields
+     swirl slowly on a fixed background, coloured from the look in use. The merging-lists
+     animation (`components/merge-backdrop.tsx`, `lib/merge-animation.ts`) is no longer shown
+     but is kept, with its tests, in case it comes back. The warm-up intro is now just its
+     heading, one paragraph and Start.

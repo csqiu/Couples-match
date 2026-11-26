@@ -52,7 +52,7 @@ export function ReviewQueueView({ queue }: { queue: ReviewQueue }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Review programs</h1>
+        <h1 className="page-title">Review programs</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted">
           Programs couples added, imported programs whose location looks doubtful, and possible duplicates. Approving a couple’s
           program makes it available to everyone in its match.
