@@ -15,10 +15,13 @@ import {
   DEFAULT_LOOK,
   fontOf,
   FONTS,
+  isFontId,
+  isPaletteId,
   lookId,
   lookName,
   paletteOf,
   PALETTES,
+  parseLookId,
   readWarmupProgress,
   savedLook,
   saveLookList,
@@ -57,7 +60,16 @@ export function WarmupFlow({ signedIn }: { signedIn: boolean }) {
   // Pick up where this device left off, and follow the look if it changes elsewhere.
   useEffect(() => {
     const saved = readWarmupProgress<Progress>();
-    if (saved && STEPS.some((s) => s.id === saved.step) && saved.fonts?.length === FONTS.length && saved.palettes?.length === PALETTES.length) {
+    const valid =
+      saved &&
+      STEPS.some((s) => s.id === saved.step) &&
+      saved.fonts?.length === FONTS.length &&
+      saved.palettes?.length === PALETTES.length &&
+      // Progress from an older set of fonts or colors starts over.
+      saved.fonts.every(isFontId) &&
+      saved.palettes.every(isPaletteId) &&
+      (saved.answers ?? []).every((a) => parseLookId(a.left) && parseLookId(a.right));
+    if (saved && valid) {
       setP({ ...START, ...saved, answers: saved.answers ?? [] });
     }
     const sync = () => setCurrent(savedLook());

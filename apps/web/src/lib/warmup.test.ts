@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { FontId, PaletteId } from './looks';
 import { runWarmup, toLookId, WARMUP_MAX_QUESTIONS, type WarmupAnswer } from './warmup';
 
-const fonts: FontId[] = ['tech', 'editorial', 'rounded', 'journal'];
-const palettes: PaletteId[] = ['glacier', 'sageplum', 'scrubs', 'coral'];
+const fonts: FontId[] = ['quirky', 'bookish', 'tech', 'wide'];
+const palettes: PaletteId[] = ['sageplum', 'scrubs', 'paperpencil', 'sunset'];
 const id = (l: { font: FontId; palette: PaletteId }) => toLookId(l);
 
 describe('theme warm-up on the engine', () => {
@@ -11,8 +11,8 @@ describe('theme warm-up on the engine', () => {
     const r = runWarmup({ fonts, palettes, answers: [] });
     expect(r.order).toHaveLength(16);
     expect(new Set(r.order.map(id)).size).toBe(16);
-    expect(id(r.order[0])).toBe('tech.glacier');
-    expect(id(r.order[15])).toBe('journal.coral');
+    expect(id(r.order[0])).toBe('quirky.sageplum');
+    expect(id(r.order[15])).toBe('wide.sunset');
     expect(r.settledByRule).toBeGreaterThan(0);
   });
 
@@ -48,7 +48,7 @@ describe('theme warm-up on the engine', () => {
     const r = runWarmup({ fonts, palettes, answers });
     const pos = new Map(r.order.map((l, i) => [id(l), i]));
     // Font #4 in color #1 now beats font #1 in color #3.
-    expect(pos.get('journal.glacier')!).toBeLessThan(pos.get('tech.scrubs')!);
+    expect(pos.get('wide.sageplum')!).toBeLessThan(pos.get('quirky.paperpencil')!);
     expect(r.answered).toBe(answers.length);
   });
 
