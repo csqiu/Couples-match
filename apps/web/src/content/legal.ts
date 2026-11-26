@@ -21,7 +21,7 @@ Pairwise (getpairwise.app) is operated by Cecil Qiu ("Pairwise," "we," "us"). Th
 
 - **Account details:** your email address.
 - **Match details:** your Match year, specialty, and partner invitation.
-- **Planning data:** the programs you add, your rankings and tiers, your answers to "this or that" questions (including "I'm certain" answers), conflict resolutions, manual edits to the shared list, saved versions, and notes.
+- **Planning data:** the programs you add, your rankings and tiers, your answers to "this or that" questions, conflict resolutions, manual edits to the shared list, saved versions, and notes.
 - **Programs you submit:** details of any program you add that isn't in our directory.
 - **Messages and feedback:** anything you send us, such as support requests or survey answers.
 - **Tips:** if you send a tip, our payment provider (Buy Me a Coffee, Stripe) handles your payment details. We receive only your name, email, amount, and date, and never your full card number.
@@ -52,6 +52,7 @@ We do not use your data for advertising, sell it, or use it to make decisions ab
 - **Pairwise operators.** A small number of people who run Pairwise can access data when needed to provide support, fix a problem you report, review submitted programs, keep the Service secure, or comply with the law. We do not browse couples' rank lists for any other reason.
 - **Service providers** that host or run parts of the Service for us, under contracts that limit their use of your data:
   - Supabase: database, sign-in, and real-time sync
+  - Google: sign-in, if you choose to sign in with Google
   - Vercel, Cloudflare: app and website hosting
   - Resend: sign-in and invitation emails
   - Buy Me a Coffee, Stripe: tips, if you send one
@@ -88,7 +89,7 @@ De-identified aggregate data can't reasonably be linked back to you, so it may r
 
 You can:
 
-- **see and export** your data: your list exports as a checklist, PDF, or CSV, and you can ask us for a full copy of your data;
+- **see and export** your data: your list exports as a checklist, PDF, or CSV;
 - **correct** your data at any time in the app;
 - **delete** your account and personal data from the Account page;
 - **opt out** of optional emails, such as surveys, using the link in each email; and
@@ -98,7 +99,7 @@ Depending on where you live, you may have more rights under local law (for examp
 
 ## 7. Security
 
-We protect your data with encryption in transit (HTTPS) and at rest, database rules that let only the two partners in a couple see that couple's data, and passwordless sign-in with single-use links. No system is perfectly secure. If a breach affects your personal information, we will notify you as the law requires.
+We protect your data with encryption in transit (HTTPS) and at rest, database rules that let only the two partners in a couple see that couple's data, and passwordless sign-in (single-use email links or Google). No system is perfectly secure. If a breach affects your personal information, we will notify you as the law requires.
 
 ## 8. Age limit
 
@@ -134,7 +135,7 @@ Pairwise is a free planning tool that helps two applicants in the NRMP Couples M
 
 - You must be at least 18 and a registered (or registering) applicant in an NRMP Match.
 - Each person may belong to one couple per Match year, and both partners must be in the same Match.
-- You sign in by email magic link. Keep access to your email account secure; you are responsible for activity under your account.
+- You sign in with an emailed magic link or with Google. Keep access to your email and Google accounts secure; you are responsible for activity under your account.
 - Only invite someone who has agreed to be your Couples Match partner. Invitation links are single-use and expire after 7 days.
 - Provide accurate information and keep it up to date.
 
