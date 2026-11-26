@@ -11,7 +11,7 @@ import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { PairDetails, PairMedium, PairNames, ProgramChip, WhyText } from '@/components/pair';
 import { BAND_ROW, BandBadge } from '@/components/proximity';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { FloatingCoffee } from '@/components/coffee-button';
+import { FloatingCoffee, FloatingStack } from '@/components/coffee-button';
 import { Card } from '@/components/ui/card';
 import { Field, Input } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
@@ -207,7 +207,6 @@ export function ListView({
 
   return (
     <div className="flex flex-col gap-4">
-      {coffee ? <FloatingCoffee onClose={() => setCoffee(false)} /> : null}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Final list</h1>
@@ -446,7 +445,10 @@ export function ListView({
       </div>
       </DndContext>
 
-      <ClashNotice clash={clash} unresolved={result.hasCycles} names={names} onUndo={() => void undoClash()} onClose={() => setClash(null)} />
+      <FloatingStack>
+        {coffee ? <FloatingCoffee docked onClose={() => setCoffee(false)} /> : null}
+        <ClashNotice clash={clash} unresolved={result.hasCycles} names={names} onUndo={() => void undoClash()} onClose={() => setClash(null)} />
+      </FloatingStack>
 
       {over > 0 ? (
         <div
@@ -670,7 +672,7 @@ function ClashNotice({
     <div
       role={clash ? 'alert' : 'status'}
       data-testid="clash-notice"
-      className="fixed inset-x-4 bottom-16 z-30 rounded-[20px] border border-warn/60 bg-surface p-4 shadow-glass sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[420px]"
+      className="pointer-events-auto w-full rounded-[20px] border border-warn/60 bg-surface p-4 shadow-glass sm:w-[420px]"
     >
       <div className="flex items-start gap-3">
         <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-warn" aria-hidden />
