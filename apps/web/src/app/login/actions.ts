@@ -1,16 +1,12 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { APP_URL, DEV_LOGIN_ENABLED } from '@/lib/env';
+import { safeNext } from '@/lib/safe-next';
 import { createClient } from '@/lib/supabase/server';
 
 export interface LoginState {
   sent?: string;
   error?: string;
-}
-
-function safeNext(next: FormDataEntryValue | null): string {
-  const n = typeof next === 'string' ? next : '';
-  return n.startsWith('/') && !n.startsWith('//') ? n : '/app';
 }
 
 export async function sendMagicLink(_: LoginState, form: FormData): Promise<LoginState> {

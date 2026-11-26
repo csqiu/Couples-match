@@ -4,7 +4,9 @@
  */
 import { buildEngineInput, type CoupleData, type StoredSettings } from '@pairwise/db';
 import {
+  buildConstraintGraph,
   effectiveComparisons,
+  reasonsBetween,
   describeConflict,
   describeLink,
   learningStatus,
@@ -68,6 +70,16 @@ export interface FlaggedView {
   deferred: boolean;
 }
 
+/** A rule or answer link the couple dropped while resolving a circle (a rule exception). */
+export interface SetAsideView {
+  higher: string;
+  lower: string;
+  higherPair: PairView | null;
+  lowerPair: PairView | null;
+  /** What it was: "Your answer", "Tier A rule", … */
+  source: LinkSource;
+}
+
 export interface Analysis {
   hasBothLists: boolean;
   question: QuestionView | null;
@@ -78,6 +90,8 @@ export interface Analysis {
   answered: number;
   done: boolean;
   conflicts: ConflictView[];
+  /** Links dropped earlier, which can be brought back (bug log #33). */
+  setAside: SetAsideView[];
 }
 
 export interface AnalyzeOptions {
@@ -168,7 +182,23 @@ export function analyze(data: CoupleData, opts: AnalyzeOptions): Analysis {
     answered: effectiveComparisons(input.comparisons).counted.length,
     done: status.done,
     conflicts: conflicts.map((c) => conflictView(c)),
+    setAside: setAsideViews(),
   };
+
+  /** Each exception, with what it overrides (read from the graph as it would be without exceptions). */
+  function setAsideViews(): SetAsideView[] {
+    if (!input.exceptions.length) return [];
+    const full = buildConstraintGraph(pairs, { ...input, exceptions: [] });
+    return input.exceptions.flatMap((e) => {
+      const x = full.index.get(e.higher);
+      const y = full.index.get(e.lower);
+      // A pair that's gone (a program was removed) has nothing to bring back.
+      if (x === undefined || y === undefined) return [];
+      const reasons = reasonsBetween(full, x, y).filter((r) => r.kind !== 'pin');
+      if (!reasons.length) return [];
+      return [{ higher: e.higher, lower: e.lower, higherPair: viewById(e.higher) ?? null, lowerPair: viewById(e.lower) ?? null, source: linkSource({ reasons }, opts.names) }];
+    });
+  }
 
   function conflictView(c: Conflict): ConflictView {
     const base = { id: c.id, kind: c.kind, text: describeConflict(ctx, c) };

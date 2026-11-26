@@ -1,4 +1,5 @@
 'use client';
+import { EngineError } from '@/components/engine-error';
 import type { ComparisonRow, CoupleData } from '@pairwise/db';
 import { ArrowDownUp, ArrowUp, CircleAlert, Flag, Info, Lock } from 'lucide-react';
 import { useMemo, useState, useTransition } from 'react';
@@ -55,11 +56,11 @@ export function SpecificComparison({
   const a = state.kind === 'ready' ? state.a : null;
   const b = state.kind === 'ready' ? state.b : null;
   const opts = useMemo(() => ({ me, names, a, b }), [me, names, a, b]);
-  const { result, busy, error } = useExplore(merged, opts);
+  const { result, busy, error, retry } = useExplore(merged, opts);
   const lists = useMemo(() => (result ? rankLists(result.pairs) : [[], []]), [result]);
   const pairsById = useMemo(() => new Map((result?.pairs ?? []).map((p) => [p.id, p])), [result]);
 
-  if (error) return <p className="text-danger" role="alert">Something went wrong: {error}</p>;
+  if (error) return <EngineError error={error} onRetry={retry} />;
   if (!result) return <div className="glass h-96 animate-pulse" aria-label="Loading" />;
 
   const d = result.detail;

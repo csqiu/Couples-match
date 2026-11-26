@@ -146,5 +146,22 @@ describe('final list', () => {
     expect(list.programs[0].map((p) => p.rank)).toEqual(list.programs[0].map((_, i) => i + 1));
     expect(list.programs[1]).toHaveLength(4);
   });
-});
 
+  it('after a restore, pairs with programs added since stay off the list until brought in (bug log #35)', () => {
+    const d = couple({ settings: { heldPrograms: [['seed-ucsf-internal-medicine'], []] } });
+    const list = computeFinalList(d, opts);
+    const held = (id: string) => id.startsWith('seed-ucsf-internal-medicine|');
+    expect(list.rows.some((r) => held(r.pairId))).toBe(false);
+    expect(list.available.some((p) => held(p.pairId))).toBe(true);
+    expect(list.held?.programs[0].map((p) => p.id)).toEqual(['seed-ucsf-internal-medicine']);
+    expect(list.held?.pairs).toBe(5); // 4 with Sam's programs + 1 with No Match
+    // Added by hand, one comes back.
+    const one = list.available.find((p) => held(p.pairId))!.pairId;
+    const d2 = couple({ settings: { heldPrograms: [['seed-ucsf-internal-medicine'], []], includedPairs: [one] } });
+    const list2 = computeFinalList(d2, opts);
+    expect(list2.rows.some((r) => r.pairId === one)).toBe(true);
+    expect(list2.held?.pairs).toBe(4);
+    // Without the setting, everything is back.
+    expect(computeFinalList(couple(), opts).held).toBeNull();
+  });
+});

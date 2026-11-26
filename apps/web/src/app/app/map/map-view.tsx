@@ -1,4 +1,5 @@
 'use client';
+import { EngineError } from '@/components/engine-error';
 import type { CoupleData } from '@pairwise/db';
 import { BAND_LABEL, type MatchType } from '@pairwise/engine';
 import dynamic from 'next/dynamic';
@@ -23,7 +24,7 @@ const TOP_CHOICES = [10, 25, 50, 100, 300];
 
 export function MapView({ data, names, matchType, listLength }: { data: CoupleData; names: [string, string]; matchType: MatchType; listLength: number }) {
   const opts = useMemo(() => ({ names, matchType }), [names, matchType]);
-  const { result } = useFinalList(data, opts);
+  const { result, error, retry } = useFinalList(data, opts);
   const [top, setTop] = useState(25);
   const [hidden, setHidden] = useState<Set<MapBand>>(new Set());
   const [selected, setSelected] = useState<number | null>(null);
@@ -34,7 +35,7 @@ export function MapView({ data, names, matchType, listLength }: { data: CoupleDa
   const visible = useMemo(() => map.lines.filter((l) => !hidden.has(l.band)), [map, hidden]);
   const byRank = useMemo(() => new Map(rows.map((r) => [r.rank, r])), [rows]);
 
-  if (!result) return <div className="h-96 glass animate-pulse" aria-label="Loading" />;
+  if (!result) return error ? <EngineError error={error} onRetry={retry} /> : <div className="h-96 glass animate-pulse" aria-label="Loading" />;
   if (!rows.length) {
     return (
       <div className="flex flex-col items-center gap-3 glass border-dashed p-10 text-center">

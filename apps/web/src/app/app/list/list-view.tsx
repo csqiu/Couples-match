@@ -8,6 +8,7 @@ import { NRMP_RULES, type MatchType } from '@pairwise/engine';
 import { ArrowDownUp, CircleAlert, CircleCheck, Crosshair, Download, FlaskConical, GripVertical, History, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, Undo2, X } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { EngineError } from '@/components/engine-error';
 import { PairDetails, PairMedium, PairNames, ProgramChip, WhyText } from '@/components/pair';
 import { BAND_ROW, BandBadge } from '@/components/proximity';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -18,10 +19,10 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/cn';
 import { toCsv } from '@/lib/csv-export';
-import { checklistFor, DEFAULT_LIST_ORDER, feesFor, RANK_LIMIT, type AvailablePair, type ListOrder, type ListRow, type MoveResult } from '@/lib/final-list';
+import { checklistFor, DEFAULT_LIST_ORDER, feesFor, RANK_LIMIT, type AvailablePair, type FinalList, type ListOrder, type ListRow, type MoveResult } from '@/lib/final-list';
 import { holdsFor, indexTies, type Holds } from '@/lib/list-ties';
 import { useEngine, useFinalList } from '@/lib/use-analysis';
-import { addDragPin, removePin, saveVersion, setIncluded, setListLength, setListOrder, setNoMatchUnlocked } from './actions';
+import { addDragPin, releaseHeldPrograms, removePin, saveVersion, setIncluded, setListLength, setListOrder, setNoMatchUnlocked } from './actions';
 import { Brackets, HoldsText } from './brackets';
 import { allReachable, simulate, SimulatorPanel, type RowReach, type Scenario } from './simulator';
 
@@ -90,7 +91,7 @@ export function ListView({
     setLocalPins((xs) => xs.filter((p) => !server.has(p.id) && Date.now() - (pinAddedAt.current.get(p.id) ?? 0) < 15_000));
   }, [data.pins]);
   const opts = useMemo(() => ({ names, matchType }), [names, matchType]);
-  const { result, busy } = useFinalList(merged, opts);
+  const { result, busy, error, retry } = useFinalList(merged, opts);
   const call = useEngine();
   const toast = useToast();
   const dndId = useId();
@@ -267,7 +268,7 @@ export function ListView({
     else await keepClashing(higher, lower, moved, check, undefined, before);
   }
 
-  if (!result) return <div className="glass h-96 animate-pulse" aria-label="Loading" />;
+  if (!result) return error ? <EngineError error={error} onRetry={retry} /> : <div className="glass h-96 animate-pulse" aria-label="Loading" />;
   if (!result.rows.length) {
     return (
       <div className="glass p-10 text-center text-sm text-muted">
@@ -278,6 +279,7 @@ export function ListView({
 
   return (
     <div className="flex flex-col gap-4">
+      {error ? <EngineError error={error} onRetry={retry} stale /> : null}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Final list</h1>
@@ -439,6 +441,16 @@ export function ListView({
             </div>
           </Card>
 
+          {result.held ? (
+            <HeldNotice
+              held={result.held}
+              names={names}
+              onRelease={async () => {
+                const res = await tracked(releaseHeldPrograms());
+                toast({ message: res.error ? `Couldn’t save: ${res.error}` : 'Brought them in. They’re placed by your answers and rules.' });
+              }}
+            />
+          ) : null}
           <AvailablePanel pairs={result.available} names={names} onAdd={(id) => void includePair(id, true).then(() => toast({ message: 'Added to your list.' }))} />
 
           {fees ? (
@@ -680,6 +692,48 @@ function ListEnd() {
     >
       Drop a pair from “Not on your list” onto a row to put it there, or here to add it in its own place.
     </div>
+  );
+}
+
+/**
+ * After restoring a version: pairs with programs added since are kept off the list, so it
+ * matches the saved one (bug log #35). They wait in "Not on your list"; one button brings
+ * them all in.
+ */
+function HeldNotice({ held, names, onRelease }: { held: NonNullable<FinalList['held']>; names: [string, string]; onRelease: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Card className="flex flex-col gap-2 border-warn/40 bg-warn-soft/70 p-4 sm:p-4" data-testid="held">
+      <h2 className="small-title">Kept off after restoring</h2>
+      <p className="text-xs text-muted">
+        These programs were added after the version you restored, so {held.pairs} pair{held.pairs === 1 ? '' : 's'} with them{' '}
+        {held.pairs === 1 ? 'is' : 'are'} kept off the list for now. Add any of them from “Not on your list”, or bring them all in.
+      </p>
+      <ul className="flex flex-col gap-1 text-[13px]">
+        {([0, 1] as const).flatMap((k) =>
+          held.programs[k].map((p) => (
+            <li key={`${k}:${p.id}`} className="flex items-center gap-1.5">
+              <span className={cn('h-2 w-2 shrink-0 rounded-full', k === 0 ? 'bg-partner-1' : 'bg-partner-2')} aria-hidden />
+              <span className={cn('font-semibold', k === 0 ? 'text-accent' : 'text-plum-deep')}>{p.short}</span>
+              <span className="text-muted">({names[k]})</span>
+            </li>
+          )),
+        )}
+      </ul>
+      <Button
+        size="sm"
+        variant="secondary"
+        className="self-start"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          await onRelease();
+          setBusy(false);
+        }}
+      >
+        <Plus className="h-4 w-4" aria-hidden /> Bring them all in
+      </Button>
+    </Card>
   );
 }
 

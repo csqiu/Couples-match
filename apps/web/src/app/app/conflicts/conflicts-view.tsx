@@ -1,17 +1,18 @@
 'use client';
 import type { CoupleData } from '@pairwise/db';
-import { ArrowRight, CircleCheck, Link2Off } from 'lucide-react';
+import { ArrowRight, CircleCheck, Link2Off, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 import type { ConflictView } from '@/lib/analysis';
 import { cn } from '@/lib/cn';
 import { useAnalysis } from '@/lib/use-analysis';
+import { EngineError } from '@/components/engine-error';
 import { PairLarge, PairTile, PickedTag } from '@/components/pair';
-import { breakLink, confirmAnswer, flipAnswer, removeAnswer, resolveDisagreement } from './actions';
+import { breakLink, bringBackLink, confirmAnswer, flipAnswer, removeAnswer, resolveDisagreement, restoreLink } from './actions';
 
 const TITLES: Record<ConflictView['kind'], string> = {
   cycle: 'These answers go in a circle',
@@ -35,7 +36,7 @@ export function ConflictsView({
   privateTiers: boolean;
 }) {
   const opts = useMemo(() => ({ me, names, answerMode }), [me, names, answerMode]);
-  const { result, busy } = useAnalysis(data, opts);
+  const { result, busy, error, retry } = useAnalysis(data, opts);
   // Arriving from a move that clashes (final list): that conflict first, and marked.
   const focus = useSearchParams().get('pair');
   const involves = (c: ConflictView) =>
@@ -65,17 +66,49 @@ export function ConflictsView({
     );
   };
 
-  async function run(id: string, fn: () => Promise<{ error?: string }>, ok: string) {
-    setPending(id);
-    const res = await fn();
+  // A card stays locked after its action until the recalculated conflicts arrive, so a second
+  // tap can't act on a circle that's already been broken (bug log #34).
+  const settledFrom = useRef<unknown>(null);
+  useEffect(() => {
+    if (!pending || settledFrom.current === null || result === settledFrom.current || busy) return;
     setPending(null);
-    toast({ message: res.error ? `Couldn’t save: ${res.error}` : ok });
+    settledFrom.current = null;
+  }, [pending, result, busy]);
+  useEffect(() => {
+    if (!pending) return;
+    const t = setTimeout(() => setPending(null), 12_000); // never stuck if nothing comes back
+    return () => clearTimeout(t);
+  }, [pending]);
+
+  async function run<R extends { error?: string }>(id: string, fn: () => Promise<R>, ok: string, undo?: (res: R) => (() => Promise<{ error?: string }>) | undefined) {
+    setPending(id);
+    settledFrom.current = null;
+    const res = await fn();
+    if (res.error) {
+      setPending(null);
+      return toast({ message: `Couldn’t save: ${res.error}` });
+    }
+    settledFrom.current = result; // unlock once a newer result than this one lands
+    const back = undo?.(res);
+    toast({
+      message: ok,
+      action: back
+        ? {
+            label: 'Undo',
+            onClick: async () => {
+              const r = await back();
+              toast({ message: r.error ? `Couldn’t undo: ${r.error}` : 'Put back.' });
+            },
+          }
+        : undefined,
+    });
   }
 
-  if (!result) return <div className="glass h-64 animate-pulse" aria-label="Loading" />;
+  if (!result) return error ? <EngineError error={error} onRetry={retry} /> : <div className="glass h-64 animate-pulse" aria-label="Loading" />;
 
   return (
     <div className="flex flex-col gap-4">
+      {error ? <EngineError error={error} onRetry={retry} stale /> : null}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Resolve conflicts</h1>
@@ -118,7 +151,11 @@ export function ConflictsView({
                             className="glass-row mb-2 flex flex-col gap-2 px-3 py-3 text-left transition-colors duration-150 hover:border-action hover:bg-action-soft sm:px-4"
                             disabled={!!pending}
                             aria-label={`${l.text} Drop this one.`}
-                            onClick={() => run(c.id, () => breakLink({ from: l.from, to: l.to, reasons: l.reasons }), 'Dropped that link.')}
+                            onClick={() =>
+                              run(c.id, () => breakLink({ from: l.from, to: l.to, reasons: l.reasons }), 'Dropped that link.', (res) =>
+                                res.undo ? () => restoreLink(res.undo!) : undefined,
+                              )
+                            }
                           >
                             <span className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-3">
                               {l.fromPair ? <PairTile pair={l.fromPair} rank={l.fromRank} /> : <span className="text-sm">{l.text}</span>}
@@ -217,6 +254,46 @@ export function ConflictsView({
           ))}
         </ul>
       )}
+
+      {result.setAside.length ? (
+        <Card className="flex flex-col gap-3" data-testid="set-aside">
+          <div>
+            <h2 className="card-title">Set aside</h2>
+            <p className="mt-0.5 text-sm text-muted">
+              Links you dropped to break a circle. They no longer order your list. Bring one back if you change your mind
+              (if it still clashes, the circle comes back here).
+            </p>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {result.setAside.map((a) => (
+              <li key={`${a.higher}>${a.lower}`} className="glass-row flex flex-col gap-2 px-3 py-3 sm:px-4">
+                <span className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-3">
+                  {a.higherPair ? <PairTile pair={a.higherPair} /> : <span className="text-sm text-muted">A pair no longer on your lists</span>}
+                  <span className="flex items-center gap-1.5 text-muted md:flex-col md:gap-0.5" aria-hidden>
+                    <span className="eyebrow">above</span>
+                    <ArrowRight className="h-4 w-4 rotate-90 md:rotate-0" />
+                  </span>
+                  {a.lowerPair ? <PairTile pair={a.lowerPair} /> : <span className="text-sm text-muted">A pair no longer on your lists</span>}
+                </span>
+                <span className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+                  <span className="flex min-w-0 flex-col gap-1 sm:flex-row sm:gap-2">
+                    <span className="eyebrow shrink-0 text-muted sm:mt-[3px]">{a.source.label}</span>
+                    <span className="min-w-0 text-muted">{a.source.detail}</span>
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={!!pending}
+                    onClick={() => run(`aside:${a.higher}>${a.lower}`, () => bringBackLink(a.higher, a.lower), 'Brought it back.')}
+                  >
+                    <Undo2 className="h-4 w-4" aria-hidden /> Bring back
+                  </Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
     </div>
   );
 }

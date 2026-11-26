@@ -67,6 +67,14 @@ export async function setListOrder(order: NonNullable<StoredSettings['listOrder'
   return updateSettings((s) => ({ ...s, listOrder: order }));
 }
 
+/** After a restore: the pairs held off the list (programs added since that version) come in. */
+export async function releaseHeldPrograms(): Promise<Result> {
+  return updateSettings((s) => {
+    const { heldPrograms: _h, ...rest } = s;
+    return rest;
+  });
+}
+
 /** Locked: the No Match rows stay at the end in their fixed order. Unlocked: they can be dragged. */
 export async function setNoMatchUnlocked(unlocked: boolean): Promise<Result> {
   return updateSettings((s) => ({ ...s, noMatchUnlocked: unlocked }));
