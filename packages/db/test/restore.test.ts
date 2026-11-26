@@ -60,7 +60,11 @@ describe('Restoring a version', () => {
       await db.query('delete from individual_ranks where user_id = $1 and program_id = $2', [b.id, PEDS[1]]);
 
       // Partner B restores — rewriting A's list too, which RLS alone wouldn't allow.
+      const events = async () => (await db.one<{ n: number }>('select count(*)::int as n from audit_events where couple_id = $1', [coupleId])).n;
+      const before = await events();
       await db.query('select restore_version($1)', [version]);
+      // Quiet: one "restored" entry, not a delete and re-add per table (bug log #36).
+      expect(await events()).toBe(before + 1);
       const ranks = await db.query<{ user_id: string; program_id: string; tier: string; nrmp_code: string | null }>(
         'select user_id, program_id, tier, nrmp_code from individual_ranks where couple_id = $1 order by user_id = $2 desc, rank',
         [coupleId, a.id],
@@ -74,10 +78,12 @@ describe('Restoring a version', () => {
       ]);
       expect(ranks[0].nrmp_code).toBe('1234140C0');
       expect(await db.query('select id, locked from comparisons where couple_id = $1', [coupleId])).toEqual([{ id: cmp, locked: true }]);
-      expect(await db.query('select comparison_id, moved_pair from pins where couple_id = $1 order by created_at', [coupleId])).toEqual([
-        { comparison_id: cmp, moved_pair: null },
-        { comparison_id: null, moved_pair: 'higher' },
-        { comparison_id: null, moved_pair: 'lower' },
+      // The drags were still there and keep A as their author; the answer's pin (gone with the
+      // deleted answer) is credited to B, who restored.
+      expect(await db.query('select comparison_id, moved_pair, created_by from pins where couple_id = $1 order by created_at', [coupleId])).toEqual([
+        { comparison_id: cmp, moved_pair: null, created_by: b.id },
+        { comparison_id: null, moved_pair: 'higher', created_by: a.id },
+        { comparison_id: null, moved_pair: 'lower', created_by: a.id },
       ]);
       const { settings } = await db.one<{ settings: Record<string, unknown> }>('select settings from couples where id = $1', [coupleId]);
       expect(settings.balance).toBe(1.3);

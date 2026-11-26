@@ -324,7 +324,7 @@ export function ListView({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section aria-label="Ranked pairs" className={cn('glass min-w-0 p-2 sm:p-3', busy && 'opacity-70')}>
           <BandCounts rows={rows} />
-          <div className="mt-1 mb-2 ml-3 grid grid-cols-[2.25rem_1.5rem_minmax(0,1fr)_auto] gap-x-2 px-1.5 sm:ml-4 font-mono text-[11px] font-medium tracking-[0.08em] text-muted uppercase sm:grid-cols-[2.5rem_1.5rem_minmax(0,1fr)_11.5rem] sm:gap-x-3 sm:px-2">
+          <div className="mt-1 mb-2 ml-5 grid grid-cols-[2.25rem_1.5rem_minmax(0,1fr)_auto] gap-x-2 px-1.5 sm:ml-6 font-mono text-[11px] font-medium tracking-[0.08em] text-muted uppercase sm:grid-cols-[2.5rem_1.5rem_minmax(0,1fr)_11.5rem] sm:gap-x-3 sm:px-2">
             <span className="text-right">#</span>
             <span />
             <span className="grid grid-cols-1 sm:grid-cols-2 sm:gap-3">
@@ -334,7 +334,7 @@ export function ListView({
             <span className="text-right">Distance</span>
           </div>
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-            <div ref={listBox} className="relative pl-3 sm:pl-4">
+            <div ref={listBox} className="relative pl-5 sm:pl-6">
             <Brackets container={listBox} focus={focus} holds={holds} rankOf={rankOf} names={names} />
             <p className="sr-only" aria-live="polite">
               {crossing ? `Crossing rank ${rankOf(crossing.id)}, ${labelOf(crossing.id)}. Dropping here clashes with something you set.` : ''}

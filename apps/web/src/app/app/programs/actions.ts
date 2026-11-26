@@ -115,7 +115,10 @@ export async function removeProgram(programId: string): Promise<{ error?: string
   return { removed: (data?.[0] as RemovedRank | undefined) ?? undefined };
 }
 
-/** Undo a removal: the row comes back with its tier, note, code and short name, at its old place. */
+/**
+ * Undo a removal: the row comes back with its tier, note, code and short name, at its old
+ * place in the list as it is now (bug log #39, #40), not at the end.
+ */
 export async function restoreRemoved(row: RemovedRank): Promise<{ error?: string }> {
   const ctx = await requireCouple();
   const supabase = await createClient();
@@ -138,6 +141,23 @@ export async function restoreRemoved(row: RemovedRank): Promise<{ error?: string
     short_name: row.short_name,
   });
   if (error && !error.message.includes('duplicate')) return { error: error.message };
+  // Move it from the end back to its old rank (as near as the list now allows), in one upsert.
+  const { data: rows } = await supabase
+    .from('individual_ranks')
+    .select('program_id, rank, tier, acceptable')
+    .eq('couple_id', ctx.couple.id)
+    .eq('user_id', ctx.user.id)
+    .order('rank');
+  const list = (rows ?? []).filter((r) => r.program_id !== row.program_id);
+  const back = (rows ?? []).find((r) => r.program_id === row.program_id);
+  if (back) {
+    list.splice(Math.max(0, Math.min(list.length, row.rank - 1)), 0, back);
+    const { error: e2 } = await supabase.from('individual_ranks').upsert(
+      list.map((r, i) => ({ couple_id: ctx.couple.id, user_id: ctx.user.id, program_id: r.program_id, rank: i + 1, tier: r.tier, acceptable: r.acceptable })),
+      { onConflict: 'couple_id,user_id,program_id' },
+    );
+    if (e2) return { error: e2.message };
+  }
   revalidatePath('/app', 'layout');
   return {};
 }

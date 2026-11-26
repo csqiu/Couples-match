@@ -198,7 +198,7 @@ export function ConflictsView({
                             hideTierOf={hideTierOf}
                             map={false}
                             highlight={picked}
-                            tag={picked ? <PickedTag name={by === 'me' ? myName : partnerName} slot={by === 'me' ? null : partnerSlot} you={by === 'me'} /> : undefined}
+                            tag={picked ? <PickedTag name={by === 'me' ? myName : partnerName} slot={by === 'me' ? mySlot : partnerSlot} you={by === 'me'} /> : undefined}
                           />
                         );
                       })}

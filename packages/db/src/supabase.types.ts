@@ -750,6 +750,7 @@ export type Database = {
       open_list: { Args: { p_list: string }; Returns: undefined }
       start_list: { Args: { p_name?: string | null; p_from_version?: string | null }; Returns: string }
       restore_saved_rank_list: { Args: { p_couple: string }; Returns: number }
+      list_draft_counts: { Args: { p_couple: string }; Returns: { list_id: string; programs: Json; answers: number; resolved: number }[] }
       import_programs: { Args: { p_programs: Json }; Returns: { inserted: number; updated: number }[] }
       merge_programs: { Args: { p_from: string; p_to: string }; Returns: undefined }
       program_duplicates: { Args: never; Returns: { program_a: string; program_b: string; distance_mi: number }[] }

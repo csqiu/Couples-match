@@ -10,7 +10,7 @@ import { Input, Select } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/cn';
 import { useToast } from '@/components/ui/toast';
-import { addProgram, removeProgram, restoreSavedList, saveShortName, searchPrograms } from './actions';
+import { addProgram, removeProgram, restoreRemoved, restoreSavedList, saveShortName, searchPrograms, type RemovedRank } from './actions';
 import { AddProgramForm } from './add-program-form';
 import { US_STATES } from '@pairwise/data';
 import { ProgramDetails } from './program-details';
@@ -138,11 +138,28 @@ export function ProgramsView({
     keep.current = { page: window.scrollY, list: listRef.current?.scrollTop ?? 0 };
     setPending(p.id);
     const added = mineIds.has(p.id);
-    const res = added ? await removeProgram(p.id) : await addProgram(p.id);
+    const res: { error?: string; removed?: RemovedRank } = added ? await removeProgram(p.id) : await addProgram(p.id);
     setPending(null);
     if (res.error) keep.current = null;
-    if (res.error) toast({ message: res.error });
-    else toast({ message: added ? `Removed ${p.name}` : `Added ${p.name}` });
+    if (res.error) return toast({ message: res.error });
+    const removed = res.removed;
+    toast({
+      message: added ? `Removed ${p.name}` : `Added ${p.name}`,
+      // Same Undo as on Rank: back with its tier, note, code and short name, in its old place (bug log #40).
+      action: removed
+        ? {
+            label: 'Undo',
+            onClick: async () => {
+              keep.current = { page: window.scrollY, list: listRef.current?.scrollTop ?? 0 };
+              const back = await restoreRemoved(removed);
+              if (back.error) {
+                keep.current = null;
+                toast({ message: `Couldn’t put it back: ${back.error}` });
+              }
+            },
+          }
+        : undefined,
+    });
   }
 
   return (

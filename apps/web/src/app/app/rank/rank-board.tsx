@@ -73,6 +73,9 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
   const [, startSave] = useTransition();
   const toast = useToast();
   const dragStart = useRef<Board<BoardEntry> | null>(null);
+  // The board as it is now, for Undo after a removal (other moves may have happened since).
+  const latest = useRef(board);
+  latest.current = board;
   // Stable id so dnd-kit's accessibility ids match between server and client render.
   const dndId = useId();
 
@@ -190,6 +193,7 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
                   }}
                   onRemove={async () => {
                     const prev = board;
+                    const oldIndex = board[tier].findIndex((e) => e.programId === entry.programId);
                     setBoard({ ...board, [tier]: board[tier].filter((e) => e.programId !== entry.programId) });
                     const res = await removeProgram(entry.programId);
                     if (res.error) {
@@ -207,7 +211,14 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
                             onClick: async () => {
                               const back = await restoreRemoved(removed);
                               if (back.error) return toast({ message: `Couldn’t put it back: ${back.error}` });
-                              persist(prev, prev);
+                              // Back into its old place in the board as it is now, keeping any
+                              // moves made since the removal (bug log #39).
+                              const now = latest.current;
+                              if (flatten(now).some((e) => e.programId === entry.programId)) return;
+                              const list = [...now[tier]];
+                              list.splice(Math.min(oldIndex, list.length), 0, entry);
+                              const next = { ...now, [tier]: list };
+                              persist(next, now);
                             },
                           }
                         : undefined,

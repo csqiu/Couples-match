@@ -31,6 +31,8 @@ export async function serverFinalList(ctx: AppContext & { couple: NonNullable<Ap
           listLength: list.target,
           includedPairs: stored.includedPairs ?? [],
           noMatchUnlocked: !!stored.noMatchUnlocked,
+          // How the list was shown, so a restore shows it the same way (bug log #37).
+          ...(stored.listOrder ? { listOrder: stored.listOrder } : {}),
         },
       },
       pairs: toVersionRows(list.rows, list.length),

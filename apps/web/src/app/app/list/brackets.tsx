@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { cn } from '@/lib/cn';
 import { isUserSet, tieDetail, tieLabel, type Hold, type Holds } from '@/lib/list-ties';
 
-/** A bracket shorter than this has no label beside it (the details card says it). */
-const LABEL_MIN = 76;
+/** Room a vertical label needs along its bracket: about this much per letter, plus padding. */
+const LABEL_PER_CHAR = 5.6;
+const LABEL_PAD = 26;
 /** Gap from the window edge for a bracket whose row is scrolled out of sight. */
 const EDGE = 12;
 
@@ -99,9 +100,9 @@ function Bracket({ line, label, rank, rows, container }: { line: Line; label: st
   const style = hold.crossed || isUserSet(hold.source) ? 'border-solid' : 'border-dashed';
   const top = Math.min(from, to);
   const height = Math.abs(to - from);
-  const x = 'left-[3px] sm:left-[5px]';
+  const x = 'left-[7px] sm:left-[9px]';
   const tick = (y: number, hide = false) =>
-    hide ? null : <div className={cn('absolute border-t-[1.5px] sm:border-t-2', tone, style, x)} style={{ top: y - 1, width: `calc(${rowLeft}px - 4px)` }} />;
+    hide ? null : <div className={cn('absolute border-t-[1.5px] sm:border-t-2', tone, style, x)} style={{ top: y - 1, width: `calc(${rowLeft}px - 8px)` }} />;
   const text = hold.crossed ? `Crossing · ${label}` : label;
   const pill = cn(
     'absolute left-0 -translate-y-1/2 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] leading-4 font-semibold shadow-glass',
@@ -127,8 +128,22 @@ function Bracket({ line, label, rank, rows, container }: { line: Line; label: st
         >
           {off === 'up' ? <ArrowUp className="h-3 w-3" aria-hidden /> : <ArrowDown className="h-3 w-3" aria-hidden />}#{rank} · {rows} rows {off === 'up' ? 'up' : 'down'} · {text}
         </button>
-      ) : height >= LABEL_MIN || hold.crossed ? (
+      ) : hold.crossed ? (
+        // While dragging, the crossing warning reads across, where it can't be missed.
         <span className={pill} style={{ top: top + height / 2 }}>
+          {text}
+        </span>
+      ) : height >= text.length * LABEL_PER_CHAR + LABEL_PAD ? (
+        // Otherwise the label runs along the line in the margin, clear of the rows (bug log #45).
+        // Too short a bracket has none: the details card says it.
+        <span
+          className={cn(
+            'absolute -translate-x-1/2 -translate-y-1/2 rotate-180 rounded-full border px-px py-1.5 text-[10px] leading-none font-semibold whitespace-nowrap [writing-mode:vertical-rl]',
+            x,
+            isUserSet(hold.source) ? 'border-action bg-action text-action-fg' : 'border-border bg-surface-2 text-muted',
+          )}
+          style={{ top: top + height / 2 }}
+        >
           {text}
         </span>
       ) : null}

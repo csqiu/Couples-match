@@ -14,19 +14,22 @@ import { createClient } from '@/lib/supabase/server';
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const ctx = await requireContext();
   const supabase = await createClient();
-  const { count } = ctx.couple
-    ? await supabase
-        .from('individual_ranks')
-        .select('program_id', { count: 'exact', head: true })
-        .eq('couple_id', ctx.couple.id)
-        .eq('user_id', ctx.user.id)
-    : { count: 0 };
-  const { count: answers } = ctx.couple
-    ? await supabase.from('comparisons').select('id', { count: 'exact', head: true }).eq('couple_id', ctx.couple.id)
-    : { count: 0 };
-  const { data: lastVersion } = ctx.list
-    ? await supabase.from('list_versions').select('minor').eq('list_id', ctx.list.id).order('minor', { ascending: false }).limit(1).maybeSingle()
-    : { data: null };
+  // Together, not one after another: every page waits on these (bug log #43).
+  const [{ count }, { count: answers }, { data: lastVersion }] = await Promise.all([
+    ctx.couple
+      ? supabase
+          .from('individual_ranks')
+          .select('program_id', { count: 'exact', head: true })
+          .eq('couple_id', ctx.couple.id)
+          .eq('user_id', ctx.user.id)
+      : Promise.resolve({ count: 0 }),
+    ctx.couple
+      ? supabase.from('comparisons').select('id', { count: 'exact', head: true }).eq('couple_id', ctx.couple.id)
+      : Promise.resolve({ count: 0 }),
+    ctx.list
+      ? supabase.from('list_versions').select('minor').eq('list_id', ctx.list.id).order('minor', { ascending: false }).limit(1).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
   const setupDone = !!ctx.couple && !!ctx.profile.specialty;
   const done = [
     ...(setupDone ? ['setup'] : []),
