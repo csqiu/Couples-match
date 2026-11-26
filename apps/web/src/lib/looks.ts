@@ -7,17 +7,17 @@
  */
 
 export const FONTS = [
+  { id: 'quirky', name: 'Quirky modern', faces: 'Bricolage Grotesque and Inter', blurb: 'Characterful headings, calm text.' },
+  { id: 'bookish', name: 'Bookish & handmade', faces: 'Young Serif and Karla', blurb: 'Like a shared notebook.' },
   { id: 'tech', name: 'Technical', faces: 'Space Grotesk and IBM Plex', blurb: 'Precise and engineered.' },
-  { id: 'editorial', name: 'Warm editorial', faces: 'Fraunces and Public Sans', blurb: 'Soft and personal.' },
-  { id: 'rounded', name: 'Rounded & friendly', faces: 'Outfit and Nunito Sans', blurb: 'Approachable for a stressful process.' },
-  { id: 'journal', name: 'Medical journal', faces: 'Newsreader and Geist', blurb: 'Credible and academic.' },
+  { id: 'wide', name: 'Wide & playful', faces: 'Unbounded and Albert Sans', blurb: 'Energetic and current.' },
 ] as const;
 
 export const PALETTES = [
   { id: 'sageplum', name: 'Sage & Plum', blurb: 'Muted botanicals. Grown-up and soothing.' },
-  { id: 'glacier', name: 'Glacier', blurb: 'Clear blues and periwinkle. Calm and cool.' },
   { id: 'scrubs', name: 'Scrubs', blurb: 'Ceil blue and teal from the wards.' },
-  { id: 'coral', name: 'Coral & Ink', blurb: 'Warm coral against deep navy.' },
+  { id: 'paperpencil', name: 'Paper & Pencil', blurb: 'Graphite with blue and red pencil, like working it out on paper.' },
+  { id: 'sunset', name: 'Sunset Commute', blurb: 'Tangerine and violet. Warm and hopeful.' },
 ] as const;
 
 export type FontId = (typeof FONTS)[number]['id'];

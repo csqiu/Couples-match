@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Fraunces, Geist, Geist_Mono, IBM_Plex_Mono, IBM_Plex_Sans, Newsreader, Nunito_Sans, Outfit, Public_Sans, Space_Grotesk } from 'next/font/google';
+import { Albert_Sans, Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans, Inter, Karla, Space_Grotesk, Unbounded, Young_Serif } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { BRAND } from '@/brand';
 import { SiteFooter } from '@/components/site-footer';
@@ -12,14 +12,13 @@ const display = Space_Grotesk({ subsets: ['latin'], weight: ['500', '600', '700'
 const sans = IBM_Plex_Sans({ subsets: ['latin'], weight: ['400', '500', '600'], display: 'swap', variable: '--font-plex-sans' });
 const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500', '600'], display: 'swap', variable: '--font-plex-mono' });
 // The other looks' fonts (lib/looks.ts). Not preloaded: they download only when a look uses them.
-const fraunces = Fraunces({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-fraunces' });
-const publicSans = Public_Sans({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-public-sans' });
-const outfit = Outfit({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-outfit' });
-const nunitoSans = Nunito_Sans({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-nunito-sans' });
-const newsreader = Newsreader({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-newsreader' });
-const geist = Geist({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-geist' });
-const geistMono = Geist_Mono({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-geist-mono' });
-const fontVars = [display, sans, mono, fraunces, publicSans, outfit, nunitoSans, newsreader, geist, geistMono].map((f) => f.variable).join(' ');
+const bricolage = Bricolage_Grotesque({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-bricolage' });
+const inter = Inter({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-inter' });
+const youngSerif = Young_Serif({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-young-serif' });
+const karla = Karla({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-karla' });
+const unbounded = Unbounded({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-unbounded' });
+const albertSans = Albert_Sans({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-albert-sans' });
+const fontVars = [display, sans, mono, bricolage, inter, youngSerif, karla, unbounded, albertSans].map((f) => f.variable).join(' ');
 
 export const metadata: Metadata = {
   title: { default: BRAND.name, template: `%s · ${BRAND.name}` },

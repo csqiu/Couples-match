@@ -15,10 +15,13 @@ import {
   DEFAULT_LOOK,
   fontOf,
   FONTS,
+  isFontId,
+  isPaletteId,
   lookId,
   lookName,
   paletteOf,
   PALETTES,
+  parseLookId,
   readWarmupProgress,
   savedLook,
   saveLookList,
@@ -57,7 +60,16 @@ export function WarmupFlow({ signedIn }: { signedIn: boolean }) {
   // Pick up where this device left off, and follow the look if it changes elsewhere.
   useEffect(() => {
     const saved = readWarmupProgress<Progress>();
-    if (saved && STEPS.some((s) => s.id === saved.step) && saved.fonts?.length === FONTS.length && saved.palettes?.length === PALETTES.length) {
+    const valid =
+      saved &&
+      STEPS.some((s) => s.id === saved.step) &&
+      saved.fonts?.length === FONTS.length &&
+      saved.palettes?.length === PALETTES.length &&
+      // Progress from an older set of fonts or colors starts over.
+      saved.fonts.every(isFontId) &&
+      saved.palettes.every(isPaletteId) &&
+      (saved.answers ?? []).every((a) => parseLookId(a.left) && parseLookId(a.right));
+    if (saved && valid) {
       setP({ ...START, ...saved, answers: saved.answers ?? [] });
     }
     const sync = () => setCurrent(savedLook());
@@ -130,7 +142,7 @@ export function WarmupFlow({ signedIn }: { signedIn: boolean }) {
         </ol>
       </nav>
 
-      {p.step === 'intro' ? <Intro fonts={p.fonts} palettes={p.palettes} onStart={() => go('fonts')} /> : null}
+      {p.step === 'intro' ? <Intro onStart={() => go('fonts')} /> : null}
 
       {p.step === 'fonts' ? (
         <RankStep
@@ -199,97 +211,23 @@ export function WarmupFlow({ signedIn }: { signedIn: boolean }) {
 // ---------------------------------------------------------------------------
 // Intro
 
-function Intro({ fonts, palettes, onStart }: { fonts: FontId[]; palettes: PaletteId[]; onStart: () => void }) {
-  const rows: Array<[string, string, string, string]> = [
-    ['1', 'Rank 4 fonts', 'One partner ranks their programs', 'Every program they’d be willing to go to, in true order.'],
-    ['2', 'Rank 4 color schemes', 'The other partner ranks theirs', 'Separately, in their own order.'],
-    ['×', '4 × 4 = 16 combinations', 'Every possible pair', 'Each of your programs with each of your partner’s, plus No Match.'],
-    ['=', 'Obvious ones are settled for you: your #1 font in your #1 colors beats your #2 in your #2s.', 'Common sense comes first', 'A pair that’s better for both of you, and no farther apart, always ranks higher.'],
-    ['3', 'This or that: “Your top font in your #3 colors, or your #2 of each?”', 'This or that', '“Both at your #1s but far apart, or both at your #3s in one city?”'],
-    ['4', 'Your themes, in order. Use any of them.', 'Your final list', 'One ordered list of pairs, ready to type into R3.'],
-  ];
+function Intro({ onStart }: { onStart: () => void }) {
   return (
-    <div className="flex flex-col gap-5">
-      <div className="max-w-3xl">
+    <div className="flex max-w-3xl flex-col gap-5">
+      <div>
         <p className="eyebrow text-muted">Warm-up · about 2 minutes · no account needed</p>
         <h1 className="mt-3 font-display text-[34px] leading-[1.06] font-semibold tracking-[-0.025em] sm:text-[40px]">
-          Pick your look the same way you’ll pick your programs.
+          Pick your Pairwise theme the same way you’ll pick your programs.
         </h1>
         <p className="mt-3 max-w-2xl text-muted">
           Rank four fonts, rank four color schemes, then answer a few “this or that” questions. You get all 16 combinations
-          in order, and the top one becomes how Pairwise looks for you on this device.
+          in order, and the top one becomes your Pairwise theme.
         </p>
       </div>
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        <Card>
-          <h2 className="card-title mb-3">How it mirrors the Couples Match</h2>
-          <div className="mb-1 hidden grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-3 font-mono text-[11px] tracking-[0.08em] text-muted uppercase sm:grid">
-            <span />
-            <span>In the warm-up</span>
-            <span>In the real thing</span>
-          </div>
-          <ul className="flex flex-col gap-2">
-            {rows.map(([k, warm, real, detail]) => (
-              <li key={k} className="glass-row grid gap-x-3 gap-y-1 px-3 py-3 sm:grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)]">
-                <span className="font-mono text-sm font-semibold">{k}</span>
-                <span className="text-sm font-medium">{warm}</span>
-                <span className="text-sm">
-                  <span className="font-medium">{real}</span>
-                  <span className="block text-[13px] text-muted">{detail}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-        <div className="flex flex-col gap-5">
-          <Card tone="strong">
-            <h2 className="small-title">All 16 combinations</h2>
-            <p className="mt-1 mb-4 text-[13px] text-muted">
-              Fonts down the side, colors across the top. The corner is first without asking; the questions settle the rest.
-            </p>
-            <div className="grid grid-cols-[4.5rem_repeat(4,minmax(0,1fr))] items-center gap-2" aria-hidden>
-              <span />
-              {palettes.map((pal, j) => (
-                <span key={pal} className="flex flex-col items-center gap-1 text-center font-mono text-[11px] text-muted">
-                  <span data-palette={pal} className="flex h-3 w-full overflow-hidden rounded-[5px]">
-                    <i className="flex-1 bg-partner-1" />
-                    <i className="flex-1 bg-partner-2" />
-                  </span>
-                  {j === 0 ? 'Colors #1' : `#${j + 1}`}
-                </span>
-              ))}
-              {fonts.map((f, i) => (
-                <FontGridRow key={f} font={f} i={i} palettes={palettes} />
-              ))}
-            </div>
-          </Card>
-          <Card className="flex flex-col gap-3">
-            <p className="text-[13.5px] text-muted">
-              In the real thing there are two of you, and distance matters too. The steps and the questions work the same way.
-            </p>
-            <Button className="self-start" onClick={onStart}>
-              Start: rank the fonts <ArrowRight className="h-4 w-4" aria-hidden />
-            </Button>
-          </Card>
-        </div>
-      </div>
+      <Button className="self-start" onClick={onStart}>
+        Start: rank the fonts <ArrowRight className="h-4 w-4" aria-hidden />
+      </Button>
     </div>
-  );
-}
-
-function FontGridRow({ font, i, palettes }: { font: FontId; i: number; palettes: PaletteId[] }) {
-  return (
-    <>
-      <span data-font={font} className="flex flex-col font-mono text-[11px] text-muted">
-        <span className="font-display text-[22px] leading-none font-semibold text-text">Aa</span>
-        {i === 0 ? 'Font #1' : `#${i + 1}`}
-      </span>
-      {palettes.map((pal, j) => (
-        <span key={pal} className={cn('flex justify-center rounded-[12px] p-1', i === 0 && j === 0 && 'ring-2 ring-action')}>
-          <LookSwatch font={font} palette={pal} className="w-full" />
-        </span>
-      ))}
-    </>
   );
 }
 
