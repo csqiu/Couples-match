@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { Fragment, useId, useMemo, useRef, useState } from 'react';
 import { BAND_NAME, BAND_ROW, BandBadge } from '@/components/proximity';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { FloatingCoffee } from '@/components/coffee-button';
 import { Card } from '@/components/ui/card';
 import { Field, Input } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
@@ -72,6 +73,7 @@ export function ListView({
   const [versionName, setVersionName] = useState('');
   const [versionNote, setVersionNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [coffee, setCoffee] = useState(false); // the coffee button, floated after a CSV export
 
   const rows = result?.rows ?? [];
   const n = result?.length ?? 0; // rows that count (first RANK_LIMIT)
@@ -153,6 +155,7 @@ export function ListView({
 
   return (
     <div className="flex flex-col gap-4">
+      {coffee ? <FloatingCoffee onClose={() => setCoffee(false)} /> : null}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Final list</h1>
@@ -168,7 +171,13 @@ export function ListView({
           <Link href="/app/versions" className={buttonVariants({ variant: 'secondary' })}>
             <History className="h-4 w-4" aria-hidden /> Versions
           </Link>
-          <Button variant="secondary" onClick={() => download(`couples-list-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(rows.slice(0, RANK_LIMIT), names))}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              download(`couples-list-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(rows.slice(0, RANK_LIMIT), names));
+              setCoffee(true);
+            }}
+          >
             <Download className="h-4 w-4" aria-hidden /> CSV
           </Button>
           <Link href="/app/list/print" className={buttonVariants({ variant: 'secondary' })}>

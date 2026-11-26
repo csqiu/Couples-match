@@ -5,4 +5,6 @@ export const BRAND = {
   description:
     'A planning tool that helps two applicants in the NRMP Couples Match turn their honest preferences into an ordered list of program pairs.',
   supportEmail: 'support@example.com',
+  /** A plain link, not Buy Me a Coffee's widget script: the CSP allows no third-party scripts. */
+  donateUrl: 'https://buymeacoffee.com/cecilqiu',
 } as const;
