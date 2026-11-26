@@ -1018,3 +1018,13 @@ option was taken. Newest phases are at the bottom.
      - **Saved on the device** (localStorage), applied by an inline script before paint so there's
        no flash, including on the landing page. Account › Appearance lists the 16 looks to switch
        between. Not yet synced to the profile across devices.
+
+141. **Landing page: swirling background and floating panels** (`app/page.tsx`, globals.css
+     `.landing-swirl`, `.landing-float`). Four panels (the hero; built for couples; the logic
+     engine's four steps; the theme warm-up with all 16 looks) float in and out as you scroll,
+     using CSS scroll-driven animations (`animation-timeline: view()`). Browsers without them,
+     and reduced motion, show the panels still. Behind them, four sage and plum color fields
+     swirl slowly on a fixed background, coloured from the look in use. The merging-lists
+     animation (`components/merge-backdrop.tsx`, `lib/merge-animation.ts`) is no longer shown
+     but is kept, with its tests, in case it comes back. The warm-up intro is now just its
+     heading, one paragraph and Start.
