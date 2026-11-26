@@ -42,6 +42,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
               </Link>
               <Link href="/guides" className={buttonVariants({ variant: 'secondary' })}>Read the guides</Link>
             </div>
+            <Link
+              href="/warmup"
+              className="mt-5 inline-flex min-h-11 items-center gap-2.5 rounded-full border border-dashed border-text/30 py-2 pr-4 pl-3 text-sm font-medium transition-colors duration-150 hover:border-solid hover:bg-glass-strong"
+            >
+              <span className="logo-mark origin-left scale-75" aria-hidden />
+              See how it works with a quick warm-up
+            </Link>
           </section>
         </main>
       </div>

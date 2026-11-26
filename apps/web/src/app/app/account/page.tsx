@@ -5,6 +5,7 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { displayName, requireContext } from '@/lib/context';
 import { createClient } from '@/lib/supabase/server';
 import { DeleteAccount, LeaveCouple } from './account-forms';
+import { AppearanceCard } from './appearance-card';
 
 export const metadata: Metadata = { title: 'Account' };
 
@@ -81,6 +82,8 @@ export default async function AccountPage() {
         ) : null}
       </Card>
       </div>
+
+      <AppearanceCard />
 
       <Card>
         <CardHeader title="Your data" />
