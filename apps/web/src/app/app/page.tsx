@@ -7,7 +7,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { displayName, requireContext } from '@/lib/context';
-import { continueStep, countsFromDraft, stepStatus, versionLabel, type ListCounts, type ListStep } from '@/lib/lists';
+import { continueStep, stepStatus, versionLabel, type ListCounts, type ListStep } from '@/lib/lists';
 import { LIST_STEPS } from '@/lib/steps';
 import { createClient } from '@/lib/supabase/server';
 import { NewListDialog, OpenListButton, StarButton } from './dashboard-controls';
@@ -22,17 +22,22 @@ export default async function Dashboard() {
   const supabase = await createClient();
   const coupleId = ctx.couple.id;
 
-  const [ranks, answers, resolved, lists, versions] = await Promise.all([
+  const [ranks, answers, resolved, lists, versions, parked] = await Promise.all([
     supabase.from('individual_ranks').select('user_id').eq('couple_id', coupleId),
     supabase.from('comparisons').select('id', { count: 'exact', head: true }).eq('couple_id', coupleId),
     supabase.from('rule_exceptions').select('id', { count: 'exact', head: true }).eq('couple_id', coupleId),
-    supabase.from('rank_lists').select('id, number, name, created_at, created_by, started_from, draft').eq('couple_id', coupleId).order('number', { ascending: false }),
+    // Closed lists are counted in the database, not downloaded whole (bug log #43).
+    supabase.from('rank_lists').select('id, number, name, created_at, created_by, started_from').eq('couple_id', coupleId).order('number', { ascending: false }),
     supabase
       .from('list_versions')
       .select('id, list_id, minor, name, note, created_at, created_by, starred, pair_count')
       .eq('couple_id', coupleId)
       .order('minor', { ascending: false }),
+    supabase.rpc('list_draft_counts', { p_couple: coupleId }),
   ]);
+  const parkedCounts = new Map(
+    (parked.data ?? []).map((p) => [p.list_id, { programs: (p.programs ?? {}) as Record<string, number>, answers: p.answers ?? 0, resolved: p.resolved ?? 0 }]),
+  );
   const mine = (ranks.data ?? []).filter((r) => r.user_id === ctx.user.id).length;
   // Onboarding: programs come before the dashboard.
   if (mine === 0 && (lists.data ?? []).length <= 1 && !(versions.data ?? []).length) redirect('/app/programs');
@@ -54,7 +59,7 @@ export default async function Dashboard() {
 
   const cards = (lists.data ?? []).map((l) => {
     const open = l.id === ctx.couple!.active_list;
-    const counts = open ? liveCounts : countsFromDraft(l.draft);
+    const counts: ListCounts = open ? liveCounts : (parkedCounts.get(l.id) ?? { programs: {}, answers: 0, resolved: 0 });
     const own = allVersions.filter((v) => v.list_id === l.id);
     const status = stepStatus(counts, people, own[0]?.pairCount ?? null);
     const started = l.started_from ? allVersions.find((v) => v.id === l.started_from) : null;

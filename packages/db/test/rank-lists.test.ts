@@ -156,4 +156,19 @@ describe('Lists and numbered versions', () => {
       expect(await db.query('select id from rank_lists where couple_id = $1', [coupleId])).toEqual([]);
       expect(await db.error('select start_list(null, $1)', [v.id])).toMatch(/not_allowed/);
     }));
+
+  it('counts a closed list’s programs, answers and resolved conflicts without sending its draft (bug log #43)', () =>
+    tx(async (db) => {
+      const { a, b, coupleId } = await setUp(db);
+      await db.as(a);
+      const { id: first } = await db.one<{ id: string }>('select id from rank_lists where couple_id = $1', [coupleId]);
+      await db.one('select start_list()');
+      expect(await db.query('select * from list_draft_counts($1)', [coupleId])).toEqual([
+        { list_id: first, programs: { [a.id]: 3, [b.id]: 2 }, answers: 1, resolved: 0 },
+      ]);
+      // Someone outside the couple sees nothing.
+      const eve = await db.createUser('eve@example.com');
+      await db.as(eve);
+      expect(await db.query('select * from list_draft_counts($1)', [coupleId])).toEqual([]);
+    }));
 });

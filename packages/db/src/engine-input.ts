@@ -41,10 +41,15 @@ export interface StoredSettings extends Partial<Omit<CoupleSettings, 'matchType'
   deferredQuestions?: string[];
   /** Questions (engine questionKey) flagged to discuss together. */
   flaggedQuestions?: string[];
+  /**
+   * Programs added since the version that was restored: [partner A's ids, partner B's ids].
+   * Pairs involving them stay off the final list until the couple brings them in (bug log #35).
+   */
+  heldPrograms?: [string[], string[]];
 }
 
 /** Settings keys the app keeps but the engine never sees. */
-export const APP_ONLY_SETTINGS = ['privacy', 'includedPairs', 'noMatchUnlocked', 'listOrder', 'deferredQuestions', 'flaggedQuestions'] as const;
+export const APP_ONLY_SETTINGS = ['privacy', 'includedPairs', 'noMatchUnlocked', 'listOrder', 'deferredQuestions', 'flaggedQuestions', 'heldPrograms'] as const;
 
 export interface CoupleData {
   couple: Pick<CoupleRow, 'id' | 'partner_a' | 'partner_b' | 'match_type' | 'settings'>;
@@ -73,7 +78,7 @@ export function coupleSeed(coupleId: string): number {
 
 export function settingsFrom(couple: Pick<CoupleRow, 'match_type' | 'settings'>): CoupleSettings {
   const stored = (couple.settings ?? {}) as StoredSettings;
-  const { privacy: _p, includedPairs: _i, noMatchUnlocked: _u, listOrder: _o, deferredQuestions: _d, flaggedQuestions: _f, ...engine } = stored;
+  const { privacy: _p, includedPairs: _i, noMatchUnlocked: _u, listOrder: _o, deferredQuestions: _d, flaggedQuestions: _f, heldPrograms: _h, ...engine } = stored;
   return withDefaults({ ...engine, matchType: couple.match_type as MatchType });
 }
 

@@ -84,5 +84,22 @@ describe('analyze', () => {
     expect(r.flagged[0].answer).toBeNull();
     expect(r.question?.flagged).toBe(true);
   });
-});
 
+  it('lists links set aside by an exception, with what they were, and nothing else', () => {
+    const data = couple();
+    const first = analyze(data, opts());
+    expect(first.setAside).toEqual([]);
+    // MGH IM is Alex's Tier A, so MGH + BCH is above JHH + BCH by the Tier A rule (or dominance).
+    const hi = 'seed-mgh-internal-medicine|seed-bch-pediatrics';
+    const lo = 'seed-jhh-internal-medicine|seed-bch-pediatrics';
+    data.exceptions = [
+      { higher_pair: hi, lower_pair: lo },
+      { higher_pair: 'gone|pair', lower_pair: lo },
+    ];
+    const aside = analyze(data, opts()).setAside;
+    expect(aside).toHaveLength(1);
+    expect(aside[0]).toMatchObject({ higher: hi, lower: lo });
+    expect(aside[0].higherPair?.sides[0]?.short).toBe('MGH IM');
+    expect(aside[0].source.label).toMatch(/Rule|Tier A/);
+  });
+});

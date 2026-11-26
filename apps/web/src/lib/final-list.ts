@@ -138,6 +138,11 @@ export interface FinalList {
   programs: [ProgramOption[], ProgramOption[]];
   /** What must stay above or below each row (the brackets beside a selected row). */
   ties: ListTies;
+  /**
+   * After restoring a version: programs added since, whose pairs are kept off the list until
+   * the couple brings them in (bug log #35). Null when nothing is held.
+   */
+  held: { programs: [ListSide[], ListSide[]]; pairs: number } | null;
 }
 
 export interface PartnerFee {
@@ -232,7 +237,7 @@ export interface ListOptions {
 // so they're left out of the key (moving the length slider doesn't re-run the engine).
 let cache: { key: string; input: EngineInput; result: EngineResult } | null = null;
 function run(data: CoupleData) {
-  const { listLength: _l, includedPairs: _i, noMatchUnlocked: _u, listOrder: _o, deferredQuestions: _d, flaggedQuestions: _f, ...settings } =
+  const { listLength: _l, includedPairs: _i, noMatchUnlocked: _u, listOrder: _o, deferredQuestions: _d, flaggedQuestions: _f, heldPrograms: _h, ...settings } =
     (data.couple.settings ?? {}) as StoredSettings;
   const engineData = { ...data, couple: { ...data.couple, settings: { ...settings, listLength: RANK_LIMIT } as never } };
   const key = JSON.stringify(engineData);
@@ -278,22 +283,26 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
     return p ? view(p) : null;
   };
   const all = list.order.map((id) => byId.get(id)!);
+  // Pairs with a program added since a restored version wait off the list (bug log #35).
+  const heldIds = [new Set(stored.heldPrograms?.[0] ?? []), new Set(stored.heldPrograms?.[1] ?? [])] as const;
+  const isHeld = (p: Pair) => heldIds[0].has(p.programs[0]) || heldIds[1].has(p.programs[1]);
   const matched = all.filter((p) => p.band !== 'no_match');
-  const noMatch = all.filter((p) => p.band === 'no_match');
+  const noMatchAll = all.filter((p) => p.band === 'no_match');
+  const noMatch = noMatchAll.filter((p) => !isHeld(p));
   const noMatchLocked = !stored.noMatchUnlocked;
 
   // Length setting = both-match pairs + the No Match rows, as in R3.
-  const maxTarget = Math.min(RANK_LIMIT, all.length);
+  const maxTarget = Math.min(RANK_LIMIT, all.filter((p) => !isHeld(p)).length);
   const minTarget = Math.min(maxTarget, Math.max(1, noMatch.length));
   const target = Math.max(minTarget, Math.min(maxTarget, Math.round(stored.listLength ?? RANK_LIMIT)));
   const room = Math.max(0, target - noMatch.length);
-  const top = new Set(matched.slice(0, room).map((p) => p.id));
+  const top = new Set(matched.filter((p) => !isHeld(p)).slice(0, room).map((p) => p.id));
   const added = new Set((stored.includedPairs ?? []).filter((id) => byId.has(id) && !top.has(id) && byId.get(id)!.band !== 'no_match'));
   const onList = (p: Pair) => top.has(p.id) || added.has(p.id);
 
   const engineOrder = noMatchLocked
     ? [...matched.filter(onList), ...noMatchPattern(noMatch)]
-    : all.filter((p) => p.band === 'no_match' || onList(p));
+    : all.filter((p) => (p.band === 'no_match' && !isHeld(p)) || onList(p));
 
   // The readable order: neighbours whose order can never change the outcome are sorted by
   // the reading key; anything a rule, an answer or a drag orders stays as it is.
@@ -397,7 +406,17 @@ export function computeFinalList(data: CoupleData, opts: ListOptions): FinalList
     tidied,
     programs,
     ties: tiesOf(list.graph, new Set(rows.filter((r) => !r.locked).map((r) => r.pairId))),
+    held: heldSummary(),
   };
+
+  function heldSummary(): FinalList['held'] {
+    const sides = ([0, 1] as const).map((k) =>
+      [...heldIds[k]].filter((id) => input.programs[id] && input.lists[k].some((e) => e.programId === id)).map((id) => side(k, id)),
+    ) as [ListSide[], ListSide[]];
+    if (!sides[0].length && !sides[1].length) return null;
+    const pairs = [...matched, ...noMatchAll].filter((p) => isHeld(p) && !onList(p)).length;
+    return { programs: sides, pairs };
+  }
 }
 
 function tieSource(r: EdgeReason): TieSource | null {

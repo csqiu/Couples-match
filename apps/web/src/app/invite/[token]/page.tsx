@@ -41,6 +41,9 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
               You’re signed in as {ctx.user.email}, but this invite is for {invite.invited_email}.
             </p>
             <form action="/auth/signout" method="post">
+              {/* Back to this invite after signing in with the invited email (bug log #41). */}
+              <input type="hidden" name="next" value={`/invite/${token}`} />
+              <input type="hidden" name="email" value={invite.invited_email} />
               <button className={buttonVariants({ variant: 'secondary' })}>Sign out and switch account</button>
             </form>
           </div>

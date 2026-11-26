@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { safeNext } from '@/lib/safe-next';
 import { Logo } from '@/components/logo';
 import { Card } from '@/components/ui/card';
 import { getContext } from '@/lib/context';
@@ -10,8 +11,9 @@ import { LoginForm } from './login-form';
 export const metadata: Metadata = { title: 'Sign in' };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; email?: string; error?: string }> }) {
-  const { next = '/app', email, error } = await searchParams;
-  if (await getContext()) redirect(next.startsWith('/') ? next : '/app');
+  const { next: rawNext, email, error } = await searchParams;
+  const next = safeNext(rawNext);
+  if (await getContext()) redirect(next);
   return (
     <main id="main" tabIndex={-1} className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12 outline-none">
       <Logo className="self-center" />

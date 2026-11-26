@@ -5,6 +5,7 @@ import { ArrowLeft, Check, Clock, Crosshair, Flag, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
+import { EngineError } from '@/components/engine-error';
 import { PairChip, PairLarge } from '@/components/pair';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
@@ -103,7 +104,7 @@ export function CompareView({
   }
 
   const opts = useMemo(() => ({ me, names, answerMode }), [me, names, answerMode]);
-  const { result, busy, error } = useAnalysis(merged, opts);
+  const { result, busy, error, retry } = useAnalysis(merged, opts);
   const hideTierOf = privateTiers ? (role === 'a' ? 1 : 0) : null;
   const partnerName = role === 'a' ? names[1] : names[0];
 
@@ -139,9 +140,8 @@ export function CompareView({
   const lastMine = [...local].reverse().find((l) => l.realId);
 
   if (!result) {
-    return <div className="glass h-96 animate-pulse" aria-label="Loading" />;
+    return error ? <EngineError error={error} onRetry={retry} /> : <div className="glass h-96 animate-pulse" aria-label="Loading" />;
   }
-  if (error) return <p className="text-danger" role="alert">Something went wrong: {error}</p>;
 
   if (!result.hasBothLists) {
     return (
@@ -155,6 +155,7 @@ export function CompareView({
   const pct = Math.round(result.confidence * 100);
   return (
     <div className="flex flex-col gap-4">
+      {error ? <EngineError error={error} onRetry={retry} stale /> : null}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">This or that</h1>

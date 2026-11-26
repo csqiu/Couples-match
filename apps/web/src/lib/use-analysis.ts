@@ -23,6 +23,16 @@ export function useEngine() {
         if (e.data.error) p.reject(new Error(e.data.error));
         else p.resolve(e.data.result);
       };
+      // A crashed worker never answers: fail what's waiting (so pages can say so and offer
+      // a retry, bug log #32) and run later calls on the main thread instead.
+      const fail = () => {
+        for (const p of pending.current.values()) p.reject(new Error('The calculation stopped unexpectedly.'));
+        pending.current.clear();
+        if (worker.current === w) worker.current = null;
+        w.terminate();
+      };
+      w.onerror = fail;
+      w.onmessageerror = fail;
       worker.current = w;
     } catch {
       worker.current = null;
@@ -57,6 +67,7 @@ function useEngineResult<T>(makeRequest: () => EngineRequest, key: string) {
   const [result, setResult] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
+  const [attempt, setAttempt] = useState(0);
   const latest = useRef(0);
 
   useEffect(() => {
@@ -71,9 +82,11 @@ function useEngineResult<T>(makeRequest: () => EngineRequest, key: string) {
       .catch((e: Error) => id === latest.current && setError(e.message))
       .finally(() => id === latest.current && setBusy(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, call]);
+  }, [key, call, attempt]);
 
-  return { result, error, busy };
+  /** Runs the same request again (after an error). */
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  return { result, error, busy, retry };
 }
 
 export function useAnalysis(data: CoupleData, opts: AnalyzeOptions) {
