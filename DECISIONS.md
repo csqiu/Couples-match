@@ -955,3 +955,18 @@ option was taken. Newest phases are at the bottom.
      - The final list's "Explore" button and each row's "Open in Explore" now go here (the
        row's pair fills "This"); flagged questions link here with both pairs. `/app/explore`
        redirects, so old links still work.
+
+135. **A simpler front door, and email-only sign-in.**
+     - The landing page is one panel ("The smart way to couples match." and the line under it,
+       from `brand.ts`) over an animated background; the feature cards, "How it works" and the
+       preview cards are gone.
+     - The background (`components/merge-backdrop.tsx`, timing and layout in
+       `lib/merge-animation.ts`): two short lists (sage and plum) fill in, link, slide together
+       into one list of two-tone pairs, multiply and shuffle, about 9.5 s a loop. It is laid out
+       in real pixels from the screen size: on wide screens the lists start at both edges and
+       meet right of centre (the panel sits on the left); on phones it plays below the panel.
+       Behind it, a sage-to-plum wash with four slowly drifting glows. With reduced motion
+       the glows stay put and the lists hold one still frame. Colors are theme tokens, so it
+       works in dark mode. The sign-in page uses the same background.
+     - Sign-in is email only (magic link). "Continue with Google" and its server action are
+       removed; the page says the same link creates an account for new people.

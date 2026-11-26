@@ -25,16 +25,6 @@ export async function sendMagicLink(_: LoginState, form: FormData): Promise<Logi
   return { sent: email };
 }
 
-export async function signInWithGoogle(form: FormData) {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: `${APP_URL}/auth/callback?next=${encodeURIComponent(safeNext(form.get('next')))}` },
-  });
-  if (error || !data.url) redirect('/login?error=google');
-  redirect(data.url);
-}
-
 /** Password sign-in for automated tests and local development only. */
 export async function devSignIn(_: LoginState, form: FormData): Promise<LoginState> {
   if (!DEV_LOGIN_ENABLED) return { error: 'Not available.' };

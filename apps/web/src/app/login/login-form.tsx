@@ -3,7 +3,7 @@ import { MailCheck } from 'lucide-react';
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
-import { devSignIn, sendMagicLink, signInWithGoogle, type LoginState } from './actions';
+import { devSignIn, sendMagicLink, type LoginState } from './actions';
 
 export function LoginForm({ next, email, devLogin }: { next: string; email?: string; devLogin: boolean }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(sendMagicLink, {});
@@ -30,14 +30,6 @@ export function LoginForm({ next, email, devLogin }: { next: string; email?: str
         </Field>
         {state.error ? <p className="text-sm text-danger" role="alert">{state.error}</p> : null}
         <Button type="submit" disabled={pending}>{pending ? 'Sending…' : 'Email me a sign-in link'}</Button>
-      </form>
-
-      <div className="flex items-center gap-3 text-xs text-muted">
-        <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
-      </div>
-      <form action={signInWithGoogle}>
-        <input type="hidden" name="next" value={next} />
-        <Button type="submit" variant="secondary" className="w-full">Continue with Google</Button>
       </form>
 
       {devLogin ? (

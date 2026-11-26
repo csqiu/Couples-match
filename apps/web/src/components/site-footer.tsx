@@ -6,7 +6,7 @@ import { BRAND } from '@/brand';
 export function SiteFooter() {
   const couples = NRMP_RULES.sources.find((s) => s.label.includes('Couples'));
   return (
-    <footer className="border-t border-border px-4 py-6 text-[12.5px] text-muted sm:px-6">
+    <footer className="site-footer relative z-10 border-t border-border px-4 py-6 text-[12.5px] text-muted sm:px-6">
       <div className="mx-auto flex max-w-5xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p>
           {BRAND.name} is a planning tool and is not affiliated with the NRMP. You must enter and certify your list in R3
