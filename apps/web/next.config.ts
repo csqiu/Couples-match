@@ -27,6 +27,10 @@ const config: NextConfig = {
   // The engine, data and db packages are TypeScript sources in this monorepo.
   transpilePackages: ['@pairwise/engine', '@pairwise/data', '@pairwise/db'],
   poweredByHeader: false,
+  async redirects() {
+    // The guide was renamed; keep old links working.
+    return [{ source: '/guides/couples-matching-for-the-uncommitted', destination: '/guides/should-i-couples-match', permanent: true }];
+  },
   async headers() {
     return [
       {
