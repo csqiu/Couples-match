@@ -277,6 +277,7 @@ export type Database = {
           minor: number
           name: string
           note: string | null
+          pair_count: number | null
           pairs: Json
           starred: boolean
         }

@@ -24,7 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { findTier, flatten, group, moveTo, nudge, sameOrder, TIERS, type Board, type Tier } from '@/lib/board';
 import { cn } from '@/lib/cn';
-import { removeProgram } from '../programs/actions';
+import { removeProgram, restoreRemoved } from '../programs/actions';
 import { saveCode, saveList } from './actions';
 
 export interface BoardEntry {
@@ -195,7 +195,23 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
                     if (res.error) {
                       setBoard(prev);
                       toast({ message: res.error });
-                    } else toast({ message: `Removed ${entry.name}` });
+                      return;
+                    }
+                    const removed = res.removed;
+                    toast({
+                      message: `Removed ${entry.name}`,
+                      // Undo brings it back exactly: tier, note, code, short name, and its place in the list.
+                      action: removed
+                        ? {
+                            label: 'Undo',
+                            onClick: async () => {
+                              const back = await restoreRemoved(removed);
+                              if (back.error) return toast({ message: `Couldn’t put it back: ${back.error}` });
+                              persist(prev, prev);
+                            },
+                          }
+                        : undefined,
+                    });
                   }}
                 />
               ))}

@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
-import type { ListRow, ProgramOption } from '@/lib/final-list';
+import { RANK_LIMIT, type ListRow, type ProgramOption } from '@/lib/final-list';
 
 /**
  * "What if": the couple ticks the programs each of them could get into (F₁ and F₂).
@@ -27,10 +27,11 @@ export function allReachable(programs: [ProgramOption[], ProgramOption[]]): Scen
 /** Where the couple matches under a scenario, and which rows are within reach. */
 export function simulate(rows: ListRow[], scenario: Scenario) {
   const sides = rows.map((r) => [r.sides[0].id, r.sides[1].id] as [ProgramRef, ProgramRef]);
-  const index = matchOutcome(sides, { partners: scenario.reach, both: scenario.both });
+  // Only the first RANK_LIMIT rows are submitted to NRMP, so only they can be the match (bug log #27).
+  const index = matchOutcome(sides.slice(0, RANK_LIMIT), { partners: scenario.reach, both: scenario.both });
   const ok = (k: 0 | 1, id: string) => id === NO_MATCH || scenario.reach[k].has(id);
   const reach: RowReach[] = sides.map(([a, b], i) =>
-    i === index ? 'match' : ok(0, a) && ok(1, b) && (a !== b || a === NO_MATCH || scenario.both.has(a)) ? 'in' : 'out',
+    i === index ? 'match' : i >= RANK_LIMIT ? 'out' : ok(0, a) && ok(1, b) && (a !== b || a === NO_MATCH || scenario.both.has(a)) ? 'in' : 'out',
   );
   return { index, reach };
 }

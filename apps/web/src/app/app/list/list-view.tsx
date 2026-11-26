@@ -7,7 +7,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { NRMP_RULES, type MatchType } from '@pairwise/engine';
 import { ArrowDownUp, CircleAlert, CircleCheck, Crosshair, Download, FlaskConical, GripVertical, History, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, Undo2, X } from 'lucide-react';
 import Link from 'next/link';
-import { Fragment, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { PairDetails, PairMedium, PairNames, ProgramChip, WhyText } from '@/components/pair';
 import { BAND_ROW, BandBadge } from '@/components/proximity';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -65,6 +65,27 @@ export function ListView({
       pins: [...data.pins, ...localPins.filter((p) => !ids.has(p.id))],
     };
   }, [data, localPins, settings]);
+  // Local changes only bridge the gap until the server copy arrives (bug log #23). Once no save
+  // is in flight, a new server copy wins, so a partner's changes show up here too.
+  const pendingSaves = useRef(0);
+  async function tracked<T>(work: Promise<T>): Promise<T> {
+    pendingSaves.current++;
+    try {
+      return await work;
+    } finally {
+      pendingSaves.current--;
+    }
+  }
+  useEffect(() => {
+    if (pendingSaves.current === 0) setLocal({});
+  }, [data.couple.settings]);
+  // A move saved here stays until the server copy has it; one the server no longer has (undone
+  // or resolved elsewhere) goes, once it's had time to arrive.
+  const pinAddedAt = useRef(new Map<string, number>());
+  useEffect(() => {
+    const server = new Set(data.pins.map((p) => p.id));
+    setLocalPins((xs) => xs.filter((p) => !server.has(p.id) && Date.now() - (pinAddedAt.current.get(p.id) ?? 0) < 15_000));
+  }, [data.pins]);
   const opts = useMemo(() => ({ names, matchType }), [names, matchType]);
   const { result, busy } = useFinalList(merged, opts);
   const call = useEngine();
@@ -100,6 +121,7 @@ export function ListView({
       return null;
     }
     const id = res.id;
+    pinAddedAt.current.set(id, Date.now());
     setLocalPins((xs) => [...xs, { id, higher_pair: higher, lower_pair: lower, source: 'manual_drag', comparison_id: null, moved_pair: moved }]);
     if (quiet) return id;
     toast({
@@ -136,7 +158,7 @@ export function ListView({
     if (on) ids.add(pairId);
     else ids.delete(pairId);
     setLocal((l) => ({ ...l, included: [...ids] }));
-    const res = await setIncluded(pairId, on);
+    const res = await tracked(setIncluded(pairId, on));
     if (res.error) toast({ message: `Couldn’t save: ${res.error}` });
   }
 
@@ -274,8 +296,13 @@ export function ListView({
                 onChange={(e) => {
                   const v = Number(e.target.value);
                   setLocal((l) => ({ ...l, length: v }));
+                  // Pending from the first move of the slider, so a refresh can't snap it back mid-drag.
                   if (lengthTimer.current) clearTimeout(lengthTimer.current);
-                  lengthTimer.current = setTimeout(() => void setListLength(v), 500);
+                  else pendingSaves.current++;
+                  lengthTimer.current = setTimeout(() => {
+                    lengthTimer.current = null;
+                    void setListLength(v).finally(() => pendingSaves.current--);
+                  }, 500);
                 }}
                 className="w-full accent-[var(--action)]"
               />
@@ -296,7 +323,7 @@ export function ListView({
                 onChange={async (e) => {
                   const order = e.target.value as ListOrder;
                   setLocal((l) => ({ ...l, order }));
-                  const res = await setListOrder(order);
+                  const res = await tracked(setListOrder(order));
                   if (res.error) toast({ message: `Couldn’t save: ${res.error}` });
                 }}
               >
@@ -317,7 +344,7 @@ export function ListView({
                 checked={result.noMatchLocked}
                 onChange={async (locked) => {
                   setLocal((l) => ({ ...l, unlocked: !locked }));
-                  const res = await setNoMatchUnlocked(!locked);
+                  const res = await tracked(setNoMatchUnlocked(!locked));
                   if (res.error) toast({ message: `Couldn’t save: ${res.error}` });
                 }}
               />

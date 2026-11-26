@@ -31,4 +31,13 @@ describe('outcome simulator', () => {
   it('nobody reachable: neither matches', () => {
     expect(simulate(list.rows, { reach: [new Set(), new Set()], both: new Set() }).index).toBe(-1);
   });
+
+  it('a row past the 300-rank limit is never the match: it isn’t submitted', () => {
+    const fill = Array.from({ length: 300 }, (_, i) => ({ ...list.rows[0], rank: i + 1, pairId: `x${i}`, sides: [{ ...list.rows[0].sides[0], id: `none-a${i}` }, { ...list.rows[0].sides[1], id: `none-b${i}` }] as typeof list.rows[0]['sides'] }));
+    const rows = [...fill, { ...list.rows[0], rank: 301 }];
+    const { index, reach } = simulate(rows, allReachable(list.programs));
+    expect(index).toBe(-1);
+    expect(reach[300]).toBe('out');
+  });
 });
+
