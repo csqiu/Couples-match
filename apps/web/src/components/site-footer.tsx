@@ -1,6 +1,7 @@
 import { NRMP_RULES } from '@pairwise/engine';
 import Link from 'next/link';
 import { BRAND } from '@/brand';
+import { CoffeeButton } from '@/components/coffee-button';
 
 /** The persistent disclaimer required by the spec, plus rules provenance. */
 export function SiteFooter() {
@@ -29,6 +30,7 @@ export function SiteFooter() {
             Privacy
           </Link>
         </p>
+        <CoffeeButton className="shrink-0 self-start sm:self-auto" />
       </div>
     </footer>
   );
