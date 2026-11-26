@@ -271,7 +271,7 @@ export function ListView({
           >
             <Download className="h-4 w-4" aria-hidden /> CSV
           </Button>
-          <Link href="/app/list/print" className={buttonVariants({ variant: 'secondary' })}>
+          <Link href="/print/list" className={buttonVariants({ variant: 'secondary' })}>
             <Printer className="h-4 w-4" aria-hidden /> Print / PDF
           </Link>
         </div>

@@ -259,6 +259,64 @@ body {
 body:has(.print-route) .backdrop { display: none; }
 .print-route .glass, .print-route .glass-strong { background: var(--surface); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
 
+/* Printing always uses the light colours: dark-mode text is light, and on white paper it
+   would be unreadable (browsers drop the dark background when printing). */
+@media print {
+  html.dark, .dark {
+    --bg: #f4f5f0;
+    --surface: #fdfdfa;
+    --surface-2: #eef0e8;
+    --border: #dcdfd2;
+    --text: #232620;
+    --muted: #585d51;
+    --action: #2b3529;
+    --action-hover: #3c4a39;
+    --action-fg: #f7f8f2;
+    --action-soft: #e9ece3;
+    --accent: #3d6838;
+    --accent-soft: #e6eee3;
+    --accent-fg: #ffffff;
+    --focus: #2b3529;
+    --partner-1: #5f7d5a;
+    --partner-1-soft: #e6eee3;
+    --partner-2: #6b4a7a;
+    --partner-2-soft: #efe7f2;
+    --partner-fg: #ffffff;
+    --plum-deep: #573a65;
+    --tier-a: #5f7d5a;
+    --tier-a-fg: #ffffff;
+    --tier-b: #573a65;
+    --tier-c: #585d51;
+    --band-together: #3d6838;
+    --band-commutable: #4b6219;
+    --band-drivable: #865611;
+    --band-apart: #8f2f2f;
+    --warn: #865611;
+    --warn-soft: #f6ecd9;
+    --danger: #a33232;
+    --danger-soft: #fdf5f4;
+    --glass: rgba(253, 253, 250, 0.56);
+    --glass-strong: rgba(253, 253, 250, 0.8);
+    --glass-row: rgba(255, 255, 255, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.78);
+    --blob-1: #8fae88;
+    --blob-2: #a983b8;
+    --blob-3: #c9d6b8;
+    --shadow: 0 14px 36px -18px rgba(35, 38, 32, 0.32), 0 2px 6px -2px rgba(35, 38, 32, 0.08);
+    --shadow-button: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 22px -12px rgba(43, 53, 41, 0.7);
+    --shadow-soft: 0 6px 16px -10px rgba(35, 38, 32, 0.4);
+    --logo-blend: multiply;
+    --hero-wash: linear-gradient(120deg, #dfe7d6 0%, #e9ece2 45%, #ebe3ee 100%);
+    --hero-row-1: #f1f5ee;
+    --hero-row-2: #f6f1f8;
+    --hero-edge-1: #b9caae;
+    --hero-edge-2: #d2bedc;
+    --hero-glow-3: #b9a0c6;
+    --hero-glow-4: #a9c2a0;
+    color-scheme: light;
+  }
+}
+
 @media print {
   .backdrop { display: none; }
   .glass, .glass-strong { background: #fff; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
