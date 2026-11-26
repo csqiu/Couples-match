@@ -29,6 +29,9 @@ export function SiteFooter() {
           <Link className="underline underline-offset-2" href="/privacy">
             Privacy
           </Link>
+          <Link className="underline underline-offset-2" href="/terms">
+            Terms
+          </Link>
         </p>
         <CoffeeButton className="shrink-0 self-start sm:self-auto" />
       </div>
