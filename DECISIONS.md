@@ -1022,7 +1022,8 @@ option was taken. Newest phases are at the bottom.
 141. **Landing page: swirling background and floating panels** (`app/page.tsx`, globals.css
      `.landing-swirl`, `.landing-float`). Four panels (the hero; built for couples; the logic
      engine's four steps; the theme warm-up with all 16 looks) float in and out as you scroll,
-     using CSS scroll-driven animations (`animation-timeline: view()`). Browsers without them,
+     using CSS scroll-driven animations (`animation-timeline: view()`), fading only at the screen
+     edges and never blurring, so a panel taller than the screen stays readable. Browsers without them,
      and reduced motion, show the panels still. Behind them, four sage and plum color fields
      swirl slowly on a fixed background, coloured from the look in use. The merging-lists
      animation (`components/merge-backdrop.tsx`, `lib/merge-animation.ts`) is no longer shown

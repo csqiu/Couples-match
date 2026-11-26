@@ -807,12 +807,22 @@ body:has(.hero-backdrop) .site-footer { background: var(--glass-strong); backdro
 body:has(.landing-swirl) .backdrop { display: none; }
 body:has(.landing-swirl) .site-footer { background: var(--glass-strong); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 
-/* Panels float in from below and drift out above as they cross the screen. */
-.landing-float { animation: landing-float linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
-@keyframes landing-float {
-  0% { opacity: 0; transform: translateY(110px) scale(0.94); filter: blur(6px); }
-  28%, 72% { opacity: 1; transform: none; filter: none; }
-  100% { opacity: 0; transform: translateY(-110px) scale(0.97); filter: blur(4px); }
+/*
+ * Panels float in from below and drift out above as they cross the screen. They are fully
+ * clear (no blur, full opacity) whenever any part is being read: the fade-in happens only
+ * while a panel's top edge comes up from the bottom of the screen, the fade-out only once
+ * its bottom edge is leaving the top. Panels taller than the screen (phones) stay clear.
+ */
+.landing-float {
+  animation: landing-in linear both, landing-out linear forwards;
+  animation-timeline: view(), view();
+  animation-range: entry 0% entry 35%, exit 65% exit 100%;
+}
+@keyframes landing-in { from { opacity: 0; transform: translateY(80px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes landing-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-80px) scale(0.98); } }
+@media (max-width: 640px) {
+  @keyframes landing-in { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: none; } }
+  @keyframes landing-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-32px); } }
 }
 @supports not (animation-timeline: view()) { .landing-float { animation: none; } }
 .landing-cue i { position: relative; width: 18px; height: 28px; border: 1.5px solid currentColor; border-radius: 10px; }
