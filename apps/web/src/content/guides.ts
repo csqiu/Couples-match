@@ -44,7 +44,7 @@ The hard part isn't making a list. It's making one that reflects what you both t
 
 Pairwise is free, and I hope to keep it that way. If it helps you, we'd be grateful for a donation. It goes toward our daughter's birthday fund ◡̈
 
-[☕ Buy me a coffee](${DONATE})
+[☕ Buy us a coffee](${DONATE})
 `,
   },
   {
@@ -110,7 +110,7 @@ The "Before you certify in R3" checklist on the final list confirms that every p
     title: 'How the Couples Match Works',
     description: 'How the NRMP algorithm reads a couple’s list, and why some changes to a list make no difference to where you match.',
     date: '2026-11-25',
-    body: `The NRMP gives a couple the highest row on their list where both partners can get in, so the best list is your true order of preference. Writing an error-free couples list that reflects those preferences, though, is easier said than done. This guide explains how the Match reads a couple's list, why some changes to a list make no difference to where you match, and how Pairwise takes the guesswork out of making your list.
+    body: `The NRMP gives a couple the highest row on their list where both partners can get in, so the best list is your true order of preference. Writing an error-free couples list that reflects both of your preferences, though, is easier said than done. This guide explains how the Match reads a couple's list, how creating a list can be difficult and messy, and how Pairwise takes the guesswork out of making your list.
 
 Pairwise is not affiliated with the NRMP. For the official rules, see [Couples in the Match](${NRMP_COUPLES}).
 
