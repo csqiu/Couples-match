@@ -19,9 +19,10 @@ export const GUIDE_AUTHOR = 'Cecil Qiu, MD';
 
 const HOW_IT_WORKS = '/guides/how-the-couples-match-works';
 const WHY_HARD = '/guides/why-making-a-couples-list-is-hard';
-const UNCOMMITTED = '/guides/couples-matching-for-the-uncommitted';
+const SHOULD_I = '/guides/should-i-couples-match';
 const TELL_PROGRAMS = '/guides/should-i-tell-programs';
 const HOW_TO_USE = '/guides/how-to-use-pairwise';
+const DONATE = 'https://buymeacoffee.com/cecilqiu';
 
 const IN_TRAINING = 'https://in-training.org/couples-matching-for-the-uncommitted-21933';
 const NRMP_COUPLES = 'https://www.nrmp.org/intro-to-the-match/the-match-algorithm/couples-in-the-match/';
@@ -29,118 +30,78 @@ const NRMP_FEES = 'https://www.nrmp.org/match-fees/';
 
 export const GUIDES: Guide[] = [
   {
+    slug: 'about-us',
+    title: 'About Us',
+    description: 'Why we built Pairwise: our own couples match, a 300-row list built by hand, and a tool to make it simpler for other couples.',
+    date: '2026-11-26',
+    body: `I'm Cecil. In 2019, I talked my then-girlfriend, Arianna, into couples matching with me. She was skeptical. She wasn't ready to compromise her career for me, and I didn't want her to. But I was a math major before medical school, and I worked out how to build our list so that neither of us would match anywhere worse than if we'd applied on our own. The only difference would be ending up closer together.
+
+It worked. We matched at Johns Hopkins and Penn, a short drive apart. Today Arianna and I are married.
+
+Getting there wasn't easy. We built the list by hand, row by tedious row, and I made a simulator in Excel to check that it said what we actually wanted. I've wanted to build something better for other couples ever since.
+
+The hard part isn't making a list. It's making one that reflects what you both truly want, without hundreds of head-to-head comparisons. That's what Pairwise does.
+
+Pairwise is free, and I hope to keep it that way. If it helps you, we'd be grateful for a donation. It goes toward our daughter's birthday fund ◡̈
+
+[☕ Buy me a coffee](${DONATE})
+`,
+  },
+  {
     slug: 'how-to-use-pairwise',
     title: 'How to Use Pairwise',
-    description: 'Tiers, rules, the model that fills the gaps, fine-tuning with Explore, and checking your list by trying outcomes.',
-    date: '2026-11-25',
-    body: `Pairwise turns what each of you wants into a couples rank list in three layers. **Rules** you set are always true in your list. A **model** fills in the gaps between the rules, learning from a few dozen of your answers. And **your own checks** confirm the list says what you mean before you enter it in R3.
+    description: 'The six steps from setup to a list ready for R3, how to use tiers, and what Pairwise does for you.',
+    date: '2026-11-26',
+    body: `Pairwise turns your two rank lists into one couples list you can enter in R3. Setup takes a few minutes, everything saves as you go, and you can change anything later. The quickest way to learn it is to start.
 
-Pairwise does not predict your odds or try to game the Match. The best couples list is your true order of preference ([why](${HOW_IT_WORKS})), and Pairwise's job is to help you write that order down without mistakes.
+## Get started
 
-The steps:
+The six steps run across the top of the app. Finish setup first and the rest open up; you can go back to any step at any time.
 
-1. **Each of you ranks your own programs** and sorts them into tiers.
-2. **Pairwise builds every possible pair** and orders them using your rules.
-3. **You answer "this or that" questions**, so the model learns how you trade distance against program quality.
-4. **You resolve conflicts** if any of your answers or rules go in a circle.
-5. **You fine-tune** any comparison you care about in Explore.
-6. **You double-check** the final list by trying outcomes, then enter it in R3.
+1. **Setup.** Pick your specialty and match year, then invite your partner by email or with a link. You can add programs while you wait for them to join.
+2. **Programs.** Search by name, city or NRMP code, and add every program you'd be willing to go to.
+3. **Rank.** Drag your programs into order and sort them into Tiers A, B and C (below). Add each program's NRMP code from R3 when you have it.
+4. **Compare.** Answer "this or that": pick the pair you'd rather match into, or call it too close to call. Watch List confidence rise, and stop whenever the list looks right. This opens once you've both ranked programs.
+5. **Conflicts.** If answers go in a circle, or the two of you answered differently, they show up here and you choose what gives way.
+6. **Final list.** Read your list, drag any row to move it, and check it on the map. Save a version, then export it as CSV or Print / PDF.
 
-## Start with tiers
+## Sort your programs into tiers
 
-Each of you ranks your own programs, then sorts them into three tiers. The tiers tell Pairwise how much each program is worth to you compared with being near your partner.
+Tiers tell Pairwise how much each program matters to you compared with being near your partner. Your partner sees your tiers unless you turn on private tiers in setup.
 
 | Tier | What it means |
 | --- | --- |
 | **A** | "Almost no amount of distance would make me drop to Tier B." |
-| **B** | "Most of my programs. I would be willing to change my preferences within this tier to be with my partner." |
+| **B** | "Most of my programs. I would be willing to change my preferences within this tier to be with my partner" |
 | **C** | "My least favourite programs. I'd rather be long distance than match here." |
 
-A few things to know:
+Quick tips:
 
-- **Use Tier A and C sparingly.** Tier A only for programs where almost no distance would change your mind, and Tier C only for programs you'd genuinely rather be apart than attend. Most people only have a few programs in each of these tiers, if any at all.
-- Most programs will fall into Tier B. Your rank order preferences in Tier B are respected, but can change to bring you closer to your partner.
-- Tier C are programs that you would rather do long distance than match into. Pairwise ranks Tier C pairs below your Tier A and B pairs unless one of your answers says otherwise.
-- **Leave off programs you would not attend.** A program that isn't on your list never appears in a pair, and you can't match there.
-- **Your list is yours.** If you change partners or leave a couple, your ranks and tiers are saved and come back with you.
+- **Put most programs in Tier B.** Your order there is respected, but can shift to keep you closer together.
+- **Use Tiers A and C sparingly.** Most people have only a few programs in each, if any.
+- **Leave off programs you wouldn't attend.** You can't match at a program that isn't on your list.
+- **Your list is yours.** If you leave a couple, your ranks and tiers are saved and come back with you.
 
-## Rules are always true
+## What Pairwise does for you
 
-Rules decide the order wherever they apply, and nothing overrides them silently. Pairwise uses four kinds:
+Pairwise builds every possible pair of your programs and puts them in order. A few rules always hold:
 
-- **Common sense.** If pair X is at least as good for both of you as pair Y, and no farther apart, X goes above Y. Example: both of you at your #1 programs in one city, above both of you at your #2 programs in that same city.
-- **Tier A.** Any pair that gives you a Tier A program, while your partner matches somewhere, goes above every pair that doesn't.
-- **No Match goes last.** Every pair where you both match goes above every pair where one of you doesn't, as the NRMP recommends. You can unlock this on the final list, with a warning.
-- **What you told it.** Every "this or that" answer holds in your list, and so does every row you drag into place.
+- A pair that's at least as good for both of you, and no farther apart, goes higher.
+- A Tier A program for you goes above pairs that don't have one.
+- No Match pairs go last.
+- Your "this or that" answers, and any row you drag, stay put.
 
-When two of these disagree, for example an answer that goes against the common-sense rule, Pairwise doesn't pick one for you. The **Conflicts** step shows the loop in plain language, and you choose which link gives way. Breaking a link affects only those two pairs.
+For everything else, Pairwise learns from your answers how you trade distance against program quality. Pairwise doesn't predict your odds or try to game the Match. Your true order of preference is the best list ([why](${HOW_IT_WORKS})), and Pairwise helps you write it down. Tap the info button on any row of the final list to see why it's there.
 
-**When your Tier A programs clash, you decide.** Sometimes one pair gives you a Tier A program and another gives your partner one, and you can't both have Tier A. Neither partner's rule wins. The model and your "this or that" answers order those pairs, and Pairwise asks about them early.
+## Before you enter it in R3
 
-## The model fills in the gaps
-
-Rules order only some pairs. For everything else, Pairwise gives each pair a score, and higher scores go first.
-
-- **Program value.** Each program is worth something to the partner who ranked it, set by its tier and where it sits within the tier.
-- **Distance cost.** Being apart costs points. There are four distance bands: together (same metro, or within 30 miles), commutable (up to 75), drivable (up to 250) and apart. You can change the mileages in setup. Apart is a flat cost: 800 miles and 2,500 miles count the same.
-- **Balance.** Both partners' programs count equally.
-
-The exact numbers are different for every couple, so Pairwise learns them from your answers. It keeps about 2,000 plausible guesses at how much distance and program quality matter to you. Each answer makes the guesses that agree with it more likely, so the model also knows how *sure* it is. It uses that to:
-
-- **Ask the most useful question next:** one it is unsure about, whose answer would move many rows near the top of your list. The first five are standard calibration questions.
-- **Tell you when to stop.** "List confidence" is the share of neighbouring rows in your top 100 that the model is at least 90% sure of. It suggests stopping at 90%, or after 40 questions.
-- **Ask "Still true?"** when it becomes more than 85% sure you'd now answer a question the other way. Your answer still holds until you change it.
-
-The model can't express every preference. It doesn't know that being on the same coast beats being across the country, and it spaces the programs in a tier evenly. That is why your answers are rules: where the model can't capture what you want, what you told it still decides the order.
-
-## Fine-tune with your answers
-
-### This or that
-
-Each question shows two pairs, with a map of where each of you would be and how far apart. Pick the one you would rather match into. You can also:
-
-- **Call it too close to call**, when you'd be equally happy with either.
-- **Come back to it later.** It won't be asked again until the other questions run out.
-- **Flag it to discuss together.** Flagged questions are listed under the question, so you can talk them through and come back to them.
-
-You can answer together or separately. When you answer separately and disagree, Pairwise shows you both answers and asks you to settle it.
-
-### Explore
-
-This or that chooses the questions. **Explore** lets you choose them. Drag any two pairs into "This" and "That" to see:
-
-- where each sits in your list, and why one is above the other;
-- whether a rule or an earlier answer fixes that order, or only the model's score;
-- whether their order can matter at all: if a row above both makes it moot, Explore says so and names that row;
-- the model's guess at which you'd choose.
-
-Before you answer, Explore previews both choices: which rows would move, and whether the answer would clash with a rule or another answer. Use it for the comparisons you care most about, such as your top few pairs, or any row that surprised you on the final list.
-
-## Double-check the final list
-
-### Read it in a sensible order
-
-Many pairs of rows can trade places without changing where you match ([how](${HOW_IT_WORKS})). Pairwise uses that freedom to show your list in the easiest order to read, by one partner's ranks first or by both together, and it matches exactly the same way. Rows set by a rule, an answer or a drag never move. Tap the info button on any row to see why it is there.
-
-### Try an outcome
-
-This is the best test of whether the list says what you mean. Tick the programs each of you could get into, and, for any program on both your lists, whether there is room for both of you. Pairwise then:
-
-- dims every row that is out of reach;
-- marks the row you would match on, which is the first row where both of you are within reach;
-- shows where each of you would have matched applying separately.
-
-Try the scenarios that worry you: one of you doesn't get your top choices, you both only get into programs far apart, or one of you doesn't match at all. If the result surprises you, drag the row, or answer the comparison in Explore, until it doesn't.
-
-### Check before you certify
-
-The checklist on the final list confirms that the list fits NRMP's 300-rank limit, that every program has its NRMP code, that the No Match rows are at the bottom, that every row can be reached, and that no conflicts are left. Then save a version, print it or export it, and enter it in R3 exactly as shown.
+The "Before you certify in R3" checklist on the final list confirms that every program has its NRMP code, No Match pairs are at the bottom, no conflicts are left and the list fits NRMP's 300-rank limit. When it's all ticked, enter the list in R3 exactly as shown.
 
 ## Further reading
 
 - [How the Couples Match Works](${HOW_IT_WORKS})
 - [Why Making a Couples List Is Hard](${WHY_HARD})
-- [Couples Matching for the Uncommitted](${UNCOMMITTED})
+- [Should I Couples Match?](${SHOULD_I})
 - [Should I Tell Programs That I'm Couples Matching?](${TELL_PROGRAMS})
 `,
   },
@@ -320,16 +281,22 @@ Pairwise does not predict your odds or try to game the Match. Your true order of
 ## Further reading
 
 - [How the Couples Match Works](${HOW_IT_WORKS}): the algorithm, and why some changes to a list make no difference.
-- [Couples Matching for the Uncommitted](${UNCOMMITTED}): why couples who aren't engaged or married should still consider matching together.
+- [Should I Couples Match?](${SHOULD_I}): why couples who aren't engaged or married should still consider matching together.
 - [Couples in the Match](${NRMP_COUPLES}), from the NRMP.
 `,
   },
   {
-    slug: 'couples-matching-for-the-uncommitted',
-    title: 'Couples Matching for the Uncommitted',
-    description: 'Why couples who aren’t engaged or married should still consider matching together: done right, it costs neither of you anything.',
-    date: '2026-11-25',
-    body: `Matching as a couple does not have to cost either of you anything (except for fees paid to the NRMP). You can write a couples list that matches each of you exactly where you would have matched alone, and then change it only where you both agree a change is better. That is why I think every couple applying in the same year should consider the couples match - engaged, married, or not.
+    slug: 'should-i-couples-match',
+    title: 'Should I Couples Match?',
+    description: 'Engaged, dating or married: how to couples match without matching anywhere worse than you would alone, and what you gain by doing it.',
+    date: '2026-11-26',
+    body: `For some couples, the list is easy. If you're married with kids, you will probably rank only pairs of programs close to each other. Being apart isn't an option, so the only question is which city.
+
+Most medical school couples are somewhere short of that: engaged, seriously dating or newly dating. You can still couples match, and you can do it without matching anywhere worse than you would have applying on your own (apart from the NRMP's couples fee). A couples list lets you say something two separate lists can't: that your preferences depend on where your partner lands. Pairwise helps you build that into your list.
+
+Here is my own example. On my own, Johns Hopkins was my top choice. But if Arianna - my serious girlfriend at the time - could match at UCSF, I would have given that up and ranked Stanford above Hopkins to be near her. Applying separately, I had no way to say "Stanford, but only if Arianna gets UCSF." On a couples list it is one decision: put (Stanford, UCSF) above (Hopkins, UCSF).
+
+That is why I think every couple applying in the same year should consider the couples match, whatever stage you're at.
 
 This post makes that argument carefully. It uses the notation from [How the Couples Match Works](${HOW_IT_WORKS}): A₁, B₁, … for Partner 1's programs, A₂, B₂, … for Partner 2's, NM for No Match, and F₁, F₂ for the programs each of you could get into.
 
@@ -447,7 +414,7 @@ What you say must be true. Misleading a program is unethical and can break the N
 
 - [How the Couples Match Works](${HOW_IT_WORKS})
 - [Why Making a Couples List Is Hard](${WHY_HARD})
-- [Couples Matching for the Uncommitted](${UNCOMMITTED})
+- [Should I Couples Match?](${SHOULD_I})
 - Arianna Yanes and Cecil Qiu, [Couples Matching for the Uncommitted](${IN_TRAINING}), in-Training, February 16, 2021
 `,
   },
