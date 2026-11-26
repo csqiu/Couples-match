@@ -45,6 +45,11 @@ content_path = "./supabase/templates/magic_link.html"
 subject = "Welcome to Pairwise: confirm your email"
 content_path = "./supabase/templates/confirm_signup.html"
 
+# Dashboard / admin invites. Partner invites are sent by functions/send-invite (email.ts).
+[auth.email.template.invite]
+subject = "You're invited to Pairwise"
+content_path = "./supabase/templates/invite.html"
+
 [auth.external.google]
 enabled = true
 client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"

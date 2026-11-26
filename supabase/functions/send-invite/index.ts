@@ -11,6 +11,7 @@
 // SUPABASE_URL and SUPABASE_PUBLISHABLE_KEYS (JSON, by key name) are provided by the platform.
 
 import { createClient } from 'npm:@supabase/supabase-js@2.119.2';
+import { inviteHtml, inviteSubject, inviteText } from './email.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': Deno.env.get('APP_URL') ?? '*',
@@ -20,9 +21,6 @@ const cors = {
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
-
-const escapeHtml = (s: string) =>
-  s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
@@ -55,19 +53,20 @@ Deno.serve(async (req) => {
 
   const { data: me } = await supabase.auth.getUser();
   const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', me.user!.id).single();
-  const inviter = escapeHtml(profile?.display_name ?? 'Your partner');
-  const link = `${Deno.env.get('APP_URL')}/invite/${token}`;
+  const inviterName = profile?.display_name ?? 'Your partner';
+  const to = body.email.trim().toLowerCase();
+  const appUrl = Deno.env.get('APP_URL')!;
+  const email = { inviterName, email: to, link: `${appUrl}/invite/${token}`, appUrl };
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: Deno.env.get('INVITE_FROM_EMAIL'),
-      to: [body.email.trim().toLowerCase()],
-      subject: `${profile?.display_name ?? 'Your partner'} invited you to plan your Couples Match list`,
-      html: `<p>${inviter} invited you to build your NRMP Couples Match rank list together.</p>
-<p><a href="${link}">Accept the invite</a> — sign in with this email address. The link works once and expires in 7 days.</p>
-<p style="color:#666;font-size:12px">This app is a planning tool and is not affiliated with the NRMP.</p>`,
+      to: [to],
+      subject: inviteSubject(inviterName),
+      html: inviteHtml(email),
+      text: inviteText(email),
     }),
   });
   if (!res.ok) {
