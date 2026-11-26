@@ -37,7 +37,9 @@ export const GUIDES: Guide[] = [
 
 Building that list by hand took dozens of hours, an Excel simulator and at least a dozen resubmissions. Since then, I've helped many other med school couples navigate the Match. Pairwise turns what I learned into a tool that makes the process efficient and accurate. For the nerdy details, see [A Technical Guide to the Couples Match](${TECHNICAL}).
 
-Pairwise is free, and I hope to keep it that way. Your personal information and rank lists will always be kept private. It has been a labor of love and geeky joy to create this tool. If it helps you, we'd be grateful for a donation. It goes toward our daughter's birthday fund ◡̈
+This is the first Match cycle with Pairwise, so expect some bumpy starts. If you run into any bugs or have suggestions, please shoot me an email at [support@getpairwise.app](mailto:support@getpairwise.app).
+
+**Pairwise is free**, and I hope to keep it that way. Your personal information and rank lists will always be kept private. It has been a labor of love and geeky joy to create this tool. If it helps you, we'd be grateful for a donation. It goes toward our daughter's birthday fund. ◡̈
 
 [☕ Buy us a coffee](${DONATE})
 `,
