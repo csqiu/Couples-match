@@ -21,7 +21,7 @@ describe('guides', () => {
   });
 
   it('render to HTML with tables, and external links open in a new tab', () => {
-    const html = guideHtml(GUIDES.find((g) => g.slug === 'how-the-couples-match-works')!.body);
+    const html = guideHtml(GUIDES.find((g) => g.slug === 'technical-guide-to-the-couples-match')!.body);
     expect(html).toContain('<table>');
     expect(html).toContain('id="two-orders"');
     expect(html).toMatch(/<a href="https:\/\/www\.nrmp\.org[^"]*" target="_blank" rel="noreferrer">/);
