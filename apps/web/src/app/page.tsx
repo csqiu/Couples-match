@@ -130,7 +130,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
               <div className="mt-6 grid grid-cols-[2.5rem_repeat(4,minmax(0,1fr))] items-center gap-2 sm:grid-cols-[3.25rem_repeat(4,minmax(0,1fr))]" aria-hidden>
                 <span />
                 {PALETTES.map((p) => (
-                  <span key={p.id} data-palette={p.id} className="flex flex-col items-center gap-1 text-center font-mono text-[10.5px] leading-tight text-muted">
+                  <span key={p.id} data-palette={p.id} className="flex flex-col items-center gap-1.5 self-start text-center font-mono text-[10.5px] leading-tight text-balance text-muted">
                     <span className="flex h-2.5 w-full overflow-hidden rounded-[5px]">
                       <i className="flex-1 bg-partner-1" />
                       <i className="flex-1 bg-partner-2" />
@@ -156,21 +156,26 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
   );
 }
 
+/** Beside the names when there's room; on narrow screens it drops under them, lined up with the names. */
+const chip =
+  'col-start-2 inline-flex items-center gap-1 justify-self-start rounded-full px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap sm:col-start-3 sm:justify-self-end';
+
 function PairRow({ n, a, b, together, miles }: { n: number; a: string; b: string; together?: boolean; miles?: number }) {
   return (
-    <li className="glass-row grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-3 px-3.5 py-2.5 text-sm">
+    <li className="glass-row grid grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3.5 py-2.5 text-sm sm:grid-cols-[1.5rem_minmax(0,1fr)_auto]">
       <span className="text-right font-mono font-semibold text-plum-deep">{n}</span>
-      <span className="flex flex-wrap items-center gap-1.5">
-        <span className="font-semibold text-partner-1">{a}</span>
-        <span className="text-muted">+</span>
-        <span className="font-semibold text-partner-2">{b}</span>
+      <span className="flex flex-wrap items-center gap-x-1.5">
+        <span className="font-semibold whitespace-nowrap text-partner-1">{a}</span>
+        <span className="whitespace-nowrap">
+          <span className="text-muted">+</span> <span className="font-semibold text-partner-2">{b}</span>
+        </span>
       </span>
       {together ? (
-        <span className="inline-flex items-center gap-1 rounded-full bg-band-together/12 px-2.5 py-1.5 text-xs font-semibold text-band-together">
+        <span className={`${chip} bg-band-together/12 text-band-together`}>
           <Heart className="h-3.5 w-3.5" aria-hidden /> Together
         </span>
       ) : (
-        <span className="inline-flex items-center gap-1 rounded-full bg-band-commutable/12 px-2.5 py-1.5 text-xs font-semibold text-band-commutable">
+        <span className={`${chip} bg-band-commutable/12 text-band-commutable`}>
           <CarFront className="h-3.5 w-3.5" aria-hidden /> Commutable · <span className="font-mono">{miles} mi</span>
         </span>
       )}
