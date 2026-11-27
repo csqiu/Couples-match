@@ -190,7 +190,8 @@ function FontRow({ font, first }: { font: (typeof FONTS)[number]['id']; first: b
     <>
       <span data-font={font} className="font-display text-[20px] leading-none font-semibold">Aa</span>
       {PALETTES.map((p, j) => (
-        <span key={p.id} className={first && j === 0 ? 'rounded-[12px] p-[3px] ring-2 ring-action' : 'p-[3px]'}>
+        // data-palette keeps the highlight ring in this tile's own colors, not the visitor's saved look.
+        <span key={p.id} data-palette={p.id} className={first && j === 0 ? 'rounded-[12px] p-[3px] ring-2 ring-action' : 'p-[3px]'}>
           <LookSwatch font={font} palette={p.id} className="h-10 w-full" />
         </span>
       ))}
