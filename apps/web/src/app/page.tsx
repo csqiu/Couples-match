@@ -59,7 +59,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
                 {BRAND.tagline}
               </h1>
               <p className="mt-5 max-w-[440px] text-lg text-muted max-md:mx-auto">
-                Collaboratively create a couples match list without giving up your favorite programs
+                Collaboratively and intuitively create a couples rank list without giving up your favorite programs
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row max-md:sm:justify-center">
                 <Link href="/login" className={buttonVariants()}>
@@ -91,8 +91,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
                 <PairRow n={3} a="Penn" b="CHOP" together />
               </ol>
               <p className="mt-3 text-[13.5px] text-muted">
-                “If they can match at UCSF, then I want to be in the Bay Area too.” Pairwise helps you encode preference
-                dependencies and keep your entire list true to what you want.
+                “If they can match at UCSF, then I want to be in the Bay Area too.” Pairwise builds in your personal
+                preferences while ensuring that your chances of matching are as good as if you applied separately (with some
+                exceptions, see our{' '}
+                <Link href="/guides/technical-guide-to-the-couples-match" className="underline underline-offset-2 hover:text-text">
+                  technical guide
+                </Link>
+                ).
               </p>
             </article>
           </div>
@@ -105,8 +110,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
                 A logic engine to keep your list clear and true
               </h2>
               <p className="mt-4 max-w-[60ch] text-[17px] text-muted">
-                No need to discuss hundreds of possibilities and comparisons. Pairwise uses your preferences to build your
-                complete list and highlights the most important decisions to discuss with your partner.
+                No need to discuss hundreds of possibilities and comparisons. Pairwise prioritizes the comparisons that matter
+                most, saving you time and energy.
               </p>
               <ol className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {STEPS.map(([k, title, body]) => (
@@ -130,12 +135,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
               <div className="mt-6 grid grid-cols-[2.5rem_repeat(4,minmax(0,1fr))] items-center gap-2 sm:grid-cols-[3.25rem_repeat(4,minmax(0,1fr))]" aria-hidden>
                 <span />
                 {PALETTES.map((p) => (
-                  <span key={p.id} data-palette={p.id} className="flex flex-col items-center gap-1.5 self-start text-center font-mono text-[10.5px] leading-tight text-balance text-muted">
-                    <span className="flex h-2.5 w-full overflow-hidden rounded-[5px]">
-                      <i className="flex-1 bg-partner-1" />
-                      <i className="flex-1 bg-partner-2" />
-                    </span>
-                    {p.name}
+                  <span key={p.id} data-palette={p.id} className="flex h-2.5 w-full self-end overflow-hidden rounded-[5px]">
+                    <i className="flex-1 bg-partner-1" />
+                    <i className="flex-1 bg-partner-2" />
                   </span>
                 ))}
                 {FONTS.map((f, i) => (
