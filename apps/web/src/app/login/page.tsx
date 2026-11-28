@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { BRAND } from '@/brand';
+import { BETA_FULL_MESSAGE } from '@/lib/beta';
 import { Card } from '@/components/ui/card';
 import { getContext } from '@/lib/context';
 import { DEV_LOGIN_ENABLED } from '@/lib/env';
@@ -18,7 +19,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <Card>
         <h1 className="text-xl font-semibold">Sign in</h1>
         <p className="mt-1 mb-6 text-sm text-muted">No passwords — we email you a link.</p>
-        {error ? <p className="mb-4 text-sm text-danger" role="alert">That sign-in link didn’t work. Request a new one.</p> : null}
+        {error ? (
+          <p className="mb-4 text-sm text-danger" role="alert">
+            {error === 'full' ? BETA_FULL_MESSAGE : 'That sign-in link didn’t work. Request a new one.'}
+          </p>
+        ) : null}
         <LoginForm next={next} email={email} devLogin={DEV_LOGIN_ENABLED} />
       </Card>
     </main>
