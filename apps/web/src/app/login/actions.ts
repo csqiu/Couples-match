@@ -2,16 +2,12 @@
 import { redirect } from 'next/navigation';
 import { APP_URL, DEV_LOGIN_ENABLED } from '@/lib/env';
 import { BETA_FULL_MESSAGE, isBetaFull } from '@/lib/beta';
+import { safeNext } from '@/lib/safe-next';
 import { createClient } from '@/lib/supabase/server';
 
 export interface LoginState {
   sent?: string;
   error?: string;
-}
-
-function safeNext(next: FormDataEntryValue | null): string {
-  const n = typeof next === 'string' ? next : '';
-  return n.startsWith('/') && !n.startsWith('//') ? n : '/app';
 }
 
 export async function sendMagicLink(_: LoginState, form: FormData): Promise<LoginState> {
@@ -28,16 +24,6 @@ export async function sendMagicLink(_: LoginState, form: FormData): Promise<Logi
     return { error: error.message };
   }
   return { sent: email };
-}
-
-export async function signInWithGoogle(form: FormData) {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: `${APP_URL}/auth/callback?next=${encodeURIComponent(safeNext(form.get('next')))}` },
-  });
-  if (error || !data.url) redirect('/login?error=google');
-  redirect(data.url);
 }
 
 /** Password sign-in for automated tests and local development only. */

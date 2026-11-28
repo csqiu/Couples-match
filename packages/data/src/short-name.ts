@@ -7,7 +7,8 @@
 /** Well-known institutions, matched against the start of the institution name (case-insensitive). */
 const INSTITUTIONS: Array<[RegExp, string]> = [
   [/^johns hopkins/i, 'Hopkins'],
-  [/^(mgb-)?massachusetts gen(eral)?\b/i, 'MGH'],
+  [/^(mgb-)?(massachusetts|mass) gen(eral)? brigham\b/i, 'MGB'],
+  [/^(mgb-)?(massachusetts|mass) gen(eral)?\b/i, 'MGH'],
   [/^(mgb-)?brigham/i, 'BWH'],
   [/^(mgb-)?beth israel deaconess/i, 'BIDMC'],
   [/^boston children/i, 'Boston Children’s'],

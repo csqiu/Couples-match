@@ -69,14 +69,14 @@ export function MiniMap({ points, label, className }: { points: MiniPoint[]; lab
           type: 'line',
           source: 'pair',
           filter: ['==', ['geometry-type'], 'LineString'],
-          paint: { 'line-color': css('--accent'), 'line-width': 2, 'line-dasharray': [2, 1.5] },
+          paint: { 'line-color': css('--muted'), 'line-width': 2, 'line-dasharray': [2, 1.5] },
         });
         m.addLayer({
           id: 'pins',
           type: 'circle',
           source: 'pair',
           filter: ['==', ['geometry-type'], 'Point'],
-          paint: { 'circle-radius': 5, 'circle-color': css('--accent'), 'circle-stroke-width': 1.5, 'circle-stroke-color': css('--surface') },
+          paint: { 'circle-radius': 5, 'circle-color': css('--action'), 'circle-stroke-width': 1.5, 'circle-stroke-color': css('--surface') },
         });
         fit(m, latest.current);
       });

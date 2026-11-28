@@ -39,7 +39,7 @@ export function VersionControls({ id, name, note }: { id: string; name: string; 
       </Button>
       {confirming ? (
         <span className="flex items-center gap-1 text-xs">
-          Replace your current list? (It’s saved as a version first.)
+          Replace your current list? It’s saved as a version first. Programs added since stay, but their pairs wait off the list until you bring them in.
           <Button
             size="sm"
             disabled={busy}

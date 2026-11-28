@@ -23,4 +23,5 @@ export type PinRow = Tables<'pins'>;
 export type PairExclusionRow = Tables<'pair_exclusions'>;
 export type RuleExceptionRow = Tables<'rule_exceptions'>;
 export type ListVersionRow = Tables<'list_versions'>;
+export type RankListRow = Tables<'rank_lists'>;
 export type AuditEventRow = Tables<'audit_events'>;

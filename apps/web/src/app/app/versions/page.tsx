@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowDown, ArrowUp, Minus, Plus } from 'lucide-react';
+import { LocalTime } from '@/components/local-time';
 import { BandBadge } from '@/components/proximity';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,7 +10,9 @@ import { cn } from '@/lib/cn';
 import { displayName, requireCouple } from '@/lib/context';
 import { serverFinalList } from '@/lib/server-list';
 import { createClient } from '@/lib/supabase/server';
+import { versionLabel } from '@/lib/lists';
 import { diffSummary, diffVersions, type VersionRow } from '@/lib/versions';
+import { StarButton } from '../dashboard-controls';
 import { VersionControls } from './version-controls';
 
 export const metadata: Metadata = { title: 'Versions' };
@@ -18,12 +21,19 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
   const { a, b } = await searchParams;
   const ctx = await requireCouple();
   const supabase = await createClient();
-  const { data: versions } = await supabase
-    .from('list_versions')
-    .select('id, name, note, created_at, created_by, engine_version, pairs')
-    .eq('couple_id', ctx.couple.id)
-    .order('created_at', { ascending: false });
-  const list = versions ?? [];
+  const [{ data: versions }, { data: lists }] = await Promise.all([
+    supabase
+      .from('list_versions')
+      .select('id, list_id, minor, starred, name, note, created_at, created_by, engine_version, pair_count')
+      .eq('couple_id', ctx.couple.id)
+      .order('created_at', { ascending: false }),
+    supabase.from('rank_lists').select('id, number').eq('couple_id', ctx.couple.id),
+  ]);
+  const numberOf = new Map((lists ?? []).map((l) => [l.id, l.number]));
+  const labelOf = (v: { list_id: string; minor: number }) => versionLabel(numberOf.get(v.list_id) ?? 0, v.minor);
+  const all = (versions ?? []).map((v) => ({ ...v, label: labelOf(v) }));
+  // This page is about the open list; Compare can reach any list's versions.
+  const list = all.filter((v) => v.list_id === ctx.list?.id);
   const who = (id: string | null) => (id === ctx.user.id ? 'you' : id && id === ctx.partner?.user_id ? displayName(ctx.partner) : 'someone');
 
   // Compare two versions (or a version against the current list).
@@ -31,18 +41,25 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
   let labels: [string, string] = ['', ''];
   if (a && b && a !== b) {
     const current = a === 'current' || b === 'current' ? (await serverFinalList(ctx)).snapshot.pairs : null;
-    const rowsOf = (id: string) => (id === 'current' ? current! : ((list.find((v) => v.id === id)?.pairs ?? []) as unknown as VersionRow[]));
-    const nameOf = (id: string) => (id === 'current' ? 'Current list' : (list.find((v) => v.id === id)?.name ?? '?'));
+    const found = (id: string) => all.find((v) => v.id === id);
+    // Only the two versions being compared are downloaded in full (bug log #30).
+    const ids = [a, b].filter((id) => id !== 'current');
+    const { data: frozen } = ids.length
+      ? await supabase.from('list_versions').select('id, pairs').eq('couple_id', ctx.couple.id).in('id', ids)
+      : { data: [] };
+    const pairsOf = new Map((frozen ?? []).map((v) => [v.id, v.pairs as unknown as VersionRow[]]));
+    const rowsOf = (id: string) => (id === 'current' ? current! : (pairsOf.get(id) ?? []));
+    const nameOf = (id: string) => (id === 'current' ? 'Current list' : found(id) ? `${found(id)!.label} · ${found(id)!.name}` : '?');
     diff = diffVersions(rowsOf(a), rowsOf(b));
     labels = [nameOf(a), nameOf(b)];
   }
 
-  const options = [{ id: 'current', name: 'Current list' }, ...list.map((v) => ({ id: v.id, name: v.name }))];
+  const options = [{ id: 'current', name: 'Current list' }, ...all.map((v) => ({ id: v.id, name: `${v.label} · ${v.name}` }))];
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Versions</h1>
+          <h1 className="page-title">Versions of List {ctx.list?.number ?? ''}</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Frozen snapshots of your list. Rename them, compare any two, print one, or restore one as your working list.
           </p>
@@ -51,21 +68,25 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
       </div>
 
       {list.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted">
-          No versions yet. Save one from the final list.
+        <p className="glass border-dashed p-8 text-center text-sm text-muted">
+          No versions of this list yet. Save one from the final list.
         </p>
       ) : (
         <ul className="flex flex-col gap-2" data-testid="versions">
           {list.map((v) => (
             <li key={v.id}>
               <Card className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-                <div className="min-w-0">
-                  <p className="font-medium">{v.name}</p>
+                <div className="flex min-w-0 items-center gap-2">
+                  <StarButton id={v.id} label={v.label} starred={v.starred} />
+                  <span className="font-mono font-semibold text-plum-deep">{v.label}</span>
+                  <div className="min-w-0">
+                  <p className="small-title">{v.name}</p>
                   <p className="text-xs text-muted">
-                    {(v.pairs as unknown as VersionRow[]).length} ranks · saved by {who(v.created_by)} ·{' '}
-                    {new Date(v.created_at).toLocaleString()}
+                    {v.pair_count ?? 0} ranks · saved by {who(v.created_by)} ·{' '}
+                    <LocalTime iso={v.created_at} time className="font-mono" />
                     {v.note ? ` · ${v.note}` : ''}
                   </p>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-1">
                   <Link href={`/print/list?version=${v.id}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Print</Link>
@@ -79,7 +100,7 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
 
       {list.length ? (
         <Card>
-          <h2 className="mb-3 font-semibold">Compare</h2>
+          <h2 className="card-title mb-3">Compare</h2>
           <form className="flex flex-col gap-2 sm:flex-row sm:items-end" action="/app/versions">
             <label className="flex flex-1 flex-col gap-1 text-sm">
               Older
@@ -112,17 +133,19 @@ export default async function VersionsPage({ searchParams }: { searchParams: Pro
                   <li
                     key={d.pairId + d.kind}
                     className={cn(
-                      'grid grid-cols-[4.5rem_1fr] items-center gap-3 rounded-lg border px-3 py-2 text-sm sm:grid-cols-[4.5rem_1fr_1fr_auto]',
-                      d.kind === 'same' ? 'border-transparent' : 'border-border',
-                      d.kind === 'removed' && 'text-muted line-through',
-                      (d.kind === 'up' || d.kind === 'down' || d.kind === 'added') && 'bg-accent-soft/60',
+                      'glass-row grid grid-cols-[4.5rem_1fr] items-center gap-3 px-3.5 py-2.5 text-sm sm:grid-cols-[4.5rem_1fr_1fr_auto]',
+                      d.kind === 'same' && 'border-transparent bg-transparent',
+                      d.kind === 'removed' && 'bg-warn-soft/70 text-muted line-through',
+                      d.kind === 'up' && 'bg-accent-soft/70',
+                      d.kind === 'down' && 'bg-danger-soft/80',
+                      d.kind === 'added' && 'bg-partner-2-soft/70',
                     )}
                     data-change={d.kind}
                   >
-                    <span className="flex items-center gap-1 tabular-nums">
+                    <span className="flex items-center gap-1 font-mono text-[13px] tabular-nums">
                       {d.kind === 'up' ? <ArrowUp className="h-3.5 w-3.5 text-accent" aria-label="moved up" /> : null}
-                      {d.kind === 'down' ? <ArrowDown className="h-3.5 w-3.5 text-warn" aria-label="moved down" /> : null}
-                      {d.kind === 'added' ? <Plus className="h-3.5 w-3.5 text-accent" aria-label="added" /> : null}
+                      {d.kind === 'down' ? <ArrowDown className="h-3.5 w-3.5 text-danger" aria-label="moved down" /> : null}
+                      {d.kind === 'added' ? <Plus className="h-3.5 w-3.5 text-plum-deep" aria-label="added" /> : null}
                       {d.kind === 'removed' ? <Minus className="h-3.5 w-3.5" aria-label="removed" /> : null}
                       {d.before ?? '–'}→{d.after ?? '–'}
                     </span>

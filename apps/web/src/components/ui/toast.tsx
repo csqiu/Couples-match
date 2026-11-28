@@ -28,7 +28,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((t) => (
           <div
             key={t.id}
-            className="pointer-events-auto flex max-w-md items-center gap-4 rounded-xl bg-text px-4 py-3 text-sm text-bg shadow-lg"
+            className="pointer-events-auto flex max-w-md items-center gap-4 rounded-2xl bg-text px-4 py-3 text-sm text-bg shadow-glass"
           >
             <span>{t.message}</span>
             {t.action ? (

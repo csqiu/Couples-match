@@ -29,7 +29,7 @@ export function ThemeToggle() {
   return (
     <button
       type="button"
-      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text"
+      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[14px] border border-transparent text-muted transition-colors duration-150 hover:border-glass-border hover:bg-glass hover:text-text"
       aria-label={`Theme: ${mode}. Switch to ${next[mode]}.`}
       onClick={() => {
         const m = next[mode];

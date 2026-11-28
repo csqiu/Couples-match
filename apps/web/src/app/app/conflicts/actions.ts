@@ -12,21 +12,49 @@ const done = (error?: { message: string } | null): Result => {
   return {};
 };
 
+/** What dropping a link changed, so Undo can put it back exactly (bug log #33). */
+export interface LinkUndo {
+  from: string;
+  to: string;
+  /** Pins that were deleted, with their original time (drags replay in that order). */
+  pins: Array<{ source: 'comparison' | 'manual_drag' | 'conflict_resolution'; comparison_id: string | null; moved_pair: string | null; created_at: string }>;
+  /** Answers that were unlocked. */
+  unlocked: string[];
+  /** An exception was added by this drop (not one that was already there). */
+  excepted: boolean;
+}
+
 /**
  * Breaks one link of a cycle. A pin is deleted (its answer stays, as a soft
  * answer); an automatic or rule link gets an exception scoped to these two pairs.
+ * Returns what changed, for Undo.
  */
-export async function breakLink(link: { from: string; to: string; reasons: EdgeReason[] }): Promise<Result> {
+export async function breakLink(link: { from: string; to: string; reasons: EdgeReason[] }): Promise<Result & { undo?: LinkUndo }> {
   const ctx = await requireCouple();
   const supabase = await createClient();
+  const undo: LinkUndo = { from: link.from, to: link.to, pins: [], unlocked: [], excepted: false };
   const pins = link.reasons.filter((r): r is Extract<EdgeReason, { kind: 'pin' }> => r.kind === 'pin');
   if (pins.length) {
-    const { error } = await supabase.from('pins').delete().eq('couple_id', ctx.couple.id).eq('higher_pair', link.from).eq('lower_pair', link.to);
+    const { data: gone, error } = await supabase
+      .from('pins')
+      .delete()
+      .eq('couple_id', ctx.couple.id)
+      .eq('higher_pair', link.from)
+      .eq('lower_pair', link.to)
+      .select('source, comparison_id, moved_pair, created_at');
     if (error) return { error: error.message };
+    undo.pins = (gone ?? []) as LinkUndo['pins'];
     const comparisonIds = pins.flatMap((p) => (p.comparisonId ? [p.comparisonId] : []));
     if (comparisonIds.length) {
-      const { error: e2 } = await supabase.from('comparisons').update({ locked: false }).in('id', comparisonIds).eq('couple_id', ctx.couple.id);
+      const { data: unlocked, error: e2 } = await supabase
+        .from('comparisons')
+        .update({ locked: false })
+        .in('id', comparisonIds)
+        .eq('couple_id', ctx.couple.id)
+        .eq('locked', true)
+        .select('id');
       if (e2) return { error: e2.message };
+      undo.unlocked = (unlocked ?? []).map((c) => c.id);
     }
   }
   if (link.reasons.some((r) => r.kind !== 'pin')) {
@@ -34,15 +62,47 @@ export async function breakLink(link: { from: string; to: string; reasons: EdgeR
       .from('rule_exceptions')
       .insert({ couple_id: ctx.couple.id, higher_pair: link.from, lower_pair: link.to, created_by: ctx.user.id });
     if (error && !error.message.includes('duplicate')) return { error: error.message };
+    undo.excepted = !error;
+  }
+  const res = done();
+  return res.error ? res : { undo };
+}
+
+/** Undo of breakLink: the exception goes, deleted pins come back in their old place, answers relock. */
+export async function restoreLink(undo: LinkUndo): Promise<Result> {
+  const ctx = await requireCouple();
+  const supabase = await createClient();
+  if (undo.excepted) {
+    const { error } = await supabase.from('rule_exceptions').delete().eq('couple_id', ctx.couple.id).eq('higher_pair', undo.from).eq('lower_pair', undo.to);
+    if (error) return { error: error.message };
+  }
+  if (undo.pins.length) {
+    const { error } = await supabase.from('pins').insert(
+      undo.pins.map((p) => ({
+        couple_id: ctx.couple.id,
+        higher_pair: undo.from,
+        lower_pair: undo.to,
+        source: p.source,
+        comparison_id: p.comparison_id,
+        moved_pair: p.moved_pair,
+        created_at: p.created_at,
+        created_by: ctx.user.id,
+      })),
+    );
+    if (error) return { error: error.message };
+  }
+  if (undo.unlocked.length) {
+    const { error } = await supabase.from('comparisons').update({ locked: true }).in('id', undo.unlocked).eq('couple_id', ctx.couple.id);
+    if (error) return { error: error.message };
   }
   return done();
 }
 
-export async function setTierAPriority(priority: 'partner1' | 'partner2' | 'case_by_case'): Promise<Result> {
+/** "Set aside" list: a rule or answer link dropped earlier comes back (its exception goes). */
+export async function bringBackLink(higher: string, lower: string): Promise<Result> {
   const ctx = await requireCouple();
   const supabase = await createClient();
-  const settings: StoredSettings = { ...((ctx.couple.settings ?? {}) as StoredSettings), tierAPriority: priority };
-  const { error } = await supabase.from('couples').update({ settings: settings as never }).eq('id', ctx.couple.id);
+  const { error } = await supabase.from('rule_exceptions').delete().eq('couple_id', ctx.couple.id).eq('higher_pair', higher).eq('lower_pair', lower);
   return done(error);
 }
 

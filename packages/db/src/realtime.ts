@@ -18,6 +18,7 @@ export const COUPLE_TABLES = [
   'pair_exclusions',
   'rule_exceptions',
   'list_versions',
+  'rank_lists',
   'audit_events',
 ] as const;
 export type CoupleTable = (typeof COUPLE_TABLES)[number];
@@ -42,13 +43,18 @@ export function coupleChannelName(coupleId: string): string {
   return `couple:${coupleId}`;
 }
 
-/** Subscribes to a couple's changes and presence. Call `.unsubscribe()` on the result to leave. */
+/**
+ * Subscribes to a couple's changes and presence. Call `.unsubscribe()` on the result to leave.
+ * `me` can be a function, read each time presence is (re)sent, e.g. after a reconnect.
+ */
 export function subscribeToCouple(
   supabase: SupabaseClient<Database>,
   coupleId: string,
-  me: PresenceState,
+  meOrGet: PresenceState | (() => PresenceState),
   handlers: CoupleChannelHandlers,
 ): RealtimeChannel {
+  const getMe = typeof meOrGet === 'function' ? meOrGet : () => meOrGet;
+  const me = getMe();
   const channel = supabase.channel(coupleChannelName(coupleId), {
     config: { private: true, presence: { key: me.userId } },
   });
@@ -76,7 +82,7 @@ export function subscribeToCouple(
 
   channel.subscribe(async (status, err) => {
     handlers.onStatus?.(status, err);
-    if (status === 'SUBSCRIBED') await channel.track(me);
+    if (status === 'SUBSCRIBED') await channel.track(getMe());
   });
   return channel;
 }

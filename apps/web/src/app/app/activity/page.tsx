@@ -26,24 +26,24 @@ export default async function ActivityPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Activity</h1>
+        <h1 className="page-title">Activity</h1>
         <p className="mt-1 text-sm text-muted">What each of you has changed, newest first. Bursts of edits are grouped into one line.</p>
       </div>
       {items.length ? (
-        <Card className="p-0 sm:p-0">
-          <ol className="divide-y divide-border" aria-label="Activity">
+        <Card tone="strong" className="max-w-3xl p-2 sm:p-2">
+          <ol className="flex flex-col gap-1.5" aria-label="Activity">
             {items.map((i) => (
-              <li key={i.key} className="flex flex-col gap-0.5 px-4 py-3 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+              <li key={i.key} className="glass-row flex flex-col gap-0.5 px-3.5 py-3 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                 <span>
                   <strong className="font-medium">{i.who}</strong> {i.text}
                 </span>
-                <RelativeTime iso={i.at} className="shrink-0 text-xs text-muted" />
+                <RelativeTime iso={i.at} className="shrink-0 font-mono text-xs text-muted" />
               </li>
             ))}
           </ol>
         </Card>
       ) : (
-        <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">
+        <div className="glass border-dashed p-10 text-center text-sm text-muted">
           Nothing yet. Changes either of you makes will show up here.
         </div>
       )}

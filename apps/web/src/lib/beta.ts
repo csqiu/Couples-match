@@ -1,4 +1,4 @@
-/** New accounts are capped during the beta (migration 11); Supabase reports the refusal this way. */
+/** New accounts are capped during the beta (migration 16); Supabase reports the refusal this way. */
 export const BETA_FULL_MESSAGE =
   'Pairwise is in a closed beta and all places are taken. If you already have an account, use the email you signed up with.';
 

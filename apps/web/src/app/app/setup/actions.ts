@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { APP_URL, SUPABASE_URL } from '@/lib/env';
 import { requireContext } from '@/lib/context';
 import { matchYearOptions } from '@/lib/match-year';
+import { updateCoupleSettings } from '@/lib/couple-settings';
 import { createClient } from '@/lib/supabase/server';
 
 export interface FormState {
@@ -135,15 +136,14 @@ export async function saveSettings(_: FormState, form: FormData): Promise<FormSt
   if (!(togetherMi < commutableMi && commutableMi < drivableMi)) {
     return { error: 'Distances must increase: Together < Commutable < Drivable.' };
   }
-  const settings: StoredSettings = {
-    ...((ctx.couple.settings ?? {}) as StoredSettings),
+  // Only these three change; everything else is read fresh, so a partner's changes since the
+  // page loaded (added pairs, flagged questions, list length…) aren't undone (bug log #38).
+  const { error } = await updateCoupleSettings((s: StoredSettings) => ({
+    ...s,
     privacy: form.get('privacy') === 'private_tiers' ? 'private_tiers' : 'shared',
     answerMode: form.get('answerMode') === 'separately' ? 'separately' : 'together',
     distanceBands: { togetherMi, commutableMi, drivableMi },
-  };
-  const supabase = await createClient();
-  const { error } = await supabase.from('couples').update({ settings: settings as never }).eq('id', ctx.couple.id);
-  if (error) return { error: error.message };
-  revalidatePath('/app', 'layout');
+  }));
+  if (error) return { error };
   return { ok: 'Settings saved.' };
 }

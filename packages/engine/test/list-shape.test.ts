@@ -125,3 +125,20 @@ describe('No Match order', () => {
     expect(order.slice(-5)).toEqual(nm);
   });
 });
+
+describe('A drag that breaks a rule stays where it was dropped until resolved', () => {
+  it('up and down, while the clash is a conflict', () => {
+    const input = emptyInput({ tierARule: ['off', 'off'] });
+    for (const id of ['a1', 'a2', 'a3', 'b1']) input.programs[id] = program(id, METROS[0]);
+    input.lists = [list([['a1', 'B'], ['a2', 'B'], ['a3', 'B']]), list([['b1', 'B']])];
+    const before = runEngine(input).list.order;
+    expect(before.slice(0, 3)).toEqual(['a1|b1', 'a2|b1', 'a3|b1']);
+    // a3|b1 is dominated by a1|b1 and a2|b1; drag it to the top anyway.
+    const up = runEngine({ ...input, pins: [{ higher: 'a3|b1', lower: 'a1|b1', source: 'manual_drag', moved: 'higher' }] });
+    expect(up.conflicts.some((c) => c.kind === 'cycle')).toBe(true);
+    expect(up.list.order.slice(0, 3)).toEqual(['a3|b1', 'a1|b1', 'a2|b1']);
+    // a1|b1 dragged to the bottom (below a3|b1).
+    const down = runEngine({ ...input, pins: [{ higher: 'a3|b1', lower: 'a1|b1', source: 'manual_drag', moved: 'lower' }] });
+    expect(down.list.order.slice(0, 3)).toEqual(['a2|b1', 'a3|b1', 'a1|b1']);
+  });
+});

@@ -1,25 +1,30 @@
 'use client';
-import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useDraggable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useDraggable, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { CoupleData, StoredSettings } from '@pairwise/db';
 import { useDroppable } from '@dnd-kit/core';
 import { NRMP_RULES, type MatchType } from '@pairwise/engine';
-import { CircleAlert, CircleCheck, Download, GripVertical, History, Info, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, X } from 'lucide-react';
+import { ArrowDownUp, CircleAlert, CircleCheck, Crosshair, Download, FlaskConical, GripVertical, History, Lock, Map as MapIcon, Plus, Printer, Save, Search, TriangleAlert, Undo2, X } from 'lucide-react';
 import Link from 'next/link';
-import { Fragment, useId, useMemo, useRef, useState } from 'react';
-import { BAND_NAME, BAND_ROW, BandBadge } from '@/components/proximity';
+import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { EngineError } from '@/components/engine-error';
+import { PairDetails, PairMedium, PairNames, ProgramChip, WhyText } from '@/components/pair';
+import { BAND_ROW, BandBadge } from '@/components/proximity';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { FloatingCoffee, FloatingStack } from '@/components/coffee-button';
 import { Card } from '@/components/ui/card';
 import { Field, Input } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/cn';
 import { toCsv } from '@/lib/csv-export';
-import { checklistFor, feesFor, RANK_LIMIT, type AvailablePair, type ListRow, type MoveResult } from '@/lib/final-list';
+import { checklistFor, DEFAULT_LIST_ORDER, feesFor, RANK_LIMIT, type AvailablePair, type FinalList, type ListOrder, type ListRow, type MoveResult } from '@/lib/final-list';
+import { holdsFor, indexTies, type Holds } from '@/lib/list-ties';
 import { useEngine, useFinalList } from '@/lib/use-analysis';
-import { breakLink } from '../conflicts/actions';
-import { addDragPin, removePin, saveVersion, setIncluded, setListLength, setNoMatchUnlocked } from './actions';
+import { addDragPin, releaseHeldPrograms, removePin, saveVersion, setIncluded, setListLength, setListOrder, setNoMatchUnlocked } from './actions';
+import { Brackets, HoldsText } from './brackets';
+import { allReachable, simulate, SimulatorPanel, type RowReach, type Scenario } from './simulator';
 
 function download(name: string, text: string) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
@@ -33,15 +38,18 @@ export function ListView({
   names,
   matchType,
   storedLength,
+  nextVersion,
 }: {
   data: CoupleData;
   names: [string, string];
   matchType: MatchType;
   storedLength: number;
+  /** The number saving now would give, e.g. "3.2". */
+  nextVersion: string | null;
 }) {
   const [localPins, setLocalPins] = useState<CoupleData['pins']>([]);
   // List settings changed here, shown at once (the server copy catches up on revalidate).
-  const [local, setLocal] = useState<{ included?: string[]; unlocked?: boolean; length?: number }>({});
+  const [local, setLocal] = useState<{ included?: string[]; unlocked?: boolean; length?: number; order?: ListOrder }>({});
   const stored = (data.couple.settings ?? {}) as StoredSettings;
   const settings = useMemo<StoredSettings>(
     () => ({
@@ -49,6 +57,7 @@ export function ListView({
       listLength: local.length ?? stored.listLength ?? storedLength,
       includedPairs: local.included ?? stored.includedPairs ?? [],
       noMatchUnlocked: local.unlocked ?? !!stored.noMatchUnlocked,
+      listOrder: local.order ?? stored.listOrder ?? DEFAULT_LIST_ORDER,
     }),
     [stored, local, storedLength],
   );
@@ -60,53 +69,166 @@ export function ListView({
       pins: [...data.pins, ...localPins.filter((p) => !ids.has(p.id))],
     };
   }, [data, localPins, settings]);
+  // Local changes only bridge the gap until the server copy arrives (bug log #23). Once no save
+  // is in flight, a new server copy wins, so a partner's changes show up here too.
+  const pendingSaves = useRef(0);
+  async function tracked<T>(work: Promise<T>): Promise<T> {
+    pendingSaves.current++;
+    try {
+      return await work;
+    } finally {
+      pendingSaves.current--;
+    }
+  }
+  useEffect(() => {
+    if (pendingSaves.current === 0) setLocal({});
+  }, [data.couple.settings]);
+  // A move saved here stays until the server copy has it; one the server no longer has (undone
+  // or resolved elsewhere) goes, once it's had time to arrive.
+  const pinAddedAt = useRef(new Map<string, number>());
+  useEffect(() => {
+    const server = new Set(data.pins.map((p) => p.id));
+    setLocalPins((xs) => xs.filter((p) => !server.has(p.id) && Date.now() - (pinAddedAt.current.get(p.id) ?? 0) < 15_000));
+  }, [data.pins]);
   const opts = useMemo(() => ({ names, matchType }), [names, matchType]);
-  const { result, busy } = useFinalList(merged, opts);
+  const { result, busy, error, retry } = useFinalList(merged, opts);
   const call = useEngine();
   const toast = useToast();
   const dndId = useId();
 
   const lengthTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [openWhy, setOpenWhy] = useState<string | null>(null);
-  const [blocked, setBlocked] = useState<{ higher: string; lower: string; moved: 'higher' | 'lower'; include?: string; res: Extract<MoveResult, { ok: false }> } | null>(null);
+  /** A move that clashes with a rule: kept where it was dropped, with Undo or Resolve (bug log #20). */
+  const [clash, setClash] = useState<{ pinId: string; pairId: string; added: boolean; before?: string[]; parts: Extract<MoveResult, { ok: false }>['parts'] } | null>(null);
   const [versionName, setVersionName] = useState('');
   const [versionNote, setVersionNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [coffee, setCoffee] = useState(false); // the coffee button, floated after a CSV export
 
-  const rows = result?.rows ?? [];
+  /**
+   * The order shown while a move is being checked, saved and recalculated (bug log #20). Without
+   * it the dropped row animates back to where it was, then jumps when the new list arrives. It
+   * also holds the old order the moment Undo is pressed, so the row glides back at once.
+   */
+  const [shown, setShown] = useState<{ ids: string[]; settle: boolean } | null>(null);
+  const engineRows = result?.rows ?? [];
+  const rows = useMemo(() => {
+    if (!shown) return engineRows;
+    const byId = new Map(engineRows.map((r) => [r.pairId, r]));
+    const ordered = shown.ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
+    const rest = engineRows.filter((r) => !shown.ids.includes(r.pairId));
+    return [...ordered, ...rest].map((r, i) => (r.rank === i + 1 ? r : { ...r, rank: i + 1 }));
+  }, [engineRows, shown]);
+  // Once the saved change is in a freshly calculated list, that list takes over again.
+  const shownResult = useRef(result);
+  useEffect(() => {
+    if (shown?.settle && result !== shownResult.current && !busy) setShown(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, busy]);
+  /** Show `ids` now; let the next freshly calculated list replace it once `settle` is set. */
+  function showOrder(ids: string[], settle = false) {
+    shownResult.current = result;
+    setShown({ ids, settle });
+  }
   const n = result?.length ?? 0; // rows that count (first RANK_LIMIT)
   const over = Math.max(0, rows.length - RANK_LIMIT);
   const fees = useMemo(() => (result ? feesFor(result.rows, n) : null), [result, n]);
+  // "Try an outcome": the programs each partner could get into, and where the couple would match.
+  const [scenario, setScenario] = useState<Scenario | null>(null);
+  const simRows = useMemo(() => rows.slice(0, n), [rows, n]);
+  const sim = useMemo(() => (scenario ? simulate(simRows, scenario) : null), [simRows, scenario]);
   const checklist = useMemo(() => (result ? checklistFor(result.rows, n, names, result.hasCycles) : []), [result, n, names]);
+
+  // Relationship brackets: from the row whose details are open, or the row being dragged, to
+  // the nearest rows that must stay above and below it. While dragging they follow the row
+  // to where it would land, and turn amber once it crosses one.
+  const [picked, setPicked] = useState<string | null>(null);
+  const [drag, setDrag] = useState<{ id: string; over: string } | null>(null);
+  const listBox = useRef<HTMLDivElement>(null);
+  const ties = useMemo(() => (result ? indexTies(result.ties) : null), [result]);
+  const ids = useMemo(() => rows.map((r) => r.pairId), [rows]);
+  const projected = useMemo(() => {
+    if (!drag) return ids;
+    const from = ids.indexOf(drag.id);
+    const to = ids.indexOf(drag.over);
+    return from < 0 || to < 0 ? ids : arrayMove(ids, from, to);
+  }, [ids, drag]);
+  const focus = drag?.id ?? (picked && ids.includes(picked) ? picked : null);
+  const holds = useMemo<Holds>(() => (ties && focus ? holdsFor(ties, projected, focus) : { above: null, below: null }), [ties, projected, focus]);
+  const rankOf = useMemo(() => {
+    const pos = new Map(projected.map((id, i) => [id, i + 1]));
+    return (id: string) => pos.get(id) ?? 0;
+  }, [projected]);
+  const labelOf = useMemo(() => {
+    const byId = new Map(rows.map((r) => [r.pairId, `${r.sides[0].short} + ${r.sides[1].short}`]));
+    return (id: string) => byId.get(id) ?? '';
+  }, [rows]);
+  const crossing = drag ? (['above', 'below'] as const).map((k) => holds[k]).find((h) => h?.crossed) : undefined;
+  function onDragStart(e: DragStartEvent) {
+    const id = String(e.active.id);
+    if (!id.startsWith('avail:')) setDrag({ id, over: id });
+  }
+  function onDragOver(e: DragOverEvent) {
+    const over = e.over ? String(e.over.id) : null;
+    if (over && over !== 'list-end') setDrag((d) => (d && d.over !== over ? { ...d, over } : d));
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  async function savePin(higher: string, lower: string, moved: 'higher' | 'lower') {
+  async function savePin(higher: string, lower: string, moved: 'higher' | 'lower', quiet = false, before?: string[]): Promise<string | null> {
     const res = await addDragPin(higher, lower, moved);
-    if (res.error || !res.id) return toast({ message: `Couldn’t save: ${res.error}` });
+    if (res.error || !res.id) {
+      toast({ message: `Couldn’t save: ${res.error}` });
+      setShown(null); // nothing saved: back to the list as it is
+      return null;
+    }
     const id = res.id;
+    pinAddedAt.current.set(id, Date.now());
     setLocalPins((xs) => [...xs, { id, higher_pair: higher, lower_pair: lower, source: 'manual_drag', comparison_id: null, moved_pair: moved }]);
+    // The list will be recalculated with this move in it; let that copy take over when it lands.
+    setShown((cur) => (cur ? { ...cur, settle: true } : cur));
+    if (quiet) return id;
     toast({
       message: 'Moved. Saved as your ordering.',
       action: {
         label: 'Undo',
         onClick: async () => {
+          // Glide back at once; the list recalculated without the move takes over when it lands.
+          if (before) showOrder(before, true);
           setLocalPins((xs) => xs.filter((p) => p.id !== id));
           await removePin(id);
         },
       },
     });
+    return id;
   }
 
-  async function include(pairId: string, on: boolean) {
+  /** The move goes against a rule: keep it where it was dropped and say so, with Undo and Resolve. */
+  async function keepClashing(higher: string, lower: string, moved: 'higher' | 'lower', res: Extract<MoveResult, { ok: false }>, include?: string, before?: string[]) {
+    if (include) await includePair(include, true);
+    const pinId = await savePin(higher, lower, moved, true, before);
+    if (pinId) setClash({ pinId, pairId: moved === 'higher' ? higher : lower, added: !!include, before, parts: res.parts });
+  }
+
+  async function undoClash() {
+    const c = clash;
+    if (!c) return;
+    setClash(null);
+    // Glide back to where it came from right away, then let the recalculated list take over.
+    if (c.before) showOrder(c.before, true);
+    setLocalPins((xs) => xs.filter((p) => p.id !== c.pinId));
+    await removePin(c.pinId);
+    if (c.added) await includePair(c.pairId, false);
+  }
+
+  async function includePair(pairId: string, on: boolean) {
     const ids = new Set(settings.includedPairs ?? []);
     if (on) ids.add(pairId);
     else ids.delete(pairId);
     setLocal((l) => ({ ...l, included: [...ids] }));
-    const res = await setIncluded(pairId, on);
+    const res = await tracked(setIncluded(pairId, on));
     if (res.error) toast({ message: `Couldn’t save: ${res.error}` });
   }
 
@@ -114,16 +236,17 @@ export function ListView({
   async function addAt(pairId: string, targetId: string | null) {
     const target = targetId ? rows.find((r) => r.pairId === targetId) : null;
     if (!target || target.locked) {
-      await include(pairId, true); // dropped at the end: it joins in its own place
+      await includePair(pairId, true); // dropped at the end: it joins in its own place
       return toast({ message: 'Added to your list.' });
     }
     const check = await call({ kind: 'move', data: merged, moving: pairId, target: target.pairId, names, moved: 'higher' });
-    if (!check.ok) return setBlocked({ higher: pairId, lower: target.pairId, moved: 'higher', include: pairId, res: check });
-    await include(pairId, true);
+    if (!check.ok) return keepClashing(pairId, target.pairId, 'higher', check, pairId);
+    await includePair(pairId, true);
     await savePin(pairId, target.pairId, 'higher');
   }
 
   async function onDragEnd(e: DragEndEvent) {
+    setDrag(null);
     if (!result || !e.over || e.active.id === e.over.id) return;
     const activeId = String(e.active.id);
     const overId = String(e.over.id);
@@ -137,15 +260,18 @@ export function ListView({
     const up = to < from;
     const [higher, lower] = up ? [activeId, overId] : [overId, activeId];
     const moved = up ? 'higher' : 'lower';
+    // The row stays where it was dropped while the move is checked and saved.
+    const before = rows.map((r) => r.pairId);
+    showOrder(arrayMove(before, from, to));
     const check = await call({ kind: 'move', data: merged, moving: higher, target: lower, names, moved });
-    if (check.ok) await savePin(higher, lower, moved);
-    else setBlocked({ higher, lower, moved, res: check });
+    if (check.ok) await savePin(higher, lower, moved, false, before);
+    else await keepClashing(higher, lower, moved, check, undefined, before);
   }
 
-  if (!result) return <div className="h-96 animate-pulse rounded-2xl bg-surface-2" aria-label="Loading" />;
+  if (!result) return error ? <EngineError error={error} onRetry={retry} /> : <div className="glass h-96 animate-pulse" aria-label="Loading" />;
   if (!result.rows.length) {
     return (
-      <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">
+      <div className="glass p-10 text-center text-sm text-muted">
         Your list appears here once you’ve both ranked programs.
       </div>
     );
@@ -153,69 +279,66 @@ export function ListView({
 
   return (
     <div className="flex flex-col gap-4">
+      {error ? <EngineError error={error} onRetry={retry} stale /> : null}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Final list</h1>
+          <h1 className="page-title">Final list</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Your couple’s rank list, in order. Drag a row to move it — if a rule you set blocks the move, we’ll say why.
             Pairs not on the list are in “Not on your list”: drag one in, or add it. Enter it into R3 exactly as shown.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" aria-pressed={!!scenario} onClick={() => setScenario(scenario ? null : allReachable(result.programs))}>
+            <FlaskConical className="h-4 w-4" aria-hidden /> Try an outcome
+          </Button>
+          <Link href="/app/compare?mode=specific" className={buttonVariants({ variant: 'outline' })}>
+            <Crosshair className="h-4 w-4" aria-hidden /> Make a specific comparison
+          </Link>
           <Link href="/app/map" className={buttonVariants({ variant: 'secondary' })}>
             <MapIcon className="h-4 w-4" aria-hidden /> Map
           </Link>
           <Link href="/app/versions" className={buttonVariants({ variant: 'secondary' })}>
             <History className="h-4 w-4" aria-hidden /> Versions
           </Link>
-          <Button variant="secondary" onClick={() => download(`couples-list-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(rows.slice(0, RANK_LIMIT), names))}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              download(`couples-list-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(rows.slice(0, RANK_LIMIT), names));
+              setCoffee(true);
+            }}
+          >
             <Download className="h-4 w-4" aria-hidden /> CSV
           </Button>
-          <Link href="/app/list/print" className={buttonVariants({ variant: 'secondary' })}>
+          <Link href="/print/list" className={buttonVariants({ variant: 'secondary' })}>
             <Printer className="h-4 w-4" aria-hidden /> Print / PDF
           </Link>
         </div>
       </div>
 
-      {blocked ? (
-        <div role="alertdialog" aria-labelledby="blocked-title" className="rounded-2xl border border-warn bg-warn-soft p-4">
-          <p id="blocked-title" className="font-medium text-warn">That move goes against something you set:</p>
-          <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm">
-            {blocked.res.blocking.map((l, i) => (
-              <li key={i}>{l.text}</li>
-            ))}
-          </ul>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              onClick={async () => {
-                const b = blocked;
-                setBlocked(null);
-                for (const link of b.res.blocking) {
-                  const r = await breakLink({ from: link.from, to: link.to, reasons: link.reasons });
-                  if (r.error) return toast({ message: `Couldn’t override: ${r.error}` });
-                }
-                if (b.include) await include(b.include, true);
-                await savePin(b.higher, b.lower, b.moved);
-              }}
-            >
-              Override with an exception
-            </Button>
-            <Button variant="secondary" onClick={() => setBlocked(null)}>Cancel</Button>
-          </div>
-        </div>
+      {scenario ? (
+        <SimulatorPanel programs={result.programs} names={names} rows={simRows} scenario={scenario} onChange={setScenario} onClose={() => setScenario(null)} />
       ) : null}
 
-      <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragCancel={() => setDrag(null)} onDragEnd={onDragEnd}>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <section aria-label="Ranked pairs" className={cn('min-w-0', busy && 'opacity-70')}>
-          <div className="mb-2 hidden grid-cols-[2.5rem_1.5rem_1fr_1fr_auto] gap-3 px-3 text-xs font-medium text-muted sm:grid">
-            <span>#</span>
+        <section aria-label="Ranked pairs" className={cn('glass min-w-0 p-2 sm:p-3', busy && 'opacity-70')}>
+          <BandCounts rows={rows} />
+          <div className="mt-1 mb-2 ml-5 grid grid-cols-[2.25rem_1.5rem_minmax(0,1fr)_auto] gap-x-2 px-1.5 sm:ml-6 font-mono text-[11px] font-medium tracking-[0.08em] text-muted uppercase sm:grid-cols-[2.5rem_1.5rem_minmax(0,1fr)_11.5rem] sm:gap-x-3 sm:px-2">
+            <span className="text-right">#</span>
             <span />
-            <span>{names[0]}</span>
-            <span>{names[1]}</span>
-            <span>Distance</span>
+            <span className="grid grid-cols-1 sm:grid-cols-2 sm:gap-3">
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-partner-1" aria-hidden />{names[0]}<span className="sm:hidden"> / {names[1]}</span></span>
+              <span className="hidden items-center gap-1.5 sm:flex"><span className="h-2 w-2 rounded-full bg-partner-2" aria-hidden />{names[1]}</span>
+            </span>
+            <span className="text-right">Distance</span>
           </div>
-          <SortableContext items={rows.map((r) => r.pairId)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            <div ref={listBox} className="relative pl-5 sm:pl-6">
+            <Brackets container={listBox} focus={focus} holds={holds} rankOf={rankOf} names={names} />
+            <p className="sr-only" aria-live="polite">
+              {crossing ? `Crossing rank ${rankOf(crossing.id)}, ${labelOf(crossing.id)}. Dropping here clashes with something you set.` : ''}
+            </p>
             <ol className="flex flex-col gap-1.5" data-testid="final-list">
               {rows.map((r) => (
                 <Fragment key={r.pairId}>
@@ -228,20 +351,25 @@ export function ListView({
                   ) : null}
                   <Row
                     row={r}
+                    reach={sim ? sim.reach[r.rank - 1] ?? 'out' : undefined}
                     overLimit={r.rank > RANK_LIMIT}
-                    open={openWhy === r.pairId}
-                    onWhy={() => setOpenWhy(openWhy === r.pairId ? null : r.pairId)}
-                    onRemove={r.added ? () => void include(r.pairId, false) : undefined}
+                    names={names}
+                    total={rows.length}
+                    onRemove={r.added ? () => void includePair(r.pairId, false) : undefined}
+                    onPicked={(on) => setPicked((cur) => (on ? r.pairId : cur === r.pairId ? null : cur))}
+                    focused={r.pairId === focus && !drag}
+                    holds={r.pairId === focus && !drag ? <HoldsText holds={holds} rankOf={rankOf} labelOf={labelOf} names={names} /> : null}
                   />
                 </Fragment>
               ))}
             </ol>
+            </div>
           </SortableContext>
           <ListEnd />
         </section>
 
         <aside className="flex min-w-0 flex-col gap-4">
-          <Card className="p-4 sm:p-4">
+          <Card className="flex flex-col gap-4 p-4 sm:p-4">
             <Field
               label={`List length: ${result.target} rank${result.target === 1 ? '' : 's'}`}
               htmlFor="length"
@@ -258,13 +386,44 @@ export function ListView({
                 onChange={(e) => {
                   const v = Number(e.target.value);
                   setLocal((l) => ({ ...l, length: v }));
+                  // Pending from the first move of the slider, so a refresh can't snap it back mid-drag.
                   if (lengthTimer.current) clearTimeout(lengthTimer.current);
-                  lengthTimer.current = setTimeout(() => void setListLength(v), 500);
+                  else pendingSaves.current++;
+                  lengthTimer.current = setTimeout(() => {
+                    lengthTimer.current = null;
+                    void setListLength(v).finally(() => pendingSaves.current--);
+                  }, 500);
                 }}
-                className="w-full accent-[var(--accent)]"
+                className="w-full accent-[var(--action)]"
               />
             </Field>
-            <div className="mt-3 flex items-center justify-between gap-3">
+            <Field
+              label="Show the list in"
+              htmlFor="list-order"
+              hint={
+                result.order === 'engine'
+                  ? 'The engine’s own order.'
+                  : `Rows whose order can’t change where you match are sorted to read easily${result.tidied ? ` (${result.tidied} moved)` : ''}. The outcome is exactly the same.`
+              }
+            >
+              <select
+                id="list-order"
+                className="min-h-[46px] w-full rounded-[14px] border border-border bg-glass-strong px-3.5 text-[15px] focus-visible:outline-action"
+                value={result.order}
+                onChange={async (e) => {
+                  const order = e.target.value as ListOrder;
+                  setLocal((l) => ({ ...l, order }));
+                  const res = await tracked(setListOrder(order));
+                  if (res.error) toast({ message: `Couldn’t save: ${res.error}` });
+                }}
+              >
+                <option value="partner1">{names[0]}’s order first</option>
+                <option value="partner2">{names[1]}’s order first</option>
+                <option value="balanced">Both ranks together</option>
+                <option value="engine">Engine order (no tidying)</option>
+              </select>
+            </Field>
+            <div className="flex items-center justify-between gap-3">
               <label htmlFor="nm-lock" className="text-sm">
                 <span className="font-medium">Keep No Match rows at the end</span>
                 <span className="block text-xs text-muted">Locked in order: {names[0]} matches first, then {names[1]}.</span>
@@ -275,22 +434,32 @@ export function ListView({
                 checked={result.noMatchLocked}
                 onChange={async (locked) => {
                   setLocal((l) => ({ ...l, unlocked: !locked }));
-                  const res = await setNoMatchUnlocked(!locked);
+                  const res = await tracked(setNoMatchUnlocked(!locked));
                   if (res.error) toast({ message: `Couldn’t save: ${res.error}` });
                 }}
               />
             </div>
           </Card>
 
-          <AvailablePanel pairs={result.available} names={names} onAdd={(id) => void include(id, true).then(() => toast({ message: 'Added to your list.' }))} />
+          {result.held ? (
+            <HeldNotice
+              held={result.held}
+              names={names}
+              onRelease={async () => {
+                const res = await tracked(releaseHeldPrograms());
+                toast({ message: res.error ? `Couldn’t save: ${res.error}` : 'Brought them in. They’re placed by your answers and rules.' });
+              }}
+            />
+          ) : null}
+          <AvailablePanel pairs={result.available} names={names} onAdd={(id) => void includePair(id, true).then(() => toast({ message: 'Added to your list.' }))} />
 
           {fees ? (
             <Card className="p-4 sm:p-4" data-testid="fees">
-              <h2 className="mb-2 font-semibold">Fee estimate</h2>
+              <h2 className="small-title mb-2">Fee estimate</h2>
               <dl className="flex flex-col gap-3 text-sm">
                 {fees.partners.map((p, k) => (
                   <div key={k}>
-                    <dt className="font-medium">{names[k]}: ${p.totalUsd}</dt>
+                    <dt className="font-medium">{names[k]}: <span className="font-mono">${p.totalUsd}</span></dt>
                     <dd className="text-xs text-muted">
                       {p.uniqueCodes} unique program codes ({NRMP_RULES.includedUniqueCodes} included) · extra ranks ${p.extraRankFeeUsd} · list
                       length ${p.lengthFeeUsd} · couples fee ${p.couplesFeeUsd}
@@ -299,7 +468,7 @@ export function ListView({
                 ))}
               </dl>
               {fees.tierWarning ? (
-                <p className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn">
+                <p className="mt-3 rounded-[12px] bg-warn-soft/85 px-3 py-2 text-xs text-warn">
                   Cutting {fees.tierWarning.pairsToCut} pair{fees.tierWarning.pairsToCut === 1 ? '' : 's'} would save $
                   {fees.tierWarning.saveUsdPerPartner} each.
                 </p>
@@ -311,7 +480,7 @@ export function ListView({
           ) : null}
 
           <Card className="p-4 sm:p-4" data-testid="checklist">
-            <h2 className="mb-2 font-semibold">Before you certify in R3</h2>
+            <h2 className="small-title mb-2">Before you certify in R3</h2>
             <ul className="flex flex-col gap-2 text-sm">
               {checklist.map((c) => (
                 <li key={c.label} className="flex gap-2">
@@ -326,18 +495,22 @@ export function ListView({
           </Card>
 
           {result.trades.length ? (
-            <Card className="p-4 sm:p-4">
-              <h2 className="mb-2 font-semibold">What you’re trading</h2>
-              <ul className="flex list-disc flex-col gap-1.5 pl-5 text-xs text-muted">
+            <Card tone="strong" className="p-4 sm:p-4">
+              <h2 className="small-title mb-2">What you’re trading</h2>
+              <ul className="flex flex-col gap-2 text-[13px] leading-relaxed">
                 {result.trades.map((t) => (
-                  <li key={t}>{t}</li>
+                  <li key={`${t.rank}-${t.partner}`}>
+                    <span className="font-mono font-semibold text-plum-deep">#{t.rank}</span> {names[t.partner]} gets{' '}
+                    <ProgramChip side={t.got} slot={t.partner} /> ahead of <ProgramChip side={t.better} slot={t.partner} />{' '}
+                    <span className="text-muted">(first at #{t.betterRank})</span>, because {t.because}.
+                  </li>
                 ))}
               </ul>
             </Card>
           ) : null}
 
           <Card className="p-4 sm:p-4">
-            <h2 className="mb-2 font-semibold">Save a version</h2>
+            <h2 className="small-title mb-2">Save a version</h2>
             <form
               className="flex flex-col gap-2"
               onSubmit={async (e) => {
@@ -347,16 +520,16 @@ export function ListView({
                 setSaving(false);
                 if (res.error) toast({ message: res.error });
                 else {
-                  toast({ message: `Saved “${versionName.trim()}”.` });
+                  toast({ message: `Saved as ${res.label ?? 'a new version'}.` });
                   setVersionName('');
                   setVersionNote('');
                 }
               }}
             >
-              <Input aria-label="Version name" placeholder="e.g. After our Sunday talk" value={versionName} onChange={(e) => setVersionName(e.target.value)} required maxLength={120} />
+              <Input aria-label="Version name" placeholder="Name (optional), e.g. After our Sunday talk" value={versionName} onChange={(e) => setVersionName(e.target.value)} maxLength={120} />
               <Input aria-label="Version note" placeholder="Note (optional)" value={versionNote} onChange={(e) => setVersionNote(e.target.value)} />
               <Button type="submit" disabled={saving}>
-                <Save className="h-4 w-4" aria-hidden /> {saving ? 'Saving…' : 'Save version'}
+                <Save className="h-4 w-4" aria-hidden /> {saving ? 'Saving…' : nextVersion ? `Save as ${nextVersion}` : 'Save version'}
               </Button>
             </form>
           </Card>
@@ -364,11 +537,16 @@ export function ListView({
       </div>
       </DndContext>
 
+      <FloatingStack>
+        {coffee ? <FloatingCoffee docked onClose={() => setCoffee(false)} /> : null}
+        <ClashNotice clash={clash} unresolved={result.hasCycles} names={names} onUndo={() => void undoClash()} onClose={() => setClash(null)} />
+      </FloatingStack>
+
       {over > 0 ? (
         <div
           role="status"
           data-testid="over-limit"
-          className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-warn bg-warn-soft px-3 py-2 text-xs font-medium text-warn shadow-lg sm:px-4 sm:text-sm"
+          className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-warn bg-warn-soft px-3 py-2 text-xs font-medium text-warn shadow-glass sm:px-4 sm:text-sm"
         >
           <TriangleAlert className="h-4 w-4" aria-hidden />
           {rows.length} / {RANK_LIMIT} — {over} over the limit
@@ -378,26 +556,61 @@ export function ListView({
   );
 }
 
-function Row({ row, open, onWhy, overLimit, onRemove }: { row: ListRow; open: boolean; onWhy: () => void; overLimit: boolean; onRemove?: () => void }) {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: row.pairId, disabled: row.locked });
-  const name = BAND_NAME[row.band];
+function Row({
+  row,
+  names,
+  total,
+  overLimit,
+  onRemove,
+  reach,
+  onPicked,
+  holds,
+  focused,
+}: {
+  row: ListRow;
+  names: [string, string];
+  total: number;
+  overLimit: boolean;
+  onRemove?: () => void;
+  reach?: RowReach;
+  /** The details card was clicked open (true) or closed (false). */
+  onPicked?: (on: boolean) => void;
+  /** "What holds it here", while this row's brackets are shown. */
+  holds?: ReactNode;
+  /** Its brackets are showing. */
+  focused?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+    id: row.pairId,
+    disabled: row.locked,
+    // Animate every change of place (a drop, an Undo, a recalculated list), not only during a drag.
+    animateLayoutChanges: () => true,
+  });
+  const label = `Rank ${row.rank}: ${names[0]} ${row.pair.sides[0]?.name ?? 'No Match'}; ${names[1]} ${row.pair.sides[1]?.name ?? 'No Match'}. Show details.`;
   return (
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        'rounded-xl border px-2 py-2',
+        'rounded-[16px] border px-1.5 py-1.5 sm:px-2',
         BAND_ROW[row.band],
         overLimit && 'opacity-45 grayscale',
-        isDragging && 'relative z-10 opacity-80 shadow-lg',
+        reach === 'out' && 'opacity-35 grayscale',
+        reach === 'match' && 'ring-2 ring-action ring-offset-2 ring-offset-bg',
+        focused && 'bg-surface ring-2 ring-action/55',
+        isDragging && 'relative z-10 border-action bg-surface opacity-90 shadow-glass',
       )}
       data-band={row.band}
+      data-pair-id={row.pairId}
       data-over-limit={overLimit || undefined}
+      data-reach={reach}
     >
-      <div className="grid grid-cols-[2.5rem_1.5rem_1fr] items-center gap-x-3 gap-y-1 sm:grid-cols-[2.5rem_1.5rem_1fr_1fr_auto]">
-        <span className="text-right text-sm font-semibold tabular-nums">
+      {reach === 'match' ? <p className="mb-1 ml-[4.25rem] text-xs font-semibold text-accent">You match here</p> : null}
+      <div className="grid grid-cols-[2.25rem_1.5rem_minmax(0,1fr)_auto] items-center gap-x-2 sm:grid-cols-[2.5rem_1.5rem_minmax(0,1fr)_11.5rem] sm:gap-x-3">
+        <span className="text-right font-mono text-[15px] font-semibold tabular-nums text-plum-deep">
           {row.rank}
           {overLimit ? <span className="sr-only"> (past the {RANK_LIMIT}-rank limit, won’t be submitted)</span> : null}
+          {reach === 'out' ? <span className="sr-only"> (out of reach in this outcome)</span> : null}
         </span>
         {row.locked ? (
           <span className="flex min-h-11 items-center justify-center text-muted" title="Locked at the end of the list">
@@ -408,34 +621,32 @@ function Row({ row, open, onWhy, overLimit, onRemove }: { row: ListRow; open: bo
             ref={setActivatorNodeRef}
             {...attributes}
             {...listeners}
-            className="flex min-h-11 cursor-grab touch-none items-center justify-center rounded-md text-muted hover:bg-surface-2"
+            className="flex min-h-11 cursor-grab touch-none items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong"
             aria-label={`Drag rank ${row.rank}`}
           >
             <GripVertical className="h-4 w-4" aria-hidden />
           </button>
         )}
-        {row.sides.map((s, k) => (
-          <div key={k} className={cn('min-w-0', k === 1 && 'col-start-3 sm:col-start-auto')}>
-            <p className={cn('truncate text-sm', name)} title={s.name}>{s.name}</p>
-            <p className="truncate text-xs text-muted">
-              {s.code ? <span className="font-mono">{s.code}</span> : <span className="text-warn">no code yet</span>}
-              {s.place ? ` · ${s.place}` : ''}
-            </p>
-          </div>
-        ))}
-        <div className="col-start-3 flex items-center gap-1 sm:col-start-auto">
-          <BandBadge band={row.band} bandLabel={row.bandLabel} distanceMi={row.distanceMi} />
-          <button
-            className="flex min-h-9 min-w-9 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
-            onClick={onWhy}
-            aria-expanded={open}
-            aria-label={`Why is rank ${row.rank} here?`}
-          >
-            <Info className="h-4 w-4" aria-hidden />
-          </button>
+        <PairDetails
+          label={label}
+          onPinnedChange={onPicked}
+          trigger={<PairNames pair={row.pair} columns className="min-h-11 content-center py-1" />}
+        >
+          <PairMedium pair={row.pair} names={names} heading={`Rank ${row.rank} of ${total}`} why={<WhyText parts={row.whyParts} names={names} fallback={row.why} />}>
+            {holds}
+            <Link
+              href={`/app/compare?mode=specific&a=${encodeURIComponent(row.pairId)}`}
+              className={buttonVariants({ variant: 'secondary', size: 'sm', className: 'self-start' })}
+            >
+              <ArrowDownUp className="h-4 w-4" aria-hidden /> Compare with another pair
+            </Link>
+          </PairMedium>
+        </PairDetails>
+        <div className="flex items-center justify-end gap-1">
+          <BandBadge band={row.band} bandLabel={row.bandLabel} distanceMi={row.distanceMi} compact />
           {onRemove ? (
             <button
-              className="flex min-h-9 min-w-9 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+              className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong hover:text-text"
               onClick={onRemove}
               aria-label={`Take rank ${row.rank} off the list`}
               title="You added this pair. Take it off the list."
@@ -445,8 +656,26 @@ function Row({ row, open, onWhy, overLimit, onRemove }: { row: ListRow; open: bo
           ) : null}
         </div>
       </div>
-      {open ? <p className="mt-2 ml-[4.75rem] text-xs text-text">{row.why}</p> : null}
     </li>
+  );
+}
+
+/** How many rows fall in each distance band (label and icon, not color alone). */
+function BandCounts({ rows }: { rows: ListRow[] }) {
+  const counts = new Map<ListRow['band'], { label: string; n: number }>();
+  for (const r of rows) {
+    const c = counts.get(r.band) ?? { label: r.bandLabel, n: 0 };
+    c.n++;
+    counts.set(r.band, c);
+  }
+  return (
+    <ul className="flex flex-wrap gap-1.5 px-1 pt-1" aria-label="Rows by distance">
+      {[...counts].map(([band, c]) => (
+        <li key={band}>
+          <BandBadge band={band} bandLabel={`${c.label} · ${c.n}`} distanceMi={null} />
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -457,12 +686,54 @@ function ListEnd() {
     <div
       ref={setNodeRef}
       className={cn(
-        'mt-2 rounded-xl border border-dashed border-border px-3 py-3 text-center text-xs text-muted',
-        isOver && 'border-accent bg-accent-soft text-accent',
+        'mt-2 rounded-[16px] border border-dashed border-border px-3 py-3 text-center text-xs text-muted',
+        isOver && 'border-action bg-action-soft text-text',
       )}
     >
       Drop a pair from “Not on your list” onto a row to put it there, or here to add it in its own place.
     </div>
+  );
+}
+
+/**
+ * After restoring a version: pairs with programs added since are kept off the list, so it
+ * matches the saved one (bug log #35). They wait in "Not on your list"; one button brings
+ * them all in.
+ */
+function HeldNotice({ held, names, onRelease }: { held: NonNullable<FinalList['held']>; names: [string, string]; onRelease: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Card className="flex flex-col gap-2 border-warn/40 bg-warn-soft/70 p-4 sm:p-4" data-testid="held">
+      <h2 className="small-title">Kept off after restoring</h2>
+      <p className="text-xs text-muted">
+        These programs were added after the version you restored, so {held.pairs} pair{held.pairs === 1 ? '' : 's'} with them{' '}
+        {held.pairs === 1 ? 'is' : 'are'} kept off the list for now. Add any of them from “Not on your list”, or bring them all in.
+      </p>
+      <ul className="flex flex-col gap-1 text-[13px]">
+        {([0, 1] as const).flatMap((k) =>
+          held.programs[k].map((p) => (
+            <li key={`${k}:${p.id}`} className="flex items-center gap-1.5">
+              <span className={cn('h-2 w-2 shrink-0 rounded-full', k === 0 ? 'bg-partner-1' : 'bg-partner-2')} aria-hidden />
+              <span className={cn('font-semibold', k === 0 ? 'text-accent' : 'text-plum-deep')}>{p.short}</span>
+              <span className="text-muted">({names[k]})</span>
+            </li>
+          )),
+        )}
+      </ul>
+      <Button
+        size="sm"
+        variant="secondary"
+        className="self-start"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          await onRelease();
+          setBusy(false);
+        }}
+      >
+        <Plus className="h-4 w-4" aria-hidden /> Bring them all in
+      </Button>
+    </Card>
   );
 }
 
@@ -480,13 +751,13 @@ function AvailablePanel({ pairs, names, onAdd }: { pairs: AvailablePair[]; names
     : pairs;
   return (
     <Card className="p-4 sm:p-4" data-testid="available">
-      <h2 className="font-semibold">Not on your list</h2>
+      <h2 className="small-title">Not on your list</h2>
       <p className="mt-0.5 text-xs text-muted">
         {pairs.length} other pair{pairs.length === 1 ? '' : 's'}, best first. Drag one onto the list, or add it.
       </p>
       <div className="relative mt-2">
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
-        <Input aria-label="Search pairs not on your list" placeholder="Search programs or cities" value={q} onChange={(e) => setQ(e.target.value)} className="pl-8" />
+        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
+        <Input aria-label="Search pairs not on your list" placeholder="Search programs or cities" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
       </div>
       <ul className="mt-2 flex max-h-96 flex-col gap-1 overflow-y-auto pr-1">
         {hits.slice(0, PANEL_SHOWN).map((p) => (
@@ -506,28 +777,81 @@ function AvailableItem({ pair, names, onAdd }: { pair: AvailablePair; names: [st
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform) }}
-      className={cn('flex items-center gap-1 rounded-lg border border-border bg-surface px-1 py-1', isDragging && 'relative z-20 shadow-lg')}
+      className={cn('glass-row flex items-center gap-1 rounded-[12px] px-1 py-1', isDragging && 'relative z-20 border-action bg-surface shadow-glass')}
     >
       <button
         {...attributes}
         {...listeners}
-        className="flex min-h-9 min-w-7 cursor-grab touch-none items-center justify-center rounded-md text-muted hover:bg-surface-2"
+        className="flex min-h-9 min-w-7 cursor-grab touch-none items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong"
         aria-label={`Drag onto the list: ${label}`}
       >
         <GripVertical className="h-4 w-4" aria-hidden />
       </button>
-      <div className="min-w-0 flex-1" title={label}>
-        <p className="truncate text-xs font-medium">{pair.sides[0].short}</p>
-        <p className="truncate text-xs font-medium">{pair.sides[1].short}</p>
-      </div>
-      <BandBadge band={pair.band} bandLabel={pair.bandLabel} distanceMi={pair.distanceMi} className="hidden xl:inline-flex" />
+      <PairNames pair={pair.pair} className="flex-1" />
+      <BandBadge band={pair.band} bandLabel={pair.bandLabel} distanceMi={pair.distanceMi} compact />
       <button
         onClick={onAdd}
-        className="flex min-h-9 min-w-9 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+        className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong hover:text-text"
         aria-label={`Add to the list: ${label}`}
       >
         <Plus className="h-4 w-4" aria-hidden />
       </button>
     </li>
+  );
+}
+
+/**
+ * Floating notice for a move that clashes with a rule (bug log #20). The row stays where it
+ * was dropped; the couple can undo it, or resolve the clash on the Conflicts step. While any
+ * clash is unresolved, a smaller notice stays up.
+ */
+function ClashNotice({
+  clash,
+  unresolved,
+  names,
+  onUndo,
+  onClose,
+}: {
+  clash: { pinId: string; pairId: string; parts: Extract<MoveResult, { ok: false }>['parts'] } | null;
+  unresolved: boolean;
+  names: [string, string];
+  onUndo: () => void;
+  onClose: () => void;
+}) {
+  if (!clash && !unresolved) return null;
+  const href = clash ? `/app/conflicts?pair=${encodeURIComponent(clash.pairId)}` : '/app/conflicts';
+  return (
+    <div
+      role={clash ? 'alert' : 'status'}
+      data-testid="clash-notice"
+      className="pointer-events-auto w-full rounded-[20px] border border-warn/60 bg-surface p-4 shadow-glass sm:w-[420px]"
+    >
+      <div className="flex items-start gap-3">
+        <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-warn" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-warn">{clash ? 'Kept where you put it, but it clashes with something you set' : 'Your list has a conflict to resolve'}</p>
+          {clash ? (
+            <p className="mt-1 text-[13px]">
+              <WhyText parts={clash.parts} names={names} />
+            </p>
+          ) : (
+            <p className="mt-1 text-[13px] text-muted">Rows involved stay where you put them until you choose what gives way.</p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {clash ? (
+              <Button size="sm" variant="secondary" onClick={onUndo}>
+                <Undo2 className="h-4 w-4" aria-hidden /> Undo move
+              </Button>
+            ) : null}
+            <Link href={href} className={buttonVariants({ size: 'sm' })}>Resolve on Conflicts</Link>
+          </div>
+        </div>
+        {clash ? (
+          <button onClick={onClose} className="flex min-h-9 min-w-9 items-center justify-center rounded-[10px] text-muted hover:bg-surface-2" aria-label="Hide this notice">
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+        ) : null}
+      </div>
+    </div>
   );
 }

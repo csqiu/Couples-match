@@ -21,7 +21,7 @@ Supabase where it lives. About 20 minutes, mostly clicking.
 
 ## Beta signup limit
 
-New accounts are capped at **50 couples** (migrations 11 and 12). The cap counts the
+New accounts are capped at **50 couples** (migrations 16 and 17). The cap counts the
 people who start a couple; anyone with a pending partner invite can always sign up and
 never takes a place. People who already have an account can always sign in. New
 sign-ups past the cap see "closed beta, all places taken". The e2e test accounts

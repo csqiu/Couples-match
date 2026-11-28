@@ -40,7 +40,7 @@ export function ImportView() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Import programs</h1>
+        <h1 className="page-title">Import programs</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted">
           Upload a spreadsheet saved as CSV. Each row is looked up on the map, its specialty matched to our list, and checked against
           programs already listed. Nothing is saved until you confirm. Only import from sources we’re allowed to use

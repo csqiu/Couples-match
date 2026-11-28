@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { tx } from './db';
 
-describe('Beta signup limit (migrations 11–12)', () => {
+describe('Beta signup limit (migrations 16–17)', () => {
   it('refuses new accounts once the cap is reached, ignoring e2e test accounts', () =>
     tx(async (db) => {
       await db.asAdmin();

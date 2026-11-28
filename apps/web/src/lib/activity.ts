@@ -63,7 +63,11 @@ function describe(type: string, count: number, payload: Record<string, unknown>,
     case 'list_versions.insert':
       return count === 1 ? 'saved a version of the list' : `saved ${count} versions of the list`;
     case 'list_versions.update':
-      return `renamed ${count === 1 ? 'a version' : `${count} versions`}`;
+      return `renamed or starred ${count === 1 ? 'a version' : `${count} versions`}`;
+    case 'rank_lists.started':
+      return `started List ${String(payload.number ?? '')}`;
+    case 'rank_lists.opened':
+      return `opened List ${String(payload.number ?? '')}`;
     case 'list_versions.delete':
       return `deleted ${count === 1 ? 'a version' : `${count} versions`}`;
     case 'list_versions.restored':

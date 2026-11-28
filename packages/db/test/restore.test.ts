@@ -4,6 +4,7 @@ import { activeCouple, tx, type Db } from './db';
 
 const IM = ['seed-mgh-internal-medicine', 'seed-jhh-internal-medicine'];
 const PEDS = ['seed-bch-pediatrics', 'seed-cnh-pediatrics'];
+const NEW = 'seed-ucsf-internal-medicine';
 
 /** What the app stores as a version's inputs_snapshot: the engine input built from the couple's rows. */
 async function snapshot(db: Db, coupleId: string) {
@@ -19,7 +20,7 @@ async function snapshot(db: Db, coupleId: string) {
 }
 
 describe('Restoring a version', () => {
-  it('brings back both partners’ lists, answers, pins and settings; keeps privacy; versions stay', () =>
+  it('brings back answers, pins, settings and tiers on today’s programs; holds back newer ones; keeps privacy', () =>
     tx(async (db) => {
       const { a, b, coupleId } = await activeCouple(db);
       for (const [user, ids] of [[a, IM], [b, PEDS]] as const) {
@@ -53,29 +54,42 @@ describe('Restoring a version', () => {
       await db.query('delete from comparisons where couple_id = $1', [coupleId]);
       await db.query(`update couples set settings = '{"balance": 0.7, "privacy": "private_tiers"}' where id = $1`, [coupleId]);
       await db.query(`update individual_ranks set tier = 'C' where user_id = $1`, [a.id]);
+      // A adds a program the version didn't have.
+      await db.query(`insert into individual_ranks (couple_id, user_id, program_id, rank, tier) values ($1, $2, $3, 3, 'A')`, [coupleId, a.id, NEW]);
       await db.as(b);
       await db.query('delete from individual_ranks where user_id = $1 and program_id = $2', [b.id, PEDS[1]]);
 
       // Partner B restores — rewriting A's list too, which RLS alone wouldn't allow.
+      const events = async () => (await db.one<{ n: number }>('select count(*)::int as n from audit_events where couple_id = $1', [coupleId])).n;
+      const before = await events();
       await db.query('select restore_version($1)', [version]);
+      // Quiet: one "restored" entry, not a delete and re-add per table (bug log #36).
+      expect(await events()).toBe(before + 1);
       const ranks = await db.query<{ user_id: string; program_id: string; tier: string; nrmp_code: string | null }>(
         'select user_id, program_id, tier, nrmp_code from individual_ranks where couple_id = $1 order by user_id = $2 desc, rank',
         [coupleId, a.id],
       );
+      // Today's programs (bug log #35): the version's tiers and order, B's removed program stays
+      // removed, and A's new one goes to Tier B at the end.
       expect(ranks.map((r) => `${r.user_id === a.id ? 'a' : 'b'}:${r.program_id}:${r.tier}`)).toEqual([
         ...IM.map((id) => `a:${id}:A`),
-        ...PEDS.map((id) => `b:${id}:A`),
+        `a:${NEW}:B`,
+        `b:${PEDS[0]}:A`,
       ]);
       expect(ranks[0].nrmp_code).toBe('1234140C0');
       expect(await db.query('select id, locked from comparisons where couple_id = $1', [coupleId])).toEqual([{ id: cmp, locked: true }]);
-      expect(await db.query('select comparison_id, moved_pair from pins where couple_id = $1 order by created_at', [coupleId])).toEqual([
-        { comparison_id: cmp, moved_pair: null },
-        { comparison_id: null, moved_pair: 'higher' },
-        { comparison_id: null, moved_pair: 'lower' },
+      // The drags were still there and keep A as their author; the answer's pin (gone with the
+      // deleted answer) is credited to B, who restored.
+      expect(await db.query('select comparison_id, moved_pair, created_by from pins where couple_id = $1 order by created_at', [coupleId])).toEqual([
+        { comparison_id: cmp, moved_pair: null, created_by: b.id },
+        { comparison_id: null, moved_pair: 'higher', created_by: a.id },
+        { comparison_id: null, moved_pair: 'lower', created_by: a.id },
       ]);
       const { settings } = await db.one<{ settings: Record<string, unknown> }>('select settings from couples where id = $1', [coupleId]);
       expect(settings.balance).toBe(1.3);
       expect(settings.privacy).toBe('private_tiers'); // app-only setting untouched
+      // Pairs with the new program wait off the final list.
+      expect(settings.heldPrograms).toEqual([[NEW], []]);
       expect(await db.query('select 1 from list_versions where couple_id = $1', [coupleId])).toHaveLength(1);
       expect(await db.query("select 1 from audit_events where couple_id = $1 and type = 'list_versions.restored'", [coupleId])).toHaveLength(1);
     }));

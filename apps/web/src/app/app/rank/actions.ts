@@ -38,7 +38,7 @@ export async function saveList(entries: ListEntry[]): Promise<{ error?: string }
 
 export async function saveCode(programId: string, raw: string): Promise<{ error?: string }> {
   const code = raw.trim().toUpperCase();
-  if (code && !isValidProgramCode(code)) return { error: 'NRMP codes are 9 characters, like 1234140C0.' };
+  if (code && !isValidProgramCode(code)) return { error: 'NRMP codes are 9 or 10 characters, like 1234140C0.' };
   const ctx = await requireCouple();
   const supabase = await createClient();
   const { error } = await supabase

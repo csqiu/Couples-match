@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 // Runs the engine off the main thread so typing, dragging and tapping never stall.
 import { analyze } from './analysis';
+import { explore } from './explore';
 import { checkMove, computeFinalList } from './final-list';
 import type { EngineRequest } from './engine-protocol';
 
@@ -21,5 +22,7 @@ function handle(req: EngineRequest): unknown {
       return computeFinalList(req.data, req.opts);
     case 'move':
       return checkMove(req.data, req.moving, req.target, req.names, req.moved);
+    case 'explore':
+      return explore(req.data, req.opts);
   }
 }

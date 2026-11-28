@@ -18,12 +18,13 @@ import { CSS } from '@dnd-kit/utilities';
 import { isValidProgramCode } from '@pairwise/engine';
 import { ChevronDown, ChevronUp, GripVertical, Trash2 } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState, useTransition } from 'react';
+import { TierBadge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { findTier, flatten, group, moveTo, nudge, sameOrder, TIERS, type Board, type Tier } from '@/lib/board';
 import { cn } from '@/lib/cn';
-import { removeProgram } from '../programs/actions';
+import { removeProgram, restoreRemoved } from '../programs/actions';
 import { saveCode, saveList } from './actions';
 
 export interface BoardEntry {
@@ -61,9 +62,9 @@ const tierAwareCoordinates: KeyboardCoordinateGetter = (event, args) => {
 };
 
 const TIER_COPY: Record<Tier, { title: string; body: string }> = {
-  A: { title: 'Tier A', body: 'I’d take this over any lower program, wherever my partner lands.' },
-  B: { title: 'Tier B', body: 'Strong preference, but I’d trade down to be with my partner.' },
-  C: { title: 'Tier C', body: 'Acceptable fallback.' },
+  A: { title: 'Tier A', body: 'Almost no amount of distance would make me drop to Tier B. Use sparingly.' },
+  B: { title: 'Tier B', body: 'Most of my programs. I’d take a lower Tier B program to be closer to my partner.' },
+  C: { title: 'Tier C', body: 'My least favourite programs. I’d rather be long distance than match here. Use sparingly.' },
 };
 
 export function RankBoard({ initial }: { initial: BoardEntry[] }) {
@@ -72,6 +73,9 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
   const [, startSave] = useTransition();
   const toast = useToast();
   const dragStart = useRef<Board<BoardEntry> | null>(null);
+  // The board as it is now, for Undo after a removal (other moves may have happened since).
+  const latest = useRef(board);
+  latest.current = board;
   // Stable id so dnd-kit's accessibility ids match between server and client render.
   const dndId = useId();
 
@@ -189,12 +193,36 @@ export function RankBoard({ initial }: { initial: BoardEntry[] }) {
                   }}
                   onRemove={async () => {
                     const prev = board;
+                    const oldIndex = board[tier].findIndex((e) => e.programId === entry.programId);
                     setBoard({ ...board, [tier]: board[tier].filter((e) => e.programId !== entry.programId) });
                     const res = await removeProgram(entry.programId);
                     if (res.error) {
                       setBoard(prev);
                       toast({ message: res.error });
-                    } else toast({ message: `Removed ${entry.name}` });
+                      return;
+                    }
+                    const removed = res.removed;
+                    toast({
+                      message: `Removed ${entry.name}`,
+                      // Undo brings it back exactly: tier, note, code, short name, and its place in the list.
+                      action: removed
+                        ? {
+                            label: 'Undo',
+                            onClick: async () => {
+                              const back = await restoreRemoved(removed);
+                              if (back.error) return toast({ message: `Couldn’t put it back: ${back.error}` });
+                              // Back into its old place in the board as it is now, keeping any
+                              // moves made since the removal (bug log #39).
+                              const now = latest.current;
+                              if (flatten(now).some((e) => e.programId === entry.programId)) return;
+                              const list = [...now[tier]];
+                              list.splice(Math.min(oldIndex, list.length), 0, entry);
+                              const next = { ...now, [tier]: list };
+                              persist(next, now);
+                            },
+                          }
+                        : undefined,
+                    });
                   }}
                 />
               ))}
@@ -216,18 +244,22 @@ function TierZone({ tier, count, children }: { tier: Tier; count: number; childr
     <section
       ref={setNodeRef}
       aria-labelledby={`tier-${tier}`}
-      className={cn('rounded-2xl border bg-surface p-3 sm:p-4', isOver ? 'border-accent' : 'border-border')}
+      className={cn(
+        'glass min-w-0 p-3 sm:p-4',
+        tier === 'A' ? 'bg-accent-soft/60' : tier === 'B' ? 'bg-partner-2-soft/55' : '',
+        isOver && 'ring-2 ring-action/35',
+      )}
     >
       <header className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 px-1">
-        <h2 id={`tier-${tier}`} className={cn('font-semibold', tier === 'A' ? 'text-tier-a' : tier === 'B' ? 'text-tier-b' : 'text-tier-c')}>
-          {TIER_COPY[tier].title} <span className="text-sm font-normal text-muted">({count})</span>
+        <h2 id={`tier-${tier}`} className="card-title flex items-center gap-2">
+          <TierBadge tier={tier} /> {TIER_COPY[tier].title} <span className="font-mono text-sm font-normal text-muted">({count})</span>
         </h2>
         <p className="text-sm text-muted">{TIER_COPY[tier].body}</p>
       </header>
       <ul className="flex min-h-14 flex-col gap-2" data-testid={`tier-${tier}`}>
         {children}
         {count === 0 ? (
-          <li className="flex min-h-14 items-center justify-center rounded-xl border border-dashed border-border text-xs text-muted">
+          <li className="flex min-h-14 items-center justify-center rounded-[16px] border border-dashed border-border text-xs text-muted">
             Drag programs here
           </li>
         ) : null}
@@ -258,7 +290,7 @@ function Row(props: {
             ref={setActivatorNodeRef}
             {...attributes}
             {...listeners}
-            className="flex min-h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted hover:bg-surface-2 active:cursor-grabbing"
+            className="flex min-h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-[10px] text-muted hover:bg-glass-strong active:cursor-grabbing"
             aria-label={`Drag ${props.entry.name}`}
           >
             <GripVertical className="h-5 w-5" aria-hidden />
@@ -300,13 +332,13 @@ function RowCard({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center gap-x-2 gap-y-2 rounded-xl border border-border bg-bg px-2 py-2 sm:flex-nowrap',
-        overlay && 'shadow-lg',
+        'glass-row flex flex-wrap items-center gap-x-2 gap-y-2 px-2 py-2 sm:flex-nowrap',
+        overlay && '-rotate-[1.2deg] border-action bg-surface shadow-glass',
         !entry.acceptable && 'opacity-60',
       )}
     >
       {handle ?? <span className="flex min-h-11 w-8 items-center justify-center text-muted"><GripVertical className="h-5 w-5" aria-hidden /></span>}
-      <span className="w-7 shrink-0 text-right text-sm font-semibold tabular-nums text-muted" aria-label={`Rank ${rank}`}>{rank}</span>
+      <span className="w-7 shrink-0 text-right font-mono text-[15px] font-semibold tabular-nums text-plum-deep" aria-label={`Rank ${rank}`}>{rank}</span>
       <div className="min-w-0 flex-1 basis-40">
         <p className={cn('truncate text-sm font-medium', !entry.acceptable && 'line-through')}>{entry.name}</p>
         <p className="truncate text-xs text-muted">{entry.place}{!entry.acceptable ? ' · not acceptable (left off your list)' : ''}</p>
@@ -315,7 +347,7 @@ function RowCard({
         <div className="flex w-full items-center justify-end gap-1 sm:w-auto">
           {entry.officialCode ? (
             <span
-              className="inline-flex min-h-11 w-28 items-center rounded-lg px-2 font-mono text-xs text-muted"
+              className="inline-flex min-h-11 w-28 min-w-0 items-center px-2 font-mono text-xs text-muted"
               title="NRMP code from the official program directory"
             >
               <span className="sr-only">NRMP code </span>
@@ -343,7 +375,7 @@ function RowCard({
               aria-invalid={!!codeError}
               title={codeError ?? 'Type the program code from R3'}
               className={cn(
-                'min-h-11 w-28 rounded-lg border bg-surface px-2 font-mono text-xs uppercase placeholder:font-sans placeholder:normal-case',
+                'min-h-11 w-28 min-w-0 rounded-[12px] border bg-glass-strong px-2 font-mono text-xs uppercase placeholder:font-sans placeholder:normal-case',
                 codeError ? 'border-danger' : 'border-border',
               )}
             />
@@ -353,20 +385,20 @@ function RowCard({
             aria-label={`Tier for ${entry.name}`}
             value={entry.tier}
             onChange={(e) => onTier?.(e.target.value as Tier)}
-            className="min-h-11 w-16 px-2"
+            className="min-h-11 w-16 shrink-0 bg-[right_8px_center] px-2.5 pr-7"
           >
             {TIERS.map((t) => <option key={t} value={t}>{t}</option>)}
           </Select>
           <span className="flex flex-col">
-            <button className="flex h-5.5 w-9 items-center justify-center rounded text-muted hover:bg-surface-2 disabled:opacity-30" disabled={isFirst} onClick={() => onNudge?.(-1)} aria-label={`Move ${entry.name} up`}>
+            <button className="flex h-5.5 w-9 items-center justify-center rounded-md text-muted hover:bg-glass-strong disabled:opacity-30" disabled={isFirst} onClick={() => onNudge?.(-1)} aria-label={`Move ${entry.name} up`}>
               <ChevronUp className="h-4 w-4" aria-hidden />
             </button>
-            <button className="flex h-5.5 w-9 items-center justify-center rounded text-muted hover:bg-surface-2 disabled:opacity-30" disabled={isLast} onClick={() => onNudge?.(1)} aria-label={`Move ${entry.name} down`}>
+            <button className="flex h-5.5 w-9 items-center justify-center rounded-md text-muted hover:bg-glass-strong disabled:opacity-30" disabled={isLast} onClick={() => onNudge?.(1)} aria-label={`Move ${entry.name} down`}>
               <ChevronDown className="h-4 w-4" aria-hidden />
             </button>
           </span>
           <Switch checked={entry.acceptable} onChange={(v) => onAcceptable?.(v)} label={`${entry.name} is acceptable`} />
-          <button className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-danger" onClick={onRemove} aria-label={`Remove ${entry.name}`}>
+          <button className="flex min-h-11 min-w-11 items-center justify-center rounded-[14px] text-muted hover:bg-glass-strong hover:text-danger" onClick={onRemove} aria-label={`Remove ${entry.name}`}>
             <Trash2 className="h-4 w-4" aria-hidden />
           </button>
         </div>

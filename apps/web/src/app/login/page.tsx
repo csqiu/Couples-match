@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { BRAND } from '@/brand';
+import Link from 'next/link';
+import { safeNext } from '@/lib/safe-next';
+import { Logo } from '@/components/logo';
 import { BETA_FULL_MESSAGE } from '@/lib/beta';
 import { Card } from '@/components/ui/card';
 import { getContext } from '@/lib/context';
@@ -11,20 +12,25 @@ import { LoginForm } from './login-form';
 export const metadata: Metadata = { title: 'Sign in' };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; email?: string; error?: string }> }) {
-  const { next = '/app', email, error } = await searchParams;
-  if (await getContext()) redirect(next.startsWith('/') ? next : '/app');
+  const { next: rawNext, email, error } = await searchParams;
+  const next = safeNext(rawNext);
+  if (await getContext()) redirect(next);
   return (
-    <main id="main" tabIndex={-1} className="outline-none mx-auto flex max-w-md flex-col gap-6 px-4 py-12">
-      <Link href="/" className="text-lg font-semibold">{BRAND.name}</Link>
-      <Card>
-        <h1 className="text-xl font-semibold">Sign in</h1>
-        <p className="mt-1 mb-6 text-sm text-muted">No passwords — we email you a link.</p>
+    <main id="main" tabIndex={-1} className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12 outline-none">
+      <Logo className="self-center" />
+      <Card tone="strong" className="p-6 sm:p-[30px]">
+        <h1 className="font-display text-[28px] leading-tight font-semibold tracking-[-0.02em]">Sign in</h1>
+        <p className="mt-1 mb-6 text-sm text-muted">No passwords: we email you a link. New here? The same link creates your account.</p>
         {error ? (
           <p className="mb-4 text-sm text-danger" role="alert">
             {error === 'full' ? BETA_FULL_MESSAGE : 'That sign-in link didn’t work. Request a new one.'}
           </p>
         ) : null}
         <LoginForm next={next} email={email} devLogin={DEV_LOGIN_ENABLED} />
+        <p className="mt-5 text-xs text-muted">
+          By continuing, you agree to our <Link href="/terms" className="underline underline-offset-2">Terms of Use</Link> and{' '}
+          <Link href="/privacy" className="underline underline-offset-2">Privacy Policy</Link>.
+        </p>
       </Card>
     </main>
   );

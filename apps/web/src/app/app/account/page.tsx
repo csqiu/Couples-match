@@ -5,6 +5,7 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { displayName, requireContext } from '@/lib/context';
 import { createClient } from '@/lib/supabase/server';
 import { DeleteAccount, LeaveCouple } from './account-forms';
+import { AppearanceCard } from './appearance-card';
 
 export const metadata: Metadata = { title: 'Account' };
 
@@ -26,13 +27,14 @@ export default async function AccountPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Account</h1>
+        <h1 className="page-title">Account</h1>
         <p className="mt-1 text-sm text-muted">Your details, your couple, and your data.</p>
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
       <Card>
         <CardHeader title="You" action={<Link href="/app/setup" className="text-sm text-accent underline">Edit name or specialty</Link>} />
-        <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[10rem_1fr]">
+        <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[8rem_1fr] [&_dd]:font-medium">
           <dt className="text-muted">Name</dt>
           <dd>{ctx.profile.display_name || '—'}</dd>
           <dt className="text-muted">Email</dt>
@@ -79,6 +81,9 @@ export default async function AccountPage() {
           </ul>
         ) : null}
       </Card>
+      </div>
+
+      <AppearanceCard />
 
       <Card>
         <CardHeader title="Your data" />
@@ -93,7 +98,7 @@ export default async function AccountPage() {
         </ul>
       </Card>
 
-      <Card className="border-danger/40">
+      <Card tone="danger">
         <CardHeader title="Delete your account" />
         <DeleteAccount inCouple={!!ctx.couple} />
       </Card>

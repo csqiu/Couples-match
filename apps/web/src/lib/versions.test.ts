@@ -30,3 +30,19 @@ describe('diffVersions', () => {
     expect(diffSummary(diffVersions(v, v))).toEqual({ moved: 0, added: 0, removed: 0, same: 2 });
   });
 });
+
+describe('printing a saved version', () => {
+  it('gets the same checklist and fee estimate as the live list', async () => {
+    const { versionAsListRows } = await import('./versions');
+    const { checklistFor, feesFor } = await import('./final-list');
+    const rows = [
+      { rank: 1, pairId: 'a|b', a: { id: 'a', name: 'Hosp A — IM', code: '1234140C0' }, b: { id: 'b', name: 'Hosp B — Peds', code: '' }, distanceMi: 3, band: 'together' as const, bandLabel: 'Together' },
+      { rank: 2, pairId: 'a|NO_MATCH', a: { id: 'a', name: 'Hosp A — IM', code: '1234140C0' }, b: { id: 'NO_MATCH', name: 'No Match', code: '999999999' }, distanceMi: null, band: 'no_match' as const, bandLabel: 'No Match' },
+    ];
+    const asRows = versionAsListRows(rows);
+    const items = checklistFor(asRows, asRows.length, ['Alex', 'Sam'], false);
+    expect(items.find((i) => i.label.startsWith('Sam'))?.ok).toBe(false);
+    expect(items.find((i) => i.label.startsWith('Alex'))?.ok).toBe(true);
+    expect(feesFor(asRows, asRows.length).ranks).toBe(2);
+  });
+});

@@ -46,6 +46,9 @@ importers:
       maplibre-gl:
         specifier: 6.19.0
         version: 6.19.0(@types/react@19.3.0)(react@19.3.1)
+      marked:
+        specifier: 15.0.12
+        version: 15.0.12
       next:
         specifier: 16.4.6
         version: 16.4.6(@playwright/test@1.63.0)(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -1088,6 +1091,11 @@ packages:
   maplibre-gl@6.19.0:
     resolution: {integrity: sha512-3bOrnfddggUYudLGJFsYFvqulUyvSxy4iQzd/uURI7ZhgYEZifdSrECujRSghaCpc+v/ZsFI0Y6ZsGSilEtE+w==}
     engines: {node: '>=16.14.0', npm: '>=8.1.0'}
+
+  marked@15.0.12:
+    resolution: {integrity: sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA==}
+    engines: {node: '>= 18'}
+    hasBin: true
 
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
@@ -2200,6 +2208,8 @@ snapshots:
       - immer
       - react
       - use-sync-external-store
+
+  marked@15.0.12: {}
 
   minimist@1.2.8: {}
 

@@ -27,6 +27,18 @@ const config: NextConfig = {
   // The engine, data and db packages are TypeScript sources in this monorepo.
   transpilePackages: ['@pairwise/engine', '@pairwise/data', '@pairwise/db'],
   poweredByHeader: false,
+  async redirects() {
+    // Retired guides point to the post that absorbed them, so old links keep working.
+    const love = '/guides/give-med-school-love-a-chance';
+    const technical = '/guides/technical-guide-to-the-couples-match';
+    return [
+      { source: '/guides/couples-matching-for-the-uncommitted', destination: love, permanent: true },
+      { source: '/guides/should-i-couples-match', destination: love, permanent: true },
+      { source: '/guides/should-i-tell-programs', destination: love, permanent: true },
+      { source: '/guides/how-the-couples-match-works', destination: technical, permanent: true },
+      { source: '/guides/why-making-a-couples-list-is-hard', destination: technical, permanent: true },
+    ];
+  },
   async headers() {
     return [
       {
