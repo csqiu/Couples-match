@@ -1,6 +1,7 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { APP_URL, DEV_LOGIN_ENABLED } from '@/lib/env';
+import { BETA_FULL_MESSAGE, isBetaFull } from '@/lib/beta';
 import { safeNext } from '@/lib/safe-next';
 import { createClient } from '@/lib/supabase/server';
 
@@ -17,7 +18,11 @@ export async function sendMagicLink(_: LoginState, form: FormData): Promise<Logi
     email,
     options: { emailRedirectTo: `${APP_URL}/auth/callback?next=${encodeURIComponent(safeNext(form.get('next')))}` },
   });
-  if (error) return { error: error.status === 429 ? 'Too many sign-in emails. Try again in a few minutes.' : error.message };
+  if (error) {
+    if (error.status === 429) return { error: 'Too many sign-in emails. Try again in a few minutes.' };
+    if (isBetaFull(error.message)) return { error: BETA_FULL_MESSAGE };
+    return { error: error.message };
+  }
   return { sent: email };
 }
 

@@ -19,6 +19,19 @@ Supabase where it lives. About 20 minutes, mostly clicking.
 - **Still to do by hand:** step 2 below (Supabase URL configuration), then step 3
   (email sender) before real users.
 
+## Beta signup limit
+
+New accounts are capped at **50 couples** (migrations 16 and 17). The cap counts the
+people who start a couple; anyone with a pending partner invite can always sign up and
+never takes a place. People who already have an account can always sign in. New
+sign-ups past the cap see "closed beta, all places taken". The e2e test accounts
+(`@example.test`) don't count. Change it in the Supabase SQL editor:
+
+```sql
+update public.beta_settings set signup_limit = 100;   -- raise it
+update public.beta_settings set signup_limit = null;  -- remove the cap at launch
+```
+
 ## What it costs
 
 | Service | Free tier | When you'd pay |
